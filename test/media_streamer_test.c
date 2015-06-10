@@ -23,8 +23,7 @@
 
 #include <media_streamer.h>
 
-typedef enum
-{
+typedef enum {
 	MENU_STATE_UNKNOWN = 0,
 	MENU_STATE_MAIN_MENU,
 	MENU_STATE_BROADCAST_MENU,
@@ -32,8 +31,7 @@ typedef enum
 	MENU_STATE_PRESET_MENU
 } menu_state_e;
 
-typedef enum
-{
+typedef enum {
 	SUBMENU_STATE_UNKNOWN = 0,
 	SUBMENU_STATE_GETTING_IP,
 	SUBMENU_STATE_AUTOPLUG = 3,
@@ -43,8 +41,7 @@ typedef enum
 #define SECOND_VOIP_MASK 0x8
 #define DOUBLE_STREAMER_MASK 0x10
 
-typedef enum
-{
+typedef enum {
 	PRESET_UNKNOWN = 0,
 	PRESET_RTP_STREAMER = 0x01,
 	PRESET_RTP_CLIENT = 0x02,
@@ -65,15 +62,15 @@ static media_streamer_h g_media_streamer;
 static media_streamer_h g_media_streamer_2;
 static media_streamer_h current_media_streamer = &g_media_streamer;
 
-//#define ONE_DEVICE_TEST
+/*#define ONE_DEVICE_TEST */
 #define MAX_STRING_LEN    2048
 #define DEFAULT_IP_ADDR "127.0.0.1"
 
 #define VIDEO_PORT 5000
 #define AUDIO_PORT 6000
 
-//#define DISABLE_AUDIO
-//#define DISABLE_VIDEO
+/*#define DISABLE_AUDIO */
+/*#define DISABLE_VIDEO */
 
 /*---------------------------------------------------------------------------
 |    LOCAL VARIABLE DEFINITIONS:                      |
@@ -99,8 +96,7 @@ static gboolean _create(media_streamer_h *streamer)
 {
 	g_print("== create \n");
 
-	if(*streamer != NULL)
-	{
+	if (*streamer != NULL) {
 		return TRUE;
 	}
 
@@ -108,8 +104,7 @@ static gboolean _create(media_streamer_h *streamer)
 
 	ret = media_streamer_create(streamer);
 
-	if( ret != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		g_print("Fail to create media streamer");
 		return FALSE;
 	}
@@ -123,8 +118,7 @@ static gboolean _prepare(void)
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
 	ret = media_streamer_prepare(current_media_streamer);
-	if( ret != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		g_print("Fail to prepare media streamer");
 		return FALSE;
 	}
@@ -139,8 +133,7 @@ static gboolean _unprepare(void)
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
 	ret = media_streamer_unprepare(current_media_streamer);
-	if( ret != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		g_print("Fail to unprepare media streamer");
 		return FALSE;
 	}
@@ -155,8 +148,7 @@ static gboolean _play()
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
 	ret = media_streamer_play(current_media_streamer);
-	if( ret != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		g_print("Fail to play media streamer");
 		return FALSE;
 	}
@@ -170,15 +162,13 @@ static gboolean _destroy(media_streamer_h streamer)
 	g_print("== destroy \n");
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
-	if(streamer == NULL)
-	{
+	if (streamer == NULL) {
 		g_print("media streamer already destroyed");
 		return TRUE;
 	}
 
 	ret = media_streamer_destroy(streamer);
-	if( ret != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		g_print("Fail to destroy media streamer");
 		return FALSE;
 	}
@@ -190,15 +180,13 @@ static gboolean _destroy(media_streamer_h streamer)
 
 static void create_formats(void)
 {
-	if(!vfmt_raw || !vfmt_encoded || afmt_raw)
-	{
+	if (!vfmt_raw || !vfmt_encoded || afmt_raw) {
 		g_print("Formats already created!");
 	}
 
 	/* Define video raw format */
 	media_format_create(&vfmt_raw);
-	if (media_format_set_video_mime(vfmt_raw, MEDIA_FORMAT_YV12) != MEDIA_FORMAT_ERROR_NONE)
-	{
+	if (media_format_set_video_mime(vfmt_raw, MEDIA_FORMAT_YV12) != MEDIA_FORMAT_ERROR_NONE) {
 		g_print("media_format_set_video_mime failed!");
 	}
 	media_format_set_video_width(vfmt_raw, 800);
@@ -208,8 +196,7 @@ static void create_formats(void)
 
 	/* Define encoded video format */
 	media_format_create(&vfmt_encoded);
-	if (media_format_set_video_mime(vfmt_encoded, MEDIA_FORMAT_H264_SP) != MEDIA_FORMAT_ERROR_NONE)
-	{
+	if (media_format_set_video_mime(vfmt_encoded, MEDIA_FORMAT_H264_SP) != MEDIA_FORMAT_ERROR_NONE) {
 		g_print("media_format_set_video_mime failed!");
 	}
 	media_format_set_video_width(vfmt_encoded, 800);
@@ -219,8 +206,7 @@ static void create_formats(void)
 
 	/* Define audio raw format */
 	media_format_create(&afmt_raw);
-	if (media_format_set_audio_mime(afmt_raw, MEDIA_FORMAT_PCM) != MEDIA_FORMAT_ERROR_NONE)
-	{
+	if (media_format_set_audio_mime(afmt_raw, MEDIA_FORMAT_PCM) != MEDIA_FORMAT_ERROR_NONE) {
 		g_print("media_format_set_audio_mime failed!");
 	}
 	media_format_set_audio_channel(afmt_raw, 1);
@@ -228,11 +214,11 @@ static void create_formats(void)
 	media_format_set_audio_bit(afmt_raw, 16);
 }
 
-static void set_rtp_params (media_streamer_node_h rtp_node,
-				const gchar *ip,
-				int video_port,
-				int audio_port,
-				gboolean port_reverse)
+static void set_rtp_params(media_streamer_node_h rtp_node,
+                           const gchar *ip,
+                           int video_port,
+                           int audio_port,
+                           gboolean port_reverse)
 {
 	bundle *params = bundle_create();
 
@@ -240,17 +226,15 @@ static void set_rtp_params (media_streamer_node_h rtp_node,
 	gchar *audio_src_port = g_strdup_printf("%d", port_reverse ? (audio_port + 5) : audio_port);
 	gchar *audio_sink_port = g_strdup_printf("%d", port_reverse ? audio_port : (audio_port + 5));
 
-	if(g_menu_preset & PRESET_RTP_STREAMER)
-	{
+	if (g_menu_preset & PRESET_RTP_STREAMER) {
 		bundle_add_str(params, "audio_sink,port", audio_sink_port);
 		bundle_add_str(params, "audio_sink,host", ip);
 	}
-	if(g_menu_preset & PRESET_RTP_CLIENT)
-	{
+	if (g_menu_preset & PRESET_RTP_CLIENT) {
 		bundle_add_str(params, "audio_source,port", audio_src_port);
 		bundle_add_str(params, "audio_source,format",
-				"application/x-rtp,media=audio,clock-rate=44100,encoding-name=L16,"
-				"encoding-params=1,channels=1,payload=96");
+		               "application/x-rtp,media=audio,clock-rate=44100,encoding-name=L16,"
+		               "encoding-params=1,channels=1,payload=96");
 	}
 
 	g_free(audio_src_port);
@@ -261,16 +245,14 @@ static void set_rtp_params (media_streamer_node_h rtp_node,
 	gchar *video_src_port = g_strdup_printf("%d", port_reverse ? (video_port + 5) : video_port);
 	gchar *video_sink_port = g_strdup_printf("%d", port_reverse ? video_port : (video_port + 5));
 
-	if(g_menu_preset & PRESET_RTP_STREAMER)
-	{
+	if (g_menu_preset & PRESET_RTP_STREAMER) {
 		bundle_add_str(params, "video_sink,port", video_sink_port);
 		bundle_add_str(params, "video_sink,host", ip);
 	}
-	if(g_menu_preset & PRESET_RTP_CLIENT)
-	{
+	if (g_menu_preset & PRESET_RTP_CLIENT) {
 		bundle_add_str(params, "video_source,port", video_src_port);
 		bundle_add_str(params, "video_source,format",
-				"application/x-rtp,media=video,clock-rate=90000,encoding-name=H264");
+		               "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264");
 	}
 
 	g_free(video_src_port);
@@ -287,65 +269,62 @@ static gboolean _create_rtp_streamer(media_streamer_node_h rtp_bin)
 	g_print("== _create_rtp_streamer \n");
 
 #ifndef DISABLE_VIDEO
-	//********************** video source ***********************************
+	/*********************** video source *********************************** */
 	media_streamer_node_h video_src = NULL;
 #ifdef ONE_DEVICE_TEST
-	if(g_menu_preset & SECOND_VOIP_MASK)
-	{
+	if (g_menu_preset & SECOND_VOIP_MASK) {
 		media_streamer_src_create(MEDIA_STREAMER_SRC_TYPE_VIDEO_TEST, &video_src);
-	}
-	else
-	{
+	} else {
 		media_streamer_src_create(MEDIA_STREAMER_SRC_TYPE_CAMERA, &video_src);
 	}
 #else
 	media_streamer_src_create(MEDIA_STREAMER_SRC_TYPE_CAMERA, &video_src);
 #endif
-//	media_streamer_node_set_fmt(video_src, vfmt_raw);
+	/*	media_streamer_node_set_fmt(video_src, vfmt_raw); */
 	media_streamer_node_add(current_media_streamer, video_src);
 
-	//********************** encoder ****************************************
+	/*********************** encoder **************************************** */
 	media_streamer_node_h video_enc = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER, NULL, vfmt_encoded, &video_enc);
 	media_streamer_node_add(current_media_streamer, video_enc);
 
 
-	//********************** videopay ***************************************
+	/*********************** videopay *************************************** */
 	media_streamer_node_h video_pay = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY, NULL, vfmt_encoded, &video_pay);
 	media_streamer_node_add(current_media_streamer, video_pay);
 
-	//====================Linking Video Streamer===========================//
+	/*====================Linking Video Streamer=========================== */
 	media_streamer_node_link(video_src, "src", video_enc, "sink");
 	media_streamer_node_link(video_enc, "src", video_pay, "sink");
 	media_streamer_node_link(video_pay, "src", rtp_bin, "video_sink");
-	//======================================================================//
+	/*====================================================================== */
 
 	g_print("== success streamer video part \n");
 #endif
 
 #ifndef DISABLE_AUDIO
-	//********************** audiosrc ***********************************
+	/*********************** audiosrc *********************************** */
 	media_streamer_node_h audio_src = NULL;
 	media_streamer_src_create(MEDIA_STREAMER_SRC_TYPE_AUDIO_CAPTURE, &audio_src);
 	media_streamer_node_add(current_media_streamer, audio_src);
 
-	//********************** audioencoder ***********************************
+	/*********************** audioencoder *********************************** */
 	media_streamer_node_h audio_enc = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER, NULL, NULL, &audio_enc);
 	media_streamer_node_add(current_media_streamer, audio_enc);
 
 
-	//********************** rtpL16pay ***********************************
+	/*********************** rtpL16pay *********************************** */
 	media_streamer_node_h audio_pay = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY, NULL, NULL, &audio_pay);
 	media_streamer_node_add(current_media_streamer, audio_pay);
 
-	//====================Linking Audio Streamer===========================//
+	/*====================Linking Audio Streamer========================== */
 	media_streamer_node_link(audio_src, "src", audio_enc, "sink");
 	media_streamer_node_link(audio_enc, "src", audio_pay, "sink");
 	media_streamer_node_link(audio_pay, "src", rtp_bin, "audio_sink");
-	//======================================================================//
+	/*====================================================================== */
 
 	g_print("== success streamer audio part \n");
 #endif
@@ -358,56 +337,56 @@ static gboolean _create_rtp_client(media_streamer_node_h rtp_bin)
 	g_print("== _create_rtp_client \n");
 
 #ifndef DISABLE_VIDEO
-	//********************** video_depay***********************************
+	/*********************** video_depay*********************************** */
 	media_streamer_node_h video_depay = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY, NULL, vfmt_encoded, &video_depay);
 	media_streamer_node_add(current_media_streamer, video_depay);
 
-	//********************** videodec ***********************************
+	/*********************** videodec *********************************** */
 	media_streamer_node_h video_dec = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER, NULL, vfmt_encoded, &video_dec);
 	media_streamer_node_add(current_media_streamer, video_dec);
 
-	//********************** videosink ***********************************
+	/*********************** videosink *********************************** */
 	media_streamer_node_h video_sink = NULL;
 	media_streamer_sink_create(MEDIA_STREAMER_SINK_TYPE_SCREEN, &video_sink);
 	media_streamer_node_add(current_media_streamer, video_sink);
 
-	//====================Linking Video Client===========================//
+	/*====================Linking Video Client=========================== */
 	media_streamer_node_link(video_depay, "src", video_dec, "sink");
-	media_streamer_node_link(video_dec, "src", video_sink,"sink");
-//	media_streamer_node_link(rtp_bin, "video_source", video_depay,"sink");
+	media_streamer_node_link(video_dec, "src", video_sink, "sink");
+	/*	media_streamer_node_link(rtp_bin, "video_source", video_depay,"sink"); */
 
 	g_print("== success client video part \n");
 #endif
 
 #ifndef DISABLE_AUDIO
-	//********************** audiodepay ***********************************
+	/*********************** audiodepay *********************************** */
 	media_streamer_node_h audio_depay = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY, NULL, NULL, &audio_depay);
 	media_streamer_node_add(current_media_streamer, audio_depay);
 
-	//********************** audioconvert ***********************************
+	/*********************** audioconvert *********************************** */
 	media_streamer_node_h audio_converter = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER, NULL, NULL, &audio_converter);
 	media_streamer_node_add(current_media_streamer, audio_converter);
 
-	//********************** audioresample ***********************************
+	/*********************** audioresample *********************************** */
 	media_streamer_node_h audio_res = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE, NULL, NULL, &audio_res);
 	media_streamer_node_add(current_media_streamer, audio_res);
 
-	//********************** audiosink ***********************************
+	/*********************** audiosink *********************************** */
 	media_streamer_node_h audio_sink = NULL;
 	media_streamer_sink_create(MEDIA_STREAMER_SINK_TYPE_AUDIO, &audio_sink);
 	media_streamer_node_add(current_media_streamer, audio_sink);
 
-	//====================Linking Audio Client===========================//
+	/*====================Linking Audio Client=========================== */
 	media_streamer_node_link(audio_depay, "src", audio_converter, "sink");
 	media_streamer_node_link(audio_converter, "src", audio_res, "sink");
-	media_streamer_node_link(audio_res, "src", audio_sink,"sink");
-//	media_streamer_node_link(rtp_bin, "audio_source", audio_depay,"sink");
-	//======================================================================//
+	media_streamer_node_link(audio_res, "src", audio_sink, "sink");
+	/*media_streamer_node_link(rtp_bin, "audio_source", audio_depay,"sink"); */
+	/*====================================================================== */
 
 	g_print("== success client audio part \n");
 #endif
@@ -416,13 +395,13 @@ static gboolean _create_rtp_client(media_streamer_node_h rtp_bin)
 }
 
 static media_streamer_node_h _create_rtp(
-				int video_port,
-				int audio_port,
-				gboolean second_client)
+    int video_port,
+    int audio_port,
+    gboolean second_client)
 {
 	g_print("== create rtp node for current preset \n");
 
-	//********************** rtpbin ***********************************
+	/*********************** rtpbin *********************************** */
 	media_streamer_node_h rtp_bin = NULL;
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_RTP, vfmt_encoded, vfmt_encoded, &rtp_bin);
 	set_rtp_params(rtp_bin, g_broadcast_address, video_port, audio_port, second_client);
@@ -450,20 +429,17 @@ void reset_current_menu_state(void)
 	g_autoplug_mode = FALSE;
 	current_media_streamer = NULL;
 
-	if (g_media_streamer)
-	{
+	if (g_media_streamer) {
 		_destroy(g_media_streamer);
 		g_media_streamer = NULL;
 	}
 
-	if (g_media_streamer_2)
-	{
+	if (g_media_streamer_2) {
 		_destroy(g_media_streamer_2);
 		g_media_streamer_2 = NULL;
 	}
 
-	if(g_broadcast_address != NULL)
-	{
+	if (g_broadcast_address != NULL) {
 		g_free(g_broadcast_address);
 		g_broadcast_address = NULL;
 	}
@@ -481,7 +457,7 @@ static void display_autoplug_select_menu(void)
 	g_print("\n");
 	g_print("Please select Media Streamer pluging mode\n");
 	g_print("By default will be used [%s] mode\n",
-			g_autoplug_mode == TRUE ? "autoplug" : "manual");
+	        g_autoplug_mode == TRUE ? "autoplug" : "manual");
 	g_print("1. Manual mode \n");
 	g_print("2. Autoplug mode \n");
 }
@@ -548,10 +524,8 @@ static void display_main_menu(void)
 
 static void display_menu(void)
 {
-	if (g_sub_menu_state == SUBMENU_STATE_UNKNOWN)
-	{
-		switch (g_menu_state)
-		{
+	if (g_sub_menu_state == SUBMENU_STATE_UNKNOWN) {
+		switch (g_menu_state) {
 			case MENU_STATE_MAIN_MENU:
 				display_main_menu();
 				break;
@@ -568,11 +542,8 @@ static void display_menu(void)
 				g_print("*** Unknown status.\n");
 				break;
 		}
-	}
-	else
-	{
-		switch (g_sub_menu_state)
-		{
+	} else {
+		switch (g_sub_menu_state) {
 			case SUBMENU_STATE_GETTING_IP:
 				display_getting_ip_menu();
 				break;
@@ -580,7 +551,7 @@ static void display_menu(void)
 				display_autoplug_select_menu();
 				break;
 			case SUBMENU_STATE_FORMAT:
-//				display_format_menu();
+				/* display_format_menu(); */
 				break;
 			default:
 				g_print("*** Unknown Submenu state.\n");
@@ -595,8 +566,7 @@ static void run_preset(void)
 	media_streamer_node_h rtp_bin = NULL;
 	create_formats();
 
-	switch(g_menu_preset)
-	{
+	switch (g_menu_preset) {
 		case PRESET_RTP_STREAMER:
 			rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
 			_create_rtp_streamer(rtp_bin);
@@ -620,11 +590,11 @@ static void run_preset(void)
 			_create_rtp_streamer(rtp_bin);
 			break;
 		case PRESET_DOUBLE_VOIP_SERVER_2:
-			rtp_bin = _create_rtp(VIDEO_PORT+10, AUDIO_PORT+10, TRUE);
+			rtp_bin = _create_rtp(VIDEO_PORT + 10, AUDIO_PORT + 10, TRUE);
 			_create_rtp_streamer(rtp_bin);
 			break;
 		case PRESET_DOUBLE_VOIP_CLIENT:
-			rtp_bin = _create_rtp(VIDEO_PORT+10, AUDIO_PORT+10, FALSE);
+			rtp_bin = _create_rtp(VIDEO_PORT + 10, AUDIO_PORT + 10, FALSE);
 			_create_rtp_client(rtp_bin);
 			break;
 		case PRESET_DOUBLE_VOIP_CLIENT_2:
@@ -641,52 +611,36 @@ void _interpret_main_menu(char *cmd)
 {
 	int len = strlen(cmd);
 
-	if(len == 1)
-	{
-		if ( !strncmp(cmd, "1", len))
-		{
+	if (len == 1) {
+		if (!strncmp(cmd, "1", len)) {
 			g_menu_state = MENU_STATE_BROADCAST_MENU;
-		}
-		else if ( !strncmp(cmd, "2", len))
-		{
+		} else if (!strncmp(cmd, "2", len)) {
 			g_menu_state = MENU_STATE_VOIP_MENU;
-		}
-		else if ( !strncmp(cmd, "q", len))
-		{
+		} else if (!strncmp(cmd, "q", len)) {
 			quit();
 		}
-	}
-	else
-	{
+	} else {
 		g_print("wrong command\n");
 	}
 }
 
-//=====================Broadcast Menu============================//
+/*=====================Broadcast Menu============================// */
 void _interpret_broadcast_menu(char *cmd)
 {
 	int len = strlen(cmd);
 
-	if(len == 1)
-	{
-		if( !strncmp(cmd, "1", len))
-		{
+	if (len == 1) {
+		if (!strncmp(cmd, "1", len)) {
 			g_menu_preset = PRESET_RTP_CLIENT;
 			g_menu_state = MENU_STATE_PRESET_MENU;
-		}
-		else if( !strncmp(cmd, "2", len))
-		{
+		} else if (!strncmp(cmd, "2", len)) {
 			g_menu_preset = PRESET_RTP_STREAMER;
 			g_menu_state = MENU_STATE_PRESET_MENU;
-		}
-		else if( !strncmp(cmd, "b", len))
-		{
+		} else if (!strncmp(cmd, "b", len)) {
 			reset_current_menu_state();
 			display_menu();
 		}
-	}
-	else
-	{
+	} else {
 		g_print("wrong command\n");
 	}
 }
@@ -695,51 +649,35 @@ void _interpret_voip_menu(char *cmd)
 {
 	int len = strlen(cmd);
 
-	if(len == 1)
-	{
-		if( !strncmp(cmd, "1", len))
-		{
+	if (len == 1) {
+		if (!strncmp(cmd, "1", len)) {
 			g_menu_preset = PRESET_VOIP;
 			g_menu_state = MENU_STATE_PRESET_MENU;
-		}
-		else if( !strncmp(cmd, "2", len))
-		{
+		} else if (!strncmp(cmd, "2", len)) {
 			g_menu_preset = PRESET_VOIP_2;
 			g_menu_state = MENU_STATE_PRESET_MENU;
-		}
-		else if( !strncmp(cmd, "3", len))
-		{
-			//double Server 1
+		} else if (!strncmp(cmd, "3", len)) {
+			/*double Server 1 */
 			g_menu_preset = PRESET_DOUBLE_VOIP_SERVER;
 			g_menu_state = MENU_STATE_PRESET_MENU;
-		}
-		else if( !strncmp(cmd, "4", len))
-		{
-			//double Server 2
+		} else if (!strncmp(cmd, "4", len)) {
+			/*double Server 2 */
 			g_menu_preset = PRESET_DOUBLE_VOIP_SERVER_2;
 			g_menu_state = MENU_STATE_PRESET_MENU;
-		}
-		else if( !strncmp(cmd, "5", len))
-		{
-			//double Client 1
+		} else if (!strncmp(cmd, "5", len)) {
+			/*double Client 1 */
 			g_menu_preset = PRESET_DOUBLE_VOIP_CLIENT;
 			g_menu_state = MENU_STATE_PRESET_MENU;
-		}
-		else if( !strncmp(cmd, "6", len))
-		{
-			//double Client 2
+		} else if (!strncmp(cmd, "6", len)) {
+			/*double Client 2 */
 			g_menu_preset = PRESET_DOUBLE_VOIP_CLIENT_2;
 			g_menu_state = MENU_STATE_PRESET_MENU;
-		}
-		else if( !strncmp(cmd, "b", len))
-		{
+		} else if (!strncmp(cmd, "b", len)) {
 			reset_current_menu_state();
-			//display_menu();
+			/*display_menu(); */
 		}
 
-	}
-	else
-	{
+	} else {
 		g_print("wrong command\n");
 	}
 }
@@ -748,18 +686,14 @@ void _interpret_getting_ip_menu(char *cmd)
 {
 	int min_len = strlen("0.0.0.0");
 	int cmd_len = strlen(cmd);
-	if(g_broadcast_address != NULL)
-	{
+	if (g_broadcast_address != NULL) {
 		g_free(g_broadcast_address);
 	}
 
-	if(cmd_len > min_len)
-	{
+	if (cmd_len > min_len) {
 		g_broadcast_address = g_strdup(cmd);
 		g_print("== IP address setted to [%s]\n", g_broadcast_address);
-	}
-	else
-	{
+	} else {
 		g_broadcast_address = g_strdup(DEFAULT_IP_ADDR);
 		g_print("Invalid IP. Default address will be used [%s]\n", DEFAULT_IP_ADDR);
 	}
@@ -771,26 +705,20 @@ void _interpret_getting_ip_menu(char *cmd)
 void _interpret_autoplug_menu(char *cmd)
 {
 
-	int cmd_number = atoi(cmd)-1;
+	int cmd_number = atoi(cmd) - 1;
 
 
-	if(cmd_number == 1 || cmd_number == 0)
-	{
+	if (cmd_number == 1 || cmd_number == 0) {
 		g_autoplug_mode = cmd_number;
-	}
-	else
-	{
+	} else {
 		g_print("Invalid input. Default autoplug mode will be used\n");
 	}
 	g_print("Selected pluging mode is [%s]\n",
-			g_autoplug_mode == TRUE ? "autoplug" : "manual");
+	        g_autoplug_mode == TRUE ? "autoplug" : "manual");
 
-	if(g_menu_preset & PRESET_RTP_STREAMER)
-	{
+	if (g_menu_preset & PRESET_RTP_STREAMER) {
 		g_sub_menu_state = SUBMENU_STATE_GETTING_IP;
-	}
-	else
-	{
+	} else {
 		run_preset();
 		g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
 	}
@@ -800,75 +728,51 @@ void _interpret_preset_menu(char *cmd)
 {
 	int len = strlen(cmd);
 
-	if(len == 1 || len == 2)
-	{
-		if( !strncmp(cmd, "1", len))
-		{
-			if((g_menu_preset & DOUBLE_STREAMER_MASK) &&
-					(g_menu_preset & PRESET_RTP_CLIENT))
-			{
+	if (len == 1 || len == 2) {
+		if (!strncmp(cmd, "1", len)) {
+			if ((g_menu_preset & DOUBLE_STREAMER_MASK) &&
+			    (g_menu_preset & PRESET_RTP_CLIENT)) {
 				_create(&g_media_streamer_2);
 				current_media_streamer = g_media_streamer_2;
 				g_print("== success create media streamer 2\n");
-			}
-			else
-			{
+			} else {
 				_create(&g_media_streamer);
 				current_media_streamer = g_media_streamer;
 				g_print("== success create media streamer\n");
 			}
 
-		}
-		else if( !strncmp(cmd, "2", len))
-		{
-			// call the run_preset function after autoplug mode was selected;
+		} else if (!strncmp(cmd, "2", len)) {
+			/* call the run_preset function after autoplug mode was selected; */
 			g_sub_menu_state = SUBMENU_STATE_AUTOPLUG;
-		}
-		else if( !strncmp(cmd, "4", len))
-		{
+		} else if (!strncmp(cmd, "4", len)) {
 			_prepare();
-		}
-		else if( !strncmp(cmd, "5", len))
-		{
+		} else if (!strncmp(cmd, "5", len)) {
 			_unprepare();
-		}
-		else if( !strncmp(cmd, "6", len))
-		{
+		} else if (!strncmp(cmd, "6", len)) {
 			_play(g_media_streamer);
-		}
-		else if( !strncmp(cmd, "7", len))
-		{
+		} else if (!strncmp(cmd, "7", len)) {
 			_destroy(current_media_streamer);
 			current_media_streamer = NULL;
-		}
-		else if( !strncmp(cmd, "b", len))
-		{
-			if(g_menu_preset & DOUBLE_STREAMER_MASK)
-			{
+		} else if (!strncmp(cmd, "b", len)) {
+			if (g_menu_preset & DOUBLE_STREAMER_MASK) {
 				g_menu_state = MENU_STATE_VOIP_MENU;
 				g_autoplug_mode = FALSE;
 				current_media_streamer = NULL;
-			}
-			else
-			{
+			} else {
 				reset_current_menu_state();
 			}
 			display_menu();
 		}
 
-	}
-	else
-	{
+	} else {
 		g_print("wrong command\n");
 	}
 }
 
 static void interpret_cmd(char *cmd)
 {
-	if(g_sub_menu_state == SUBMENU_STATE_UNKNOWN)
-	{
-		switch(g_menu_state)
-		{
+	if (g_sub_menu_state == SUBMENU_STATE_UNKNOWN) {
+		switch (g_menu_state) {
 			case MENU_STATE_MAIN_MENU:
 				_interpret_main_menu(cmd);
 				break;
@@ -886,11 +790,8 @@ static void interpret_cmd(char *cmd)
 				return;
 				break;
 		}
-	}
-	else
-	{
-		switch (g_sub_menu_state)
-		{
+	} else {
+		switch (g_sub_menu_state) {
 			case SUBMENU_STATE_GETTING_IP:
 				_interpret_getting_ip_menu(cmd);
 				break;
@@ -898,7 +799,7 @@ static void interpret_cmd(char *cmd)
 				_interpret_autoplug_menu(cmd);
 				break;
 			case SUBMENU_STATE_FORMAT:
-				//display_format_menu();
+				/*display_format_menu(); */
 				break;
 			default:
 				g_print("*** Unknown Submenu state.\n");
@@ -930,7 +831,7 @@ int main(int argc, char **argv)
 	GIOChannel *stdin_channel;
 	stdin_channel = g_io_channel_unix_new(0);
 	g_io_channel_set_flags(stdin_channel, G_IO_FLAG_NONBLOCK, NULL);
-	g_io_add_watch(stdin_channel, G_IO_IN,(GIOFunc)input, NULL);
+	g_io_add_watch(stdin_channel, G_IO_IN, (GIOFunc)input, NULL);
 
 	display_menu();
 

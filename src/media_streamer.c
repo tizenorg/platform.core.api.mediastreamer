@@ -30,11 +30,11 @@
 */
 
 int media_streamer_src_create(media_streamer_src_type_e type,
-				media_streamer_node_h *src)
+                              media_streamer_node_h *src)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
-	media_streamer_node_s *ms_src = (media_streamer_node_s*)src;
+	media_streamer_node_s *ms_src = (media_streamer_node_s *)src;
 	ms_retvm_if(ms_src == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	ms_src = (media_streamer_node_s *)calloc(1, sizeof(media_streamer_node_s));
@@ -43,10 +43,9 @@ int media_streamer_src_create(media_streamer_src_type_e type,
 	ms_src->type = MEDIA_STREAMER_NODE_TYPE_SRC;
 	ms_src->subtype = (media_streamer_src_type_e)type;
 	ret = __ms_src_node_create(ms_src);
-	if(ret != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		MS_SAFE_FREE(ms_src);
-		ms_error( "Error creating Src node [%d]",ret);
+		ms_error("Error creating Src node [%d]", ret);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
@@ -57,11 +56,11 @@ int media_streamer_src_create(media_streamer_src_type_e type,
 }
 
 int media_streamer_sink_create(media_streamer_sink_type_e type,
-				media_streamer_node_h *sink)
+                               media_streamer_node_h *sink)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
-	media_streamer_node_s *ms_sink = (media_streamer_node_s*)sink;
+	media_streamer_node_s *ms_sink = (media_streamer_node_s *)sink;
 	ms_retvm_if(ms_sink == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	ms_sink = (media_streamer_node_s *)calloc(1, sizeof(media_streamer_node_s));
@@ -70,10 +69,9 @@ int media_streamer_sink_create(media_streamer_sink_type_e type,
 	ms_sink->type = MEDIA_STREAMER_NODE_TYPE_SINK;
 	ms_sink->subtype = (media_streamer_sink_type_e)type;
 	ret = __ms_sink_node_create(ms_sink);
-	if(ret != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		MS_SAFE_FREE(ms_sink);
-		ms_error( "Error creating Sink node [%d]",ret);
+		ms_error("Error creating Sink node [%d]", ret);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
@@ -84,13 +82,13 @@ int media_streamer_sink_create(media_streamer_sink_type_e type,
 }
 
 int media_streamer_node_create(media_streamer_node_type_e type,
-				media_format_h in_fmt,
-				media_format_h out_fmt,
-				media_streamer_node_h *node)
+                               media_format_h in_fmt,
+                               media_format_h out_fmt,
+                               media_streamer_node_h *node)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
-	media_streamer_node_s *ms_node = (media_streamer_node_s*)node;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	ms_node = (media_streamer_node_s *)calloc(1, sizeof(media_streamer_node_s));
@@ -100,10 +98,9 @@ int media_streamer_node_create(media_streamer_node_type_e type,
 	ms_node->subtype = 0;
 
 	ret = __ms_node_create(ms_node, in_fmt, out_fmt);
-	if(ret != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		MS_SAFE_FREE(ms_node);
-		ms_error( "Error creating Node [%d]",ret);
+		ms_error("Error creating Node [%d]", ret);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
@@ -115,19 +112,16 @@ int media_streamer_node_create(media_streamer_node_type_e type,
 
 int media_streamer_node_destroy(media_streamer_node_h node)
 {
-	media_streamer_node_s *ms_node = (media_streamer_node_s*)node;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
-	if (ms_node->parent_streamer == NULL)
-	{
-		// This node was not added into any media streamer
+	if (ms_node->parent_streamer == NULL) {
+		/* This node was not added into any media streamer */
 		__ms_node_destroy(ms_node);
-	}
-	else
-	{
+	} else {
 		int ret = __ms_node_remove_from_table(ms_node->parent_streamer->nodes_table, ms_node);
 		ms_retvm_if(ret != MEDIA_STREAMER_ERROR_NONE, MEDIA_STREAMER_ERROR_INVALID_OPERATION,
-				"Current key was not removed from nodes_table");
+		            "Current key was not removed from nodes_table");
 	}
 
 	ms_info("Node destroyed successfully");
@@ -135,19 +129,19 @@ int media_streamer_node_destroy(media_streamer_node_h node)
 }
 
 int media_streamer_node_add(media_streamer_h streamer,
-				media_streamer_node_h node)
+                            media_streamer_node_h node)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
-	media_streamer_s *ms_streamer = (media_streamer_s*)streamer;
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
 	ms_retvm_if(streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
-	media_streamer_node_s* ms_node = (media_streamer_node_s*)node;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	__ms_node_insert_into_table(ms_streamer->nodes_table,ms_node);
+	__ms_node_insert_into_table(ms_streamer->nodes_table, ms_node);
 	ms_node->parent_streamer = ms_streamer;
 
 	__ms_add_node_into_bin(ms_streamer, ms_node);
@@ -159,21 +153,19 @@ int media_streamer_node_add(media_streamer_h streamer,
 
 int media_streamer_prepare(media_streamer_h streamer)
 {
-	media_streamer_s *ms_streamer = (media_streamer_s*)streamer;
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(ms_streamer->pipeline == NULL, MEDIA_STREAMER_ERROR_INVALID_STATE, "Pipeline doesn`t exist");
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	if(ms_streamer->state > MEDIA_STREAMER_STATE_IDLE)
-	{
+	if (ms_streamer->state > MEDIA_STREAMER_STATE_IDLE) {
 		ms_error("Error: Media streamer already prepared [%d]!",
-				MEDIA_STREAMER_ERROR_INVALID_OPERATION);
+		         MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
-	if(__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY) != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_error("Error: can not set state [%d]", MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -186,14 +178,13 @@ int media_streamer_prepare(media_streamer_h streamer)
 
 int media_streamer_unprepare(media_streamer_h streamer)
 {
-	media_streamer_s *ms_streamer = (media_streamer_s*)streamer;
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(ms_streamer->pipeline == NULL, MEDIA_STREAMER_ERROR_INVALID_STATE, "Pipeline doesn`t exist");
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	if(__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE) != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_error("Error: can not set state [%d]", MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -205,20 +196,18 @@ int media_streamer_unprepare(media_streamer_h streamer)
 
 int media_streamer_play(media_streamer_h streamer)
 {
-	media_streamer_s *ms_streamer = (media_streamer_s*)streamer;
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	if(ms_streamer->state < MEDIA_STREAMER_STATE_READY)
-	{
+	if (ms_streamer->state < MEDIA_STREAMER_STATE_READY) {
 		ms_error("Error: Media streamer must be prepared first [%d]!",
-				MEDIA_STREAMER_ERROR_INVALID_OPERATION);
+		         MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
-	if(__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_PLAYING) != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_PLAYING) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_error("Error: can not set state [%d]", MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -243,8 +232,7 @@ int media_streamer_create(media_streamer_h *streamer)
 	ms_streamer->state = MEDIA_STREAMER_STATE_NONE;
 
 	ret = __ms_create(ms_streamer);
-	if(ret!=MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		ms_error("Error creating Media Streamer");
 		__ms_streamer_destroy(ms_streamer);
 
@@ -253,8 +241,7 @@ int media_streamer_create(media_streamer_h *streamer)
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
-	if(__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE) != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_error("Error: can not set state [%d]", MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -266,7 +253,7 @@ int media_streamer_create(media_streamer_h *streamer)
 
 int media_streamer_destroy(media_streamer_h streamer)
 {
-	media_streamer_s *ms_streamer = (media_streamer_s*)streamer;
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
@@ -282,8 +269,8 @@ int media_streamer_destroy(media_streamer_h streamer)
 }
 
 int media_streamer_set_error_cb(media_streamer_h streamer,
-				media_streamer_error_cb callback,
-				void *data)
+                                media_streamer_error_cb callback,
+                                void *data)
 {
 	return MEDIA_STREAMER_ERROR_NONE;
 }
@@ -294,8 +281,8 @@ int media_streamer_unset_error_cb(media_streamer_h streamer)
 }
 
 int media_streamer_set_state_change_cb(media_streamer_h streamer,
-				media_streamer_state_changed_cb callback,
-				void *data)
+                                       media_streamer_state_changed_cb callback,
+                                       void *data)
 {
 	return MEDIA_STREAMER_ERROR_NONE;
 }
@@ -306,8 +293,8 @@ int media_streamer_unset_state_change_cb(media_streamer_h streamer)
 }
 
 int media_streamer_src_set_buffer_status_cb(media_streamer_node_h source,
-				media_streamer_custom_buffer_status_cb callback,
-				void *user_data)
+                                            media_streamer_custom_buffer_status_cb callback,
+                                            void *user_data)
 {
 	return MEDIA_STREAMER_ERROR_NONE;
 }
@@ -318,8 +305,8 @@ int media_streamer_src_unset_buffer_status_cb(media_streamer_node_h source)
 }
 
 int media_streamer_sink_set_data_ready_cb(media_streamer_node_h sink,
-				media_streamer_sink_data_ready_cb callback,
-				void *data)
+                                          media_streamer_sink_data_ready_cb callback,
+                                          void *data)
 {
 	return MEDIA_STREAMER_ERROR_NONE;
 }
@@ -330,8 +317,8 @@ int media_streamer_sink_unset_data_ready_cb(media_streamer_node_h source)
 }
 
 int media_streamer_sink_set_eos_cb(media_streamer_node_h sink,
-				media_streamer_sink_eos_cb callback,
-				void *data)
+                                   media_streamer_sink_eos_cb callback,
+                                   void *data)
 {
 	return MEDIA_STREAMER_ERROR_NONE;
 }
@@ -343,13 +330,12 @@ int media_streamer_sink_unset_eos_cb(media_streamer_node_h source)
 
 int media_streamer_pause(media_streamer_h streamer)
 {
-	media_streamer_s *ms_streamer = (media_streamer_s*)streamer;
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	if(__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_PAUSED) != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_PAUSED) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_error("Error: can not set state [%d]", MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -361,20 +347,18 @@ int media_streamer_pause(media_streamer_h streamer)
 
 int media_streamer_stop(media_streamer_h streamer)
 {
-	media_streamer_s *ms_streamer = (media_streamer_s*)streamer;
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	if(ms_streamer->state < MEDIA_STREAMER_STATE_READY)
-	{
+	if (ms_streamer->state < MEDIA_STREAMER_STATE_READY) {
 		ms_error("Error: Media streamer must be prepared first [%d]!",
-				MEDIA_STREAMER_ERROR_INVALID_OPERATION);
+		         MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
-	if(__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY) != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_error("Error: can not set state [%d]", MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -385,9 +369,9 @@ int media_streamer_stop(media_streamer_h streamer)
 }
 
 int media_streamer_get_state(media_streamer_h streamer,
-				media_streamer_state_e *state)
+                             media_streamer_state_e *state)
 {
-	media_streamer_s *ms_streamer = (media_streamer_s*)streamer;
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	*state = ms_streamer->state;
@@ -396,28 +380,28 @@ int media_streamer_get_state(media_streamer_h streamer,
 }
 
 int media_streamer_seek(media_streamer_h streamer,
-				media_streamer_time_value time)
+                        media_streamer_time_value time)
 {
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
 int media_streamer_push_packet(media_streamer_node_h src,
-				media_packet_h packet)
+                               media_packet_h packet)
 {
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
 int media_streamer_pull_packet(media_streamer_node_h sink,
-				media_packet_h *packet)
+                               media_packet_h *packet)
 {
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
 int media_streamer_node_set_format(media_streamer_node_h node,
-				media_format_h fmt)
+                                   media_format_h fmt)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
-	media_streamer_node_s *ms_node = (media_streamer_node_s*)node;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Format is NULL");
 
@@ -426,10 +410,10 @@ int media_streamer_node_set_format(media_streamer_node_h node,
 }
 
 int media_streamer_node_get_format(media_streamer_node_h node,
-				media_format_h *fmt)
+                                   media_format_h *fmt)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
-	media_streamer_node_s *ms_node = (media_streamer_node_s*)node;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Format is NULL");
 
@@ -438,15 +422,15 @@ int media_streamer_node_get_format(media_streamer_node_h node,
 }
 
 int media_streamer_node_link(media_streamer_node_h src_node,
-				const char *src_pad,
-				media_streamer_node_h dest_node,
-				const char *sink_pad)
+                             const char *src_pad,
+                             media_streamer_node_h dest_node,
+                             const char *sink_pad)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
-	media_streamer_node_s *ms_src_node = (media_streamer_node_s*)src_node;
+	media_streamer_node_s *ms_src_node = (media_streamer_node_s *)src_node;
 	ms_retvm_if(ms_src_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
-	media_streamer_node_s *ms_dest_node = (media_streamer_node_s*)dest_node;
+	media_streamer_node_s *ms_dest_node = (media_streamer_node_s *)dest_node;
 	ms_retvm_if(ms_dest_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	gchar *src_element_name = gst_element_get_name(ms_src_node->gst_element);
 	gchar *sink_element_name = gst_element_get_name(ms_dest_node->gst_element);
@@ -456,9 +440,8 @@ int media_streamer_node_link(media_streamer_node_h src_node,
 
 	gboolean link_ret;
 
-	link_ret = gst_element_link_pads (ms_src_node->gst_element, src_pad, ms_dest_node->gst_element, sink_pad);
-	if(!link_ret)
-	{
+	link_ret = gst_element_link_pads(ms_src_node->gst_element, src_pad, ms_dest_node->gst_element, sink_pad);
+	if (!link_ret) {
 		ms_error("Can not link [%s]->%s pad to [%s]->%s pad, ret code [%d] ", src_pad, sink_pad, src_element_name, sink_element_name, link_ret);
 		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -469,33 +452,33 @@ int media_streamer_node_link(media_streamer_node_h src_node,
 }
 
 int media_streamer_node_get_pad_format(media_streamer_node_h node,
-				char **in_fmt,
-				char **out_fmt)
+                                       char **in_fmt,
+                                       char **out_fmt)
 {
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
 int media_streamer_node_set_params(media_streamer_node_h node,
-				bundle *param_list)
+                                   bundle *param_list)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
-	media_streamer_node_s *ms_node = (media_streamer_node_s*)node;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(ms_node->gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(param_list == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Parameters list is NULL");
 
-	ret = __ms_node_read_params_from_bundle(ms_node,param_list);
+	ret = __ms_node_read_params_from_bundle(ms_node, param_list);
 	ms_retvm_if(ret != MEDIA_STREAMER_ERROR_NONE, MEDIA_STREAMER_ERROR_INVALID_OPERATION,
-			"Parameters list is NULL");
+	            "Parameters list is NULL");
 
 	return ret;
 }
 
 int media_streamer_node_get_param_list(media_streamer_node_h node,
-				bundle **param_list)
+                                       bundle **param_list)
 {
-	media_streamer_node_s *ms_node =(media_streamer_node_s*)node;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(param_list == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Param list pionter is NULL");
 
@@ -503,8 +486,7 @@ int media_streamer_node_get_param_list(media_streamer_node_h node,
 	ms_params = bundle_create();
 	ms_retvm_if(ms_params == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Error creating new params object");
 
-	if (__ms_node_write_params_into_bundle(ms_node, ms_params) != MEDIA_STREAMER_ERROR_NONE)
-	{
+	if (__ms_node_write_params_into_bundle(ms_node, ms_params) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_info("Node [%s] do not have any params.", ms_node->name);
 		bundle_free(ms_params);
 		*param_list = NULL;

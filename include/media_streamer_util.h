@@ -43,38 +43,38 @@ extern "C" {
 #define FONT_COLOR_GRAY     "\033[37m"
 
 #define ms_debug(fmt, arg...) do { \
-	LOGD(FONT_COLOR_RESET""fmt"", ##arg);     \
-} while(0)
+		LOGD(FONT_COLOR_RESET""fmt"", ##arg);     \
+	} while(0)
 
 #define ms_info(fmt, arg...) do { \
-	LOGI(FONT_COLOR_GREEN""fmt"", ##arg);     \
-} while(0)
+		LOGI(FONT_COLOR_GREEN""fmt"", ##arg);     \
+	} while(0)
 
 #define ms_error(fmt, arg...) do { \
-	LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
-} while(0)
+		LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
+	} while(0)
 
 #define ms_debug_fenter() do { \
-	LOGD(FONT_COLOR_YELLOW"<Enter>");     \
-} while(0)
+		LOGD(FONT_COLOR_YELLOW"<Enter>");     \
+	} while(0)
 
 #define ms_debug_fleave() do { \
-	LOGD(FONT_COLOR_PURPLE"<Leave>");     \
-} while(0)
+		LOGD(FONT_COLOR_PURPLE"<Leave>");     \
+	} while(0)
 
 #define ms_retm_if(expr, fmt, arg...) do { \
-	if(expr) { \
-	LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
-	return; \
-} \
-} while(0)
+		if(expr) { \
+			LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
+			return; \
+		} \
+	} while(0)
 
 #define ms_retvm_if(expr, val, fmt, arg...) do { \
-	if(expr) { \
-	LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
-	return(val); \
-} \
-} while(0)
+		if(expr) { \
+			LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
+			return(val); \
+		} \
+	} while(0)
 
 
 #define MS_SAFE_FREE(src)           {if(src) {free(src); src = NULL;}}
@@ -91,8 +91,7 @@ extern "C" {
  *
  * @since_tizen 3.0
  */
-typedef struct __media_streamer_ini
-{
+typedef struct __media_streamer_ini {
 	/* general */
 	gboolean generate_dot;
 
@@ -214,7 +213,7 @@ gboolean __ms_destroy_ini_dictionary(dictionary *dict);
  * @since_tizen 3.0
  */
 gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path,
-		char *default_str);
+                           char *default_str);
 
 /**
  * @brief Converts Media Format mime type into string.

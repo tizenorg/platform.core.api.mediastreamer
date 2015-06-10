@@ -33,8 +33,7 @@ extern "C" {
  *
  * @since_tizen 3.0
  */
-typedef struct
-{
+typedef struct {
 	void *callback;
 	void *user_data;
 } media_streamer_callback_s;
@@ -44,8 +43,7 @@ typedef struct
  *
  * @since_tizen 3.0
  */
-typedef struct
-{
+typedef struct {
 	media_streamer_callback_s enough_data_cb;
 	media_streamer_callback_s need_data_cb;
 } media_streamer_src_callbacks_s;
@@ -55,8 +53,7 @@ typedef struct
  *
  * @since_tizen 3.0
  */
-typedef struct
-{
+typedef struct {
 	media_streamer_callback_s data_ready_cb;
 	media_streamer_callback_s eos_cb;
 } media_streamer_sink_callbacks_s;
@@ -66,8 +63,7 @@ typedef struct
  *
  * @since_tizen 3.0
  */
-typedef struct
-{
+typedef struct {
 	media_streamer_ini_t ini;
 	GstElement *pipeline;
 
@@ -94,17 +90,16 @@ typedef struct
  * @since_tizen 3.0
  */
 typedef int (*media_streamer_node_set_param)(
-				struct media_streamer_node_s *node,
-				const gchar *param_key,
-				const gchar *param_value);
+    struct media_streamer_node_s *node,
+    const gchar *param_key,
+    const gchar *param_value);
 
 /**
  * @brief Media Streamer node type handle.
  *
  * @since_tizen 3.0
  */
-typedef struct
-{
+typedef struct {
 	GstElement *gst_element;
 	char *name;
 	media_streamer_s *parent_streamer;

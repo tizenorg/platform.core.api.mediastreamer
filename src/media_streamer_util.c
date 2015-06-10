@@ -23,34 +23,28 @@
 #include <media_streamer_util.h>
 
 #ifdef MEDIA_STREAMER_DEFAULT_INI
-	static gboolean __ms_generate_default_ini(void);
+static gboolean __ms_generate_default_ini(void);
 #endif
 
 static void __ms_check_ini_status(void);
 
-gchar* __ms_ini_get_string(dictionary *dict,
-		const char *ini_path, char *default_str)
+gchar *__ms_ini_get_string(dictionary *dict,
+                           const char *ini_path, char *default_str)
 {
 	gchar *result_str = NULL;
 
 	ms_retvm_if(ini_path == NULL, NULL, "Invalid ini path");
 
-	if (dict == NULL)
-	{
+	if (dict == NULL) {
 		result_str = g_strdup(default_str);
-	}
-	else
-	{
+	} else {
 		gchar *str = NULL;
 		str = iniparser_getstring(dict, ini_path, default_str);
 		if (str &&
-				(strlen(str) > 0) &&
-				(strlen(str) < MEDIA_STREAMER_INI_MAX_STRLEN))
-		{
+		    (strlen(str) > 0) &&
+		    (strlen(str) < MEDIA_STREAMER_INI_MAX_STRLEN)) {
 			result_str = g_strdup(str);
-		}
-		else
-		{
+		} else {
 			result_str = g_strdup(default_str);
 		}
 	}
@@ -69,16 +63,12 @@ gboolean __ms_load_ini_dictionary(dictionary **dict)
 	ms_dict = iniparser_load(MEDIA_STREAMER_INI_DEFAULT_PATH);
 
 	/* if no file exists. create one with set of default values */
-	if (!ms_dict)
-	{
+	if (!ms_dict) {
 #ifdef MEDIA_STREAMER_DEFAULT_INI
 		ms_debug("No inifile found. Media streamer will create default inifile.");
-		if (FALSE == __ms_generate_default_ini())
-		{
+		if (FALSE == __ms_generate_default_ini()) {
 			ms_debug("Creating default .ini file failed. Media-streamer will use default values.");
-		}
-		else
-		{
+		} else {
 			/* load default ini */
 			ms_dict = iniparser_load(MEDIA_STREAMER_INI_DEFAULT_PATH);
 		}
@@ -109,20 +99,16 @@ int __ms_load_ini_settings(media_streamer_ini_t *ini)
 	/* get ini values */
 	memset(ini, 0, sizeof(media_streamer_ini_t));
 
-	if (__ms_load_ini_dictionary(&dict))
-	{
+	if (__ms_load_ini_dictionary(&dict)) {
 		/* general */
 		ini->generate_dot = iniparser_getboolean(dict, "general:generate dot", DEFAULT_GENERATE_DOT);
-		if (ini->generate_dot == TRUE)
-		{
+		if (ini->generate_dot == TRUE) {
 			gchar *dot_path = iniparser_getstring(dict, "general:dot dir" , MEDIA_STREAMER_DEFAULT_DOT_DIR);
-			ms_debug("generate_dot is TRUE, dot file will be stored into %s",dot_path);
-			g_setenv ("GST_DEBUG_DUMP_DOT_DIR", dot_path, FALSE);
+			ms_debug("generate_dot is TRUE, dot file will be stored into %s", dot_path);
+			g_setenv("GST_DEBUG_DUMP_DOT_DIR", dot_path, FALSE);
 		}
 
-	}
-	else /* if dict is not available just fill the structure with default value */
-	{
+	} else { /* if dict is not available just fill the structure with default value */
 		ms_debug("failed to load ini. using hardcoded default");
 
 		/* general settings*/
@@ -143,21 +129,16 @@ static void __ms_check_ini_status(void)
 	int file_size = 0;
 	int status = 0;
 
-	if(fp == NULL)
-	{
+	if (fp == NULL) {
 		ms_debug("Failed to get media streamer ini file.");
-	}
-	else
-	{
+	} else {
 		fseek(fp, 0, SEEK_END);
 		file_size = ftell(fp);
 		fclose(fp);
-		if (file_size < 5)
-		{
+		if (file_size < 5) {
 			ms_debug("media_streamer.ini file size=%d, Corrupted! Removed", file_size);
 			status = g_remove(MEDIA_STREAMER_INI_DEFAULT_PATH);
-			if (status == -1)
-			{
+			if (status == -1) {
 				ms_error("failed to delete corrupted ini");
 			}
 		}
@@ -174,14 +155,12 @@ static gboolean __ms_generate_default_ini(void)
 	/* create new file */
 	fp = fopen(MEDIA_STREAMER_INI_DEFAULT_PATH, "wt");
 
-	if (!fp)
-	{
+	if (!fp) {
 		return FALSE;
 	}
 
 	/* writing default ini file */
-	if (strlen(default_ini) != fwrite(default_ini, 1, strlen(default_ini), fp))
-	{
+	if (strlen(default_ini) != fwrite(default_ini, 1, strlen(default_ini), fp)) {
 		fclose(fp);
 		return FALSE;
 	}
@@ -193,8 +172,7 @@ static gboolean __ms_generate_default_ini(void)
 
 const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime)
 {
-	switch(mime)
-	{
+	switch (mime) {
 		case MEDIA_FORMAT_I420:
 			return "I420";
 		case MEDIA_FORMAT_YV12:
@@ -210,7 +188,7 @@ const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime)
 		default:
 			ms_error("Invalid or Unsupported media format [%d].", mime);
 			return NULL;
-		break;
+			break;
 	}
 
 }

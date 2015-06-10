@@ -43,16 +43,15 @@ export CXXFLAGS="$CXXFLAGS -DTIZEN_DEBUG_ENABLE"
 export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
 %endif
 MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
-cmake . -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=%{version} -DMAJORVER=${MAJORVER}
-
+%cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DFULLVER=%{version} -DMAJORVER=${MAJORVER}
 
 make %{?jobs:-j%jobs}
 
 %install
 rm -rf %{buildroot}
-mkdir -p %{buildroot}/usr/share/license
+mkdir -p %{buildroot}%{_datadir}/license
 mkdir -p %{buildroot}/usr/bin
-cp LICENSE.APLv2 %{buildroot}/usr/share/license/%{name}
+cp LICENSE.APLv2 %{buildroot}%{_datadir}/license/%{name}
 cp test/media_streamer_test %{buildroot}/usr/bin
 
 %make_install
@@ -64,12 +63,14 @@ cp test/media_streamer_test %{buildroot}/usr/bin
 
 
 %files
-%manifest capi-media-streamer.manifest
+%manifest %{name}.manifest
+%license LICENSE.APLv2
 %{_libdir}/libcapi-media-streamer.so.*
 %{_datadir}/license/%{name}
-/usr/bin/*
+%{_bindir}/*
 
 %files devel
+%manifest %{name}.manifest
 %{_includedir}/media/*.h
 %{_libdir}/pkgconfig/*.pc
 %{_libdir}/libcapi-media-streamer.so

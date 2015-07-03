@@ -29,7 +29,7 @@
 * Public Implementation
 */
 
-int media_streamer_src_create(media_streamer_src_type_e type,
+int media_streamer_node_create_src(media_streamer_node_src_type_e type,
                               media_streamer_node_h *src)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
@@ -41,7 +41,8 @@ int media_streamer_src_create(media_streamer_src_type_e type,
 	ms_retvm_if(ms_src == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error allocation memory");
 
 	ms_src->type = MEDIA_STREAMER_NODE_TYPE_SRC;
-	ms_src->subtype = (media_streamer_src_type_e)type;
+	ms_src->subtype = (media_streamer_node_src_type_e)type;
+
 	ret = __ms_src_node_create(ms_src);
 	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		MS_SAFE_FREE(ms_src);
@@ -55,7 +56,7 @@ int media_streamer_src_create(media_streamer_src_type_e type,
 	return ret;
 }
 
-int media_streamer_sink_create(media_streamer_sink_type_e type,
+int media_streamer_node_create_sink(media_streamer_node_sink_type_e type,
                                media_streamer_node_h *sink)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
@@ -67,7 +68,8 @@ int media_streamer_sink_create(media_streamer_sink_type_e type,
 	ms_retvm_if(ms_sink == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error allocation memory");
 
 	ms_sink->type = MEDIA_STREAMER_NODE_TYPE_SINK;
-	ms_sink->subtype = (media_streamer_sink_type_e)type;
+	ms_sink->subtype = (media_streamer_node_sink_type_e)type;
+
 	ret = __ms_sink_node_create(ms_sink);
 	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		MS_SAFE_FREE(ms_sink);
@@ -119,12 +121,39 @@ int media_streamer_node_destroy(media_streamer_node_h node)
 		/* This node was not added into any media streamer */
 		__ms_node_destroy(ms_node);
 	} else {
-		int ret = __ms_node_remove_from_table(ms_node->parent_streamer->nodes_table, ms_node);
-		ms_retvm_if(ret != MEDIA_STREAMER_ERROR_NONE, MEDIA_STREAMER_ERROR_INVALID_OPERATION,
-		            "Current key was not removed from nodes_table");
+		ms_error("Node destroy error: needed to unlink node and remove it from media streamer before destroying.");
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
 	ms_info("Node destroyed successfully");
+	return MEDIA_STREAMER_ERROR_NONE;
+}
+
+int media_streamer_node_remove(media_streamer_h streamer,
+                               media_streamer_node_h node)
+{
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
+
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(ms_streamer->nodes_table == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	ms_retvm_if(ms_streamer != ms_node->parent_streamer, MEDIA_STREAMER_ERROR_INVALID_PARAMETER,
+	            "Node [%s] added into another Media Streamer object", ms_node->name);
+
+	g_mutex_lock(&ms_streamer->mutex_lock);
+
+	if (g_hash_table_steal(ms_streamer->nodes_table, (gpointer)ms_node->name) &&
+	    __ms_element_unlink(ms_node->gst_element)) {
+		ms_node->parent_streamer = NULL;
+		ms_info("Node removed from Media Streamer");
+	} else {
+		ms_error("Error: Node [%s] remove failed", ms_node->name);
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+	g_mutex_unlock(&ms_streamer->mutex_lock);
+
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
@@ -236,8 +265,6 @@ int media_streamer_create(media_streamer_h *streamer)
 		ms_error("Error creating Media Streamer");
 		__ms_streamer_destroy(ms_streamer);
 
-		g_mutex_clear(&ms_streamer->mutex_lock);
-
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
@@ -260,9 +287,6 @@ int media_streamer_destroy(media_streamer_h streamer)
 
 	__ms_streamer_destroy(ms_streamer);
 
-	g_mutex_unlock(&ms_streamer->mutex_lock);
-	g_mutex_clear(&ms_streamer->mutex_lock);
-
 	ms_info("Media Streamer destroyed successfully");
 
 	return MEDIA_STREAMER_ERROR_NONE;
@@ -272,11 +296,32 @@ int media_streamer_set_error_cb(media_streamer_h streamer,
                                 media_streamer_error_cb callback,
                                 void *data)
 {
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(callback == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Callback is NULL");
+
+	g_mutex_lock(&ms_streamer->mutex_lock);
+
+	ms_streamer->error_cb.callback = callback;
+	ms_streamer->error_cb.user_data = data;
+
+	g_mutex_unlock(&ms_streamer->mutex_lock);
+
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
 int media_streamer_unset_error_cb(media_streamer_h streamer)
 {
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	g_mutex_lock(&ms_streamer->mutex_lock);
+
+	ms_streamer->error_cb.callback = NULL;
+	ms_streamer->error_cb.user_data = NULL;
+
+	g_mutex_unlock(&ms_streamer->mutex_lock);
+
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
@@ -284,11 +329,32 @@ int media_streamer_set_state_change_cb(media_streamer_h streamer,
                                        media_streamer_state_changed_cb callback,
                                        void *data)
 {
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(callback == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Callback is NULL");
+
+	g_mutex_lock(&ms_streamer->mutex_lock);
+
+	ms_streamer->state_changed_cb.callback = callback;
+	ms_streamer->state_changed_cb.user_data = data;
+
+	g_mutex_unlock(&ms_streamer->mutex_lock);
+
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
 int media_streamer_unset_state_change_cb(media_streamer_h streamer)
 {
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	g_mutex_lock(&ms_streamer->mutex_lock);
+
+	ms_streamer->state_changed_cb.callback = NULL;
+	ms_streamer->state_changed_cb.user_data = NULL;
+
+	g_mutex_unlock(&ms_streamer->mutex_lock);
+
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
@@ -296,11 +362,33 @@ int media_streamer_src_set_buffer_status_cb(media_streamer_node_h source,
                                             media_streamer_custom_buffer_status_cb callback,
                                             void *user_data)
 {
+	media_streamer_node_s *ms_src = (media_streamer_node_s *)source;
+	media_streamer_callback_s *src_callback = NULL;
+	ms_retvm_if(ms_src == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	if (!ms_src->callbacks_structure) {
+		src_callback = (media_streamer_callback_s *) calloc(1, sizeof(media_streamer_callback_s));
+		ms_retvm_if(src_callback == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error allocation memory");
+	} else {
+		src_callback = (media_streamer_callback_s *)ms_src->callbacks_structure;
+	}
+
+	src_callback->callback = callback;
+	src_callback->user_data = user_data;
+
+	ms_src->callbacks_structure = (void *)src_callback;
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
 int media_streamer_src_unset_buffer_status_cb(media_streamer_node_h source)
 {
+	media_streamer_node_s *ms_src = (media_streamer_node_s *)source;
+	ms_retvm_if(ms_src == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	media_streamer_callback_s *src_callback = (media_streamer_callback_s *) ms_src->callbacks_structure;
+	src_callback->callback = NULL;
+	src_callback->user_data = NULL;
+
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
@@ -308,11 +396,34 @@ int media_streamer_sink_set_data_ready_cb(media_streamer_node_h sink,
                                           media_streamer_sink_data_ready_cb callback,
                                           void *data)
 {
+	media_streamer_node_s *ms_sink = (media_streamer_node_s *)sink;
+	ms_retvm_if(ms_sink == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	media_streamer_sink_callbacks_s *sink_callbacks = ms_sink->callbacks_structure;
+	if (!sink_callbacks) {
+		sink_callbacks = (media_streamer_sink_callbacks_s *) calloc(1, sizeof(media_streamer_sink_callbacks_s));
+		ms_retvm_if(sink_callbacks == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error allocation memory");
+	}
+
+	sink_callbacks->data_ready_cb.callback = callback;
+	sink_callbacks->data_ready_cb.user_data = data;
+
+	ms_sink->callbacks_structure = (void *)sink_callbacks;
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
-int media_streamer_sink_unset_data_ready_cb(media_streamer_node_h source)
+int media_streamer_sink_unset_data_ready_cb(media_streamer_node_h sink)
 {
+	media_streamer_node_s *ms_sink = (media_streamer_node_s *)sink;
+	ms_retvm_if(ms_sink == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	media_streamer_sink_callbacks_s *sink_callbacks = ms_sink->callbacks_structure;
+	ms_retvm_if(sink_callbacks == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Callback didn't set yet");
+
+	sink_callbacks->data_ready_cb.callback = NULL;
+	sink_callbacks->data_ready_cb.user_data = NULL;
+
+	ms_sink->callbacks_structure = (void *)sink_callbacks;
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
@@ -320,11 +431,34 @@ int media_streamer_sink_set_eos_cb(media_streamer_node_h sink,
                                    media_streamer_sink_eos_cb callback,
                                    void *data)
 {
+	media_streamer_node_s *ms_sink = (media_streamer_node_s *)sink;
+	ms_retvm_if(ms_sink == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	media_streamer_sink_callbacks_s *sink_callbacks = ms_sink->callbacks_structure;
+	if (!sink_callbacks) {
+		sink_callbacks = (media_streamer_sink_callbacks_s *) calloc(1, sizeof(media_streamer_sink_callbacks_s));
+		ms_retvm_if(sink_callbacks == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error allocation memory");
+	}
+
+	sink_callbacks->eos_cb.callback = callback;
+	sink_callbacks->eos_cb.user_data = data;
+
+	ms_sink->callbacks_structure = (void *)sink_callbacks;
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
-int media_streamer_sink_unset_eos_cb(media_streamer_node_h source)
+int media_streamer_sink_unset_eos_cb(media_streamer_node_h sink)
 {
+	media_streamer_node_s *ms_sink = (media_streamer_node_s *)sink;
+	ms_retvm_if(ms_sink == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	media_streamer_sink_callbacks_s *sink_callbacks = ms_sink->callbacks_structure;
+	ms_retvm_if(sink_callbacks == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Callback didn't set yet");
+
+	sink_callbacks->data_ready_cb.callback = NULL;
+	sink_callbacks->data_ready_cb.user_data = NULL;
+
+	ms_sink->callbacks_structure = (void *)sink_callbacks;
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
@@ -379,52 +513,40 @@ int media_streamer_get_state(media_streamer_h streamer,
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
-int media_streamer_seek(media_streamer_h streamer,
-                        media_streamer_time_value time)
-{
-	return MEDIA_STREAMER_ERROR_NONE;
-}
-
-int media_streamer_push_packet(media_streamer_node_h src,
+int media_streamer_node_push_packet(media_streamer_node_h src,
                                media_packet_h packet)
 {
-	return MEDIA_STREAMER_ERROR_NONE;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)src;
+	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	ms_retvm_if(ms_node->type != MEDIA_STREAMER_NODE_TYPE_SRC,
+			MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Node type must be Src type for pushing packets.");
+	ms_retvm_if(ms_node->subtype != MEDIA_STREAMER_NODE_SRC_TYPE_CUSTOM,
+			MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Source Node must be a custom type for pushing packets.");
+
+	return __ms_element_push_packet(ms_node->gst_element, packet);
 }
 
-int media_streamer_pull_packet(media_streamer_node_h sink,
+int media_streamer_node_pull_packet(media_streamer_node_h sink,
                                media_packet_h *packet)
 {
-	return MEDIA_STREAMER_ERROR_NONE;
-}
-
-int media_streamer_node_set_format(media_streamer_node_h node,
-                                   media_format_h fmt)
-{
-	int ret = MEDIA_STREAMER_ERROR_NONE;
-	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)sink;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
-	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Format is NULL");
+	ms_retvm_if(packet == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Media packet is NULL");
 
-	ret = __ms_element_set_fmt(node, fmt);
-	return ret;
-}
+	ms_retvm_if(ms_node->gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(ms_node->type != MEDIA_STREAMER_NODE_TYPE_SINK,
+			MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Node type must be Sink type for pulling packets.");
+	ms_retvm_if(ms_node->subtype != MEDIA_STREAMER_NODE_SINK_TYPE_CUSTOM,
+			MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Sink Node must be a custom type for pulling packets.");
 
-int media_streamer_node_get_format(media_streamer_node_h node,
-                                   media_format_h *fmt)
-{
-	int ret = MEDIA_STREAMER_ERROR_NONE;
-	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
-	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
-	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Format is NULL");
-
-
-	return ret;
+	return __ms_element_pull_packet(ms_node->gst_element, packet);
 }
 
 int media_streamer_node_link(media_streamer_node_h src_node,
-                             const char *src_pad,
+                             const char *src_pad_name,
                              media_streamer_node_h dest_node,
-                             const char *sink_pad)
+                             const char *sink_pad_name)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 	media_streamer_node_s *ms_src_node = (media_streamer_node_s *)src_node;
@@ -435,14 +557,14 @@ int media_streamer_node_link(media_streamer_node_h src_node,
 	gchar *src_element_name = gst_element_get_name(ms_src_node->gst_element);
 	gchar *sink_element_name = gst_element_get_name(ms_dest_node->gst_element);
 
-	ms_retvm_if(src_pad == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Pad is NULL");
-	ms_retvm_if(sink_pad == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Pad is NULL");
+	ms_retvm_if(src_pad_name == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Pad is NULL");
+	ms_retvm_if(sink_pad_name == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Pad is NULL");
 
 	gboolean link_ret;
 
-	link_ret = gst_element_link_pads(ms_src_node->gst_element, src_pad, ms_dest_node->gst_element, sink_pad);
+	link_ret = gst_element_link_pads(ms_src_node->gst_element, src_pad_name, ms_dest_node->gst_element, sink_pad_name);
 	if (!link_ret) {
-		ms_error("Can not link [%s]->%s pad to [%s]->%s pad, ret code [%d] ", src_pad, sink_pad, src_element_name, sink_element_name, link_ret);
+		ms_error("Can not link [%s]->%s pad to [%s]->%s pad, ret code [%d] ", src_pad_name, sink_pad_name, src_element_name, sink_element_name, link_ret);
 		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
@@ -451,10 +573,31 @@ int media_streamer_node_link(media_streamer_node_h src_node,
 	return ret;
 }
 
-int media_streamer_node_get_pad_format(media_streamer_node_h node,
-                                       char **in_fmt,
-                                       char **out_fmt)
+int media_streamer_node_set_pad_format(media_streamer_node_h node,
+                                       const char *pad_name,
+                                       media_format_h fmt)
 {
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
+	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Format is NULL");
+
+	/* By default it sets format to object's property 'caps'*/
+	return __ms_element_set_fmt(node, fmt);
+}
+
+int media_streamer_node_get_pad_format(media_streamer_node_h node,
+                                       const char *pad_name,
+                                       media_format_h *fmt)
+{
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
+	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(pad_name == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Empty pad name");
+	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Format is NULL");
+
+	*fmt = __ms_element_get_pad_fmt(ms_node->gst_element, pad_name);
+
+	ms_retvm_if(*fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error while getting node fmt");
+
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
@@ -475,8 +618,8 @@ int media_streamer_node_set_params(media_streamer_node_h node,
 	return ret;
 }
 
-int media_streamer_node_get_param_list(media_streamer_node_h node,
-                                       bundle **param_list)
+int media_streamer_node_get_params(media_streamer_node_h node,
+                                   bundle **param_list)
 {
 	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -497,3 +640,29 @@ int media_streamer_node_get_param_list(media_streamer_node_h node,
 	*param_list = ms_params;
 	return MEDIA_STREAMER_ERROR_NONE;
 }
+
+int media_streamer_node_set_param(media_streamer_node_h node,
+                                 const char *param_name, const char *param_value)
+{
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
+	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(ms_node->gst_element == NULL && ms_node->set_param,
+	            MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(param_name == NULL || param_value == NULL,
+	            MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Parameters name or value is NULL");
+
+	return ms_node->set_param(ms_node, param_name, param_value);
+}
+
+int media_streamer_node_get_param(media_streamer_node_h node,
+                                  const char *param_name, char **param_value)
+{
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
+	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(param_name == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Param name is NULL");
+
+  // TBD
+
+	return MEDIA_STREAMER_ERROR_NONE;
+}
+

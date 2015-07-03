@@ -69,7 +69,7 @@ static media_streamer_h current_media_streamer = &g_media_streamer;
 #define VIDEO_PORT 5000
 #define AUDIO_PORT 6000
 
-/*#define DISABLE_AUDIO */
+#define DISABLE_AUDIO
 /*#define DISABLE_VIDEO */
 
 /*---------------------------------------------------------------------------
@@ -173,14 +173,21 @@ static gboolean _destroy(media_streamer_h streamer)
 		return FALSE;
 	}
 
-	g_menu_preset = PRESET_UNKNOWN;
+
+	if (current_media_streamer == g_media_streamer) {
+		g_media_streamer = NULL;
+	} else {
+		g_media_streamer_2 = NULL;
+	}
+	current_media_streamer = NULL;
+
 	g_print("== success destroy \n");
 	return TRUE;
 }
 
 static void create_formats(void)
 {
-	if (!vfmt_raw || !vfmt_encoded || afmt_raw) {
+	if (!vfmt_raw || !vfmt_encoded || !afmt_raw) {
 		g_print("Formats already created!");
 	}
 
@@ -196,7 +203,7 @@ static void create_formats(void)
 
 	/* Define encoded video format */
 	media_format_create(&vfmt_encoded);
-	if (media_format_set_video_mime(vfmt_encoded, MEDIA_FORMAT_H264_SP) != MEDIA_FORMAT_ERROR_NONE) {
+	if (media_format_set_video_mime(vfmt_encoded, MEDIA_FORMAT_H263) != MEDIA_FORMAT_ERROR_NONE) {
 		g_print("media_format_set_video_mime failed!");
 	}
 	media_format_set_video_width(vfmt_encoded, 800);
@@ -215,7 +222,7 @@ static void create_formats(void)
 }
 
 static void set_rtp_params(media_streamer_node_h rtp_node,
-                           const gchar *ip,
+                           const char *ip,
                            int video_port,
                            int audio_port,
                            gboolean port_reverse)
@@ -242,8 +249,8 @@ static void set_rtp_params(media_streamer_node_h rtp_node,
 #endif
 
 #ifndef DISABLE_VIDEO
-	gchar *video_src_port = g_strdup_printf("%d", port_reverse ? (video_port + 5) : video_port);
-	gchar *video_sink_port = g_strdup_printf("%d", port_reverse ? video_port : (video_port + 5));
+	char *video_src_port = g_strdup_printf("%d", port_reverse ? (video_port + 5) : video_port);
+	char *video_sink_port = g_strdup_printf("%d", port_reverse ? video_port : (video_port + 5));
 
 	if (g_menu_preset & PRESET_RTP_STREAMER) {
 		bundle_add_str(params, "video_sink,port", video_sink_port);
@@ -273,12 +280,13 @@ static gboolean _create_rtp_streamer(media_streamer_node_h rtp_bin)
 	media_streamer_node_h video_src = NULL;
 #ifdef ONE_DEVICE_TEST
 	if (g_menu_preset & SECOND_VOIP_MASK) {
-		media_streamer_src_create(MEDIA_STREAMER_SRC_TYPE_VIDEO_TEST, &video_src);
+		media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_TEST, &video_src);
+		media_streamer_node_set_param(video_src, "is-live", "true");
 	} else {
-		media_streamer_src_create(MEDIA_STREAMER_SRC_TYPE_CAMERA, &video_src);
+		media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA, &video_src);
 	}
 #else
-	media_streamer_src_create(MEDIA_STREAMER_SRC_TYPE_CAMERA, &video_src);
+	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA, &video_src);
 #endif
 	/*	media_streamer_node_set_fmt(video_src, vfmt_raw); */
 	media_streamer_node_add(current_media_streamer, video_src);
@@ -306,7 +314,7 @@ static gboolean _create_rtp_streamer(media_streamer_node_h rtp_bin)
 #ifndef DISABLE_AUDIO
 	/*********************** audiosrc *********************************** */
 	media_streamer_node_h audio_src = NULL;
-	media_streamer_src_create(MEDIA_STREAMER_SRC_TYPE_AUDIO_CAPTURE, &audio_src);
+	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_CAPTURE, &audio_src);
 	media_streamer_node_add(current_media_streamer, audio_src);
 
 	/*********************** audioencoder *********************************** */
@@ -349,7 +357,7 @@ static gboolean _create_rtp_client(media_streamer_node_h rtp_bin)
 
 	/*********************** videosink *********************************** */
 	media_streamer_node_h video_sink = NULL;
-	media_streamer_sink_create(MEDIA_STREAMER_SINK_TYPE_SCREEN, &video_sink);
+	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
 	media_streamer_node_add(current_media_streamer, video_sink);
 
 	/*====================Linking Video Client=========================== */
@@ -378,7 +386,7 @@ static gboolean _create_rtp_client(media_streamer_node_h rtp_bin)
 
 	/*********************** audiosink *********************************** */
 	media_streamer_node_h audio_sink = NULL;
-	media_streamer_sink_create(MEDIA_STREAMER_SINK_TYPE_AUDIO, &audio_sink);
+	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO, &audio_sink);
 	media_streamer_node_add(current_media_streamer, audio_sink);
 
 	/*====================Linking Audio Client=========================== */
@@ -403,10 +411,81 @@ static media_streamer_node_h _create_rtp(
 
 	/*********************** rtpbin *********************************** */
 	media_streamer_node_h rtp_bin = NULL;
-	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_RTP, vfmt_encoded, vfmt_encoded, &rtp_bin);
+	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_RTP, NULL, NULL, &rtp_bin);
 	set_rtp_params(rtp_bin, g_broadcast_address, video_port, audio_port, second_client);
 	media_streamer_node_add(current_media_streamer, rtp_bin);
 	return rtp_bin;
+}
+
+/* Application source callback */
+static void buffer_status_cb(media_streamer_node_h node,
+		media_streamer_custom_buffer_status_e status,
+		void *user_data) {
+
+	static int count = 0; /* Try send only 10 packets*/
+	if (status == MEDIA_STREAMER_CUSTOM_BUFFER_UNDERRUN
+			&& count < 10) {
+		g_print("Buffer status cb got underflow\n");
+
+		char *test = g_strdup_printf("[%d]This is buffer_status_cb test!", count);
+		guint64 size = strlen(test);
+
+		media_packet_h packet;
+		media_packet_create_from_external_memory(&vfmt_encoded,
+				(void *)test, size, NULL, NULL, &packet);
+		media_streamer_node_push_packet(node, packet);
+		count++;
+	} else {
+		media_streamer_node_push_packet(node, NULL);
+		g_print("Buffer status cb got overflow\n");
+	}
+}
+
+/* Application sink callbacks */
+static void new_buffer_cb(media_streamer_node_h node, void *user_data)
+{
+	char *received_data = NULL;
+	media_packet_h packet;
+
+	media_streamer_node_pull_packet(node, &packet);
+	media_packet_get_buffer_data_ptr(packet, &received_data);
+	g_print("Received new packet from appsink with data [%s]\n", received_data);
+
+	media_packet_destroy(packet);
+}
+
+static void eos_cb(media_streamer_node_h node, void *user_data)
+{
+
+	g_print("Got EOS cb from appsink\n");
+}
+
+static gboolean _create_app_test()
+{
+	g_print("== _create_appsrc \n");
+
+	/*********************** app_src *********************************** */
+	media_streamer_node_h app_src = NULL;
+	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_CUSTOM, &app_src);
+	media_streamer_node_add(current_media_streamer, app_src);
+
+	/*********************** app_sink *********************************** */
+	media_streamer_node_h app_sink = NULL;
+	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_CUSTOM, &app_sink);
+	media_streamer_node_set_pad_format(app_sink, "sink", vfmt_raw);
+	media_streamer_node_add(current_media_streamer, app_sink);
+
+	/*====================Linking ======================================== */
+	media_streamer_node_link(app_src, "src", app_sink, "sink");
+	/*====================================================================== */
+
+	media_streamer_src_set_buffer_status_cb(app_src, buffer_status_cb, NULL);
+	media_streamer_sink_set_data_ready_cb(app_sink, new_buffer_cb, NULL);
+	media_streamer_sink_set_eos_cb(app_sink, eos_cb, NULL);
+
+	g_print("== success appsrc part \n");
+
+	return TRUE;
 }
 
 /***************************************************************/
@@ -488,8 +567,8 @@ static void display_voip_menu(void)
 	g_print("1. one streamer VoIP 1 \n");
 	g_print("2. one streamer VoIP 2 \n");
 	g_print("3. two streamers VoIP server 1 \n");
-	g_print("4. two streamers VoIP server 2 \n");
-	g_print("5. two streamers VoIP client 1 \n");
+	g_print("4. two streamers VoIP client 1 \n");
+	g_print("5. two streamers VoIP server 2 \n");
 	g_print("6. two streamers VoIP client 2 \n");
 	g_print("b. back \n");
 	g_print("----------------------------------------------------\n");
@@ -661,12 +740,12 @@ void _interpret_voip_menu(char *cmd)
 			g_menu_preset = PRESET_DOUBLE_VOIP_SERVER;
 			g_menu_state = MENU_STATE_PRESET_MENU;
 		} else if (!strncmp(cmd, "4", len)) {
-			/*double Server 2 */
-			g_menu_preset = PRESET_DOUBLE_VOIP_SERVER_2;
-			g_menu_state = MENU_STATE_PRESET_MENU;
-		} else if (!strncmp(cmd, "5", len)) {
 			/*double Client 1 */
 			g_menu_preset = PRESET_DOUBLE_VOIP_CLIENT;
+			g_menu_state = MENU_STATE_PRESET_MENU;
+		} else if (!strncmp(cmd, "5", len)) {
+			/*double Server 2 */
+			g_menu_preset = PRESET_DOUBLE_VOIP_SERVER_2;
 			g_menu_state = MENU_STATE_PRESET_MENU;
 		} else if (!strncmp(cmd, "6", len)) {
 			/*double Client 2 */
@@ -752,7 +831,6 @@ void _interpret_preset_menu(char *cmd)
 			_play(g_media_streamer);
 		} else if (!strncmp(cmd, "7", len)) {
 			_destroy(current_media_streamer);
-			current_media_streamer = NULL;
 		} else if (!strncmp(cmd, "b", len)) {
 			if (g_menu_preset & DOUBLE_STREAMER_MASK) {
 				g_menu_state = MENU_STATE_VOIP_MENU;

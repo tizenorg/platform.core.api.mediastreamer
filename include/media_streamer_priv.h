@@ -39,16 +39,6 @@ typedef struct {
 } media_streamer_callback_s;
 
 /**
- * @brief Media Streamer source callbacks structure.
- *
- * @since_tizen 3.0
- */
-typedef struct {
-	media_streamer_callback_s enough_data_cb;
-	media_streamer_callback_s need_data_cb;
-} media_streamer_src_callbacks_s;
-
-/**
  * @brief Media Streamer sink callbacks structure.
  *
  * @since_tizen 3.0
@@ -89,10 +79,10 @@ typedef struct {
  *
  * @since_tizen 3.0
  */
-typedef int (*media_streamer_node_set_param)(
+typedef int (*ms_node_set_param)(
     struct media_streamer_node_s *node,
-    const gchar *param_key,
-    const gchar *param_value);
+    const char *param_key,
+    const char *param_value);
 
 /**
  * @brief Media Streamer node type handle.
@@ -105,7 +95,7 @@ typedef struct {
 	media_streamer_s *parent_streamer;
 	media_streamer_node_type_e type;
 	int subtype;
-	media_streamer_node_set_param set_param;
+	ms_node_set_param set_param;
 	void *callbacks_structure;
 } media_streamer_node_s;
 

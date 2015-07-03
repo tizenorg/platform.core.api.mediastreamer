@@ -192,4 +192,23 @@ const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime)
 	}
 
 }
+
+media_format_mimetype_e __ms_convert_string_format_to_mime(const char *format_type)
+{
+	if (g_strrstr(format_type, "I420")) {
+		return MEDIA_FORMAT_I420;
+	} else if (g_strrstr(format_type, "YV12")) {
+		return MEDIA_FORMAT_YV12;
+	} else if (g_strrstr(format_type, "h263")) {
+		return MEDIA_FORMAT_H263;
+	} else if (g_strrstr(format_type, "h264")) {
+		return MEDIA_FORMAT_H264_SP;
+	} else if (g_strrstr(format_type, "S16BE")) {
+		return MEDIA_FORMAT_PCM;
+	} else {
+		ms_error("Invalid or Unsupported media format [%s].", format_type);
+		return MEDIA_FORMAT_NONE;
+	}
+}
+
 #endif

@@ -52,7 +52,7 @@ GstElement *__ms_element_create(const char *plugin_name, const char *name);
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_camera_element_create(const char *microphone_plugin_name);
+GstElement *__ms_camera_element_create(const char *camera_plugin_name);
 
 /**
  * @brief Creates encoder GstElement by mime type.
@@ -83,14 +83,28 @@ GstElement *__ms_audio_encoder_element_create(void);
 GstElement *__ms_rtp_element_create(media_streamer_node_s *ms_node);
 
 /**
- * @brief Parse param for RTP node type.
+ * @brief Find Udp elements into rtp container by name.
  *
  * @since_tizen 3.0
  */
-int __ms_rtp_set_param(
-				media_streamer_node_s *node,
-				const gchar *param_key,
-				const gchar *param_value);
+gboolean __ms_get_rtp_elements(media_streamer_node_s *ms_node,
+                               GstElement **rtp_elem, GstElement **rtcp_elem, const gchar *elem_name);
+
+/**
+ * @brief Converts key-value property into needed GType
+ * and sets this property into GstElement.
+ *
+ * @since_tizen 3.0
+ */
+gboolean __ms_element_set_property(GstElement *src_element,
+                                   const gchar *key, const gchar *param_value);
+
+/**
+ * @brief Unlink all pads into GstElement.
+ *
+ * @since_tizen 3.0
+ */
+gboolean __ms_element_unlink(GstElement *src_element);
 
 /**
  * @brief Creates pipeline, bus and src/sink/topology bins.
@@ -104,7 +118,7 @@ int __ms_pipeline_create(media_streamer_s *ms_streamer);
  *
  * @since_tizen 3.0
  */
-int __ms_add_node_into_bin(media_streamer_s *ms_streamer,media_streamer_node_s *ms_node);
+int __ms_add_node_into_bin(media_streamer_s *ms_streamer, media_streamer_node_s *ms_node);
 
 /**
  * @brief Sets GstElement into state.
@@ -114,8 +128,29 @@ int __ms_add_node_into_bin(media_streamer_s *ms_streamer,media_streamer_node_s *
 int __ms_element_set_state(GstElement *gst_element, GstState gst_state);
 
 /**
+ * @brief Gets mediaformat from the GstElement's pad by pad name.
+ *
+ * @since_tizen 3.0
+ */
+media_format_h __ms_element_get_pad_fmt(GstElement *gst_element, const char* pad_name);
+
+/**
  * @brief Sets mediaformat into GstElement.
  *
  * @since_tizen 3.0
  */
 int __ms_element_set_fmt(media_streamer_node_s *node, media_format_h fmt);
+
+/**
+ * @brief Push the media packet buffer to the source element.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_element_push_packet(GstElement *src_element, media_packet_h packet);
+
+/**
+ * @brief Pull the media packet buffer from sink element.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_element_pull_packet(GstElement *sink_element, media_packet_h *packet);

@@ -98,19 +98,24 @@ typedef struct __media_streamer_ini {
 } media_streamer_ini_t;
 
 /*Test elements*/
-#define DEFAULT_VIDEO_TEST_SOURCE			"videotestsrc"
-#define DEFAULT_AUDIO_TEST_SOURCE			"audiotestsrc"
+#define DEFAULT_VIDEO_TEST_SOURCE		"videotestsrc"
+#define DEFAULT_AUDIO_TEST_SOURCE		"audiotestsrc"
 #define DEFAULT_FAKE_SINK				"fakesink"
 #define DEFAULT_QUEUE					"queue"
 
 /* setting default values if each value is not specified in .ini file */
 /* general */
-#define DEFAULT_GENERATE_DOT				FALSE
-#define DEFAULT_AUDIO_SOURCE				"alsasrc"
-#define DEFAULT_CAMERA_SOURCE				"camerasrc"
-#define DEFAULT_VIDEO_SOURCE				"ximagesrc"
+#define DEFAULT_GENERATE_DOT			FALSE
+#define DEFAULT_AUDIO_SOURCE			"alsasrc"
+#define DEFAULT_CAMERA_SOURCE			"camerasrc"
+#define DEFAULT_VIDEO_SOURCE			"ximagesrc"
+#define DEFAULT_APP_SOURCE				"appsrc"
 #define DEFAULT_AUDIO_SINK				"pulsesink"
 #define DEFAULT_VIDEO_SINK				"autovideosink"
+#define DEFAULT_VIDEO_CONVERT			"videoconvert"
+#define DEFAULT_AUDIO_CONVERT			"audioconvert"
+#define DEFAULT_AUDIO_RESAMPLE			"audioresample"
+#define DEFAULT_APP_SINK				"appsink"
 
 /* udp streaming */
 #define DEFAULT_UDP_SOURCE				"udpsrc"
@@ -120,20 +125,22 @@ typedef struct __media_streamer_ini {
 /* video format defaults */
 #define DEFAULT_VIDEO_ENCODER				"omxh264enc"
 #define DEFAULT_VIDEO_DECODER				"omxh264dec"
-#define DEFAULT_VIDEO_PARSER				"h264parse"
-#define DEFAULT_VIDEO_RTPPAY				"rtph264pay"
-#define DEFAULT_VIDEO_RTPDEPAY				"rtph264depay"
+#define DEFAULT_VIDEO_PARSER				"h263parse"
+#define DEFAULT_VIDEO_RTPPAY				"rtph263pay"
+#define DEFAULT_VIDEO_RTPDEPAY				"rtph263depay"
 
 /* audio format defaults */
-#define DEFAULT_AUDIO_ENCODER				"omxh264enc"
-#define DEFAULT_AUDIO_DECODER				"omxh264dec"
-#define DEFAULT_AUDIO_PARSER				"h264parse"
-#define DEFAULT_AUDIO_RTPPAY				"rtph264pay"
-#define DEFAULT_AUDIO_RTPDEPAY				"rtph264depay"
+#define DEFAULT_AUDIO_RTPPAY				"rtpL16pay"
+#define DEFAULT_AUDIO_RTPDEPAY				"rtpL16depay"
 
 #define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,width=320,height=240"
 #define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=44100,format=S16BE"
-#define MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT "video/x-h264,stream-format=byte-stream,profile=high"
+#define MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT "video/x-h263,stream-format=byte-stream,profile=high"
+
+#define MS_ELEMENT_IS_SINK(el) g_str_has_suffix(el, "sink")
+#define MS_ELEMENT_IS_SOURCE(el) g_str_has_suffix(el, "source")
+#define MS_ELEMENT_IS_AUDIO(el) g_str_has_prefix(el, "audio")
+#define MS_ELEMENT_IS_VIDEO(el) g_str_has_prefix(el, "video")
 
 #define MEDIA_STREAMER_DEFAULT_DOT_DIR "/tmp"
 #define MEDIA_STREAMER_DEFAULT_INI \
@@ -216,11 +223,18 @@ gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path,
                            char *default_str);
 
 /**
- * @brief Converts Media Format mime type into string.
+ * @brief Converts Media Format mime type into Caps media format string.
  *
  * @since_tizen 3.0
  */
 const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime);
+
+/**
+ * @brief Converts Caps stream format into Media Format mime type.
+ *
+ * @since_tizen 3.0
+ */
+media_format_mimetype_e __ms_convert_string_format_to_mime(const char *format_type);
 
 #ifdef __cplusplus
 }

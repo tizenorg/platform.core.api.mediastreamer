@@ -47,6 +47,7 @@ int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e stat
 			}
 			break;
 		case MEDIA_STREAMER_STATE_READY:
+			ret = __ms_autoplug_prepare(ms_streamer);
 			break;
 		case MEDIA_STREAMER_STATE_PLAYING:
 			ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PLAYING);
@@ -94,6 +95,7 @@ int __ms_create(media_streamer_s *ms_streamer)
 	return ret;
 }
 
+#if 0
 static void __node_remove_cb(gpointer key,
                              gpointer value,
                              gpointer user_data)
@@ -137,7 +139,7 @@ static void __node_remove_cb(gpointer key,
 	MS_SAFE_GFREE(bin_name);
 
 }
-
+#endif
 
 void __ms_streamer_destroy(media_streamer_s *ms_streamer)
 {
@@ -145,35 +147,24 @@ void __ms_streamer_destroy(media_streamer_s *ms_streamer)
 		ms_error("Error: can not set state [%d]", MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 	}
 
-	gst_element_unlink_many(ms_streamer->src_bin,
-	                        ms_streamer->topology_bin,
-	                        ms_streamer->sink_video_bin, NULL);
+	MS_TABLE_SAFE_UNREF(ms_streamer->nodes_table);
 
-	g_hash_table_foreach(ms_streamer->nodes_table, __node_remove_cb, (gpointer)ms_streamer);
-
-	if (ms_streamer->src_bin && !gst_bin_remove(GST_BIN(ms_streamer->pipeline), ms_streamer->src_bin)) {
-		ms_error("Failed to remove src_bin from pipeline");
-	} else {
-		ms_info("src_bin removed from pipeline");
+	if (ms_streamer->sink_video_bin &&
+			GST_OBJECT_PARENT(ms_streamer->sink_video_bin) != ms_streamer->pipeline) {
+		MS_SAFE_UNREF(ms_streamer->sink_video_bin);
+		ms_info("sink_video_bin removed from pipeline");
 	}
 
-	if (ms_streamer->sink_video_bin && !gst_bin_remove(GST_BIN(ms_streamer->pipeline), ms_streamer->sink_video_bin)) {
-		ms_error("Failed to remove sink_bin from pipeline");
-	} else {
-		ms_info("sink_bin removed from pipeline");
+	if (ms_streamer->sink_audio_bin &&
+			GST_OBJECT_PARENT(ms_streamer->sink_audio_bin) != ms_streamer->pipeline) {
+		MS_SAFE_UNREF(ms_streamer->sink_audio_bin);
+		ms_info("sink_audio_bin removed from pipeline");
 	}
-
-
-	if (ms_streamer->topology_bin && !gst_bin_remove(GST_BIN(ms_streamer->pipeline), ms_streamer->topology_bin)) {
-		ms_error("Failed to remove topology_bin from pipeline");
-	} else {
-		ms_info("topology_bin removed from pipeline");
-	}
-
 
 	ms_streamer->state = MEDIA_STREAMER_STATE_NONE;
+	g_mutex_unlock(&ms_streamer->mutex_lock);
+	g_mutex_clear(&ms_streamer->mutex_lock);
 
-	MS_TABLE_SAFE_UNREF(ms_streamer->nodes_table);
 	MS_SAFE_UNREF(ms_streamer->bus);
 	MS_SAFE_UNREF(ms_streamer->pipeline);
 

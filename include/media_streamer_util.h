@@ -98,49 +98,49 @@ typedef struct __media_streamer_ini {
 } media_streamer_ini_t;
 
 /*Test elements*/
-#define DEFAULT_VIDEO_TEST_SOURCE		"videotestsrc"
-#define DEFAULT_AUDIO_TEST_SOURCE		"audiotestsrc"
-#define DEFAULT_FAKE_SINK				"fakesink"
-#define DEFAULT_QUEUE					"queue"
+#define DEFAULT_VIDEO_TEST_SOURCE           "videotestsrc"
+#define DEFAULT_AUDIO_TEST_SOURCE           "audiotestsrc"
+#define DEFAULT_FAKE_SINK                   "fakesink"
+#define DEFAULT_QUEUE                       "queue"
 
 /* setting default values if each value is not specified in .ini file */
 /* general */
-#define DEFAULT_GENERATE_DOT			FALSE
-#define DEFAULT_AUDIO_SOURCE			"alsasrc"
-#define DEFAULT_CAMERA_SOURCE			"camerasrc"
-#define DEFAULT_VIDEO_SOURCE			"ximagesrc"
-#define DEFAULT_APP_SOURCE				"appsrc"
-#define DEFAULT_AUDIO_SINK				"pulsesink"
-#define DEFAULT_VIDEO_SINK				"autovideosink"
-#define DEFAULT_VIDEO_CONVERT			"videoconvert"
-#define DEFAULT_AUDIO_CONVERT			"audioconvert"
-#define DEFAULT_AUDIO_RESAMPLE			"audioresample"
-#define DEFAULT_APP_SINK				"appsink"
+#define DEFAULT_GENERATE_DOT                FALSE
+#define DEFAULT_AUDIO_SOURCE                "alsasrc"
+#define DEFAULT_CAMERA_SOURCE               "v4l2src"
+#define DEFAULT_VIDEO_SOURCE                "ximagesrc"
+#define DEFAULT_APP_SOURCE                  "appsrc"
+#define DEFAULT_AUDIO_SINK                  "pulsesink"
+#define DEFAULT_VIDEO_SINK                  "autovideosink"
+#define DEFAULT_VIDEO_CONVERT               "videoconvert"
+#define DEFAULT_AUDIO_CONVERT               "audioconvert"
+#define DEFAULT_AUDIO_RESAMPLE              "audioresample"
+#define DEFAULT_APP_SINK                    "appsink"
 
 /* udp streaming */
-#define DEFAULT_UDP_SOURCE				"udpsrc"
-#define DEFAULT_UDP_SINK				"udpsink"
-#define DEFAULT_RTP_BIN					"rtpbin"
+#define DEFAULT_UDP_SOURCE                  "udpsrc"
+#define DEFAULT_UDP_SINK                    "udpsink"
+#define DEFAULT_RTP_BIN                     "rtpbin"
 
 /* video format defaults */
-#define DEFAULT_VIDEO_ENCODER				"omxh264enc"
-#define DEFAULT_VIDEO_DECODER				"omxh264dec"
-#define DEFAULT_VIDEO_PARSER				"h263parse"
-#define DEFAULT_VIDEO_RTPPAY				"rtph263pay"
-#define DEFAULT_VIDEO_RTPDEPAY				"rtph263depay"
+#define DEFAULT_VIDEO_ENCODER               "omxh264enc"
+#define DEFAULT_VIDEO_DECODER               "omxh264dec"
+#define DEFAULT_VIDEO_PARSER                "h263parse"
+#define DEFAULT_VIDEO_RTPPAY                "rtph263pay"
+#define DEFAULT_VIDEO_RTPDEPAY              "rtph263depay"
 
 /* audio format defaults */
-#define DEFAULT_AUDIO_RTPPAY				"rtpL16pay"
-#define DEFAULT_AUDIO_RTPDEPAY				"rtpL16depay"
+#define DEFAULT_AUDIO_RTPPAY                "rtpL16pay"
+#define DEFAULT_AUDIO_RTPDEPAY              "rtpL16depay"
 
-#define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,width=320,height=240"
+#define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,width=1280,height=720"
 #define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=44100,format=S16BE"
 #define MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT "video/x-h263,stream-format=byte-stream,profile=high"
 
-#define MS_ELEMENT_IS_SINK(el) g_str_has_suffix(el, "sink")
-#define MS_ELEMENT_IS_SOURCE(el) g_str_has_suffix(el, "source")
-#define MS_ELEMENT_IS_AUDIO(el) g_str_has_prefix(el, "audio")
-#define MS_ELEMENT_IS_VIDEO(el) g_str_has_prefix(el, "video")
+#define MS_ELEMENT_IS_OUTPUT(el) g_strrstr(el, "out")
+#define MS_ELEMENT_IS_INPUT(el) g_strrstr(el, "in")
+#define MS_ELEMENT_IS_AUDIO(el) g_strrstr(el, "audio")
+#define MS_ELEMENT_IS_VIDEO(el) g_strrstr(el, "video")
 
 #define MEDIA_STREAMER_DEFAULT_DOT_DIR "/tmp"
 #define MEDIA_STREAMER_DEFAULT_INI \
@@ -154,7 +154,7 @@ dot dir = /tmp \n\
 [sources] \n\
 \n\
 audio_source = pulsesrc \n\
-camera_source = camerasrc \n\
+camera_source = v4l2src \n\
 video_source = ximagesrc \n\
 udp_source = udpsrc \n\
 \n\
@@ -162,7 +162,7 @@ udp_source = udpsrc \n\
 [sinks] \n\
 \n\
 audio_sink = pulsesink \n\
-video_sink = autovideosink \n\
+video_sink = waylandsink \n\
 udp_sink = udpsink \n\
 \n\
 \n\

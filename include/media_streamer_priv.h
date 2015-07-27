@@ -28,6 +28,7 @@ extern "C" {
 #include <media_streamer.h>
 #include <media_streamer_util.h>
 
+struct media_streamer_node_s;
 /**
  * @brief Media Streamer callbacks structure.
  *

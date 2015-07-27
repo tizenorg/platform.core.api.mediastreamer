@@ -34,13 +34,6 @@
 void __ms_generate_dots(GstElement *bin, gchar *name_tag);
 
 /**
- * @brief Returns the string representation of GST_STATE.
- *
- * @since_tizen 3.0
- */
-const char *_ms_state_to_string(GstState state);
-
-/**
  * @brief Creates GstElement by plugin name.
  *
  * @since_tizen 3.0
@@ -88,7 +81,11 @@ GstElement *__ms_rtp_element_create(media_streamer_node_s *ms_node);
  * @since_tizen 3.0
  */
 gboolean __ms_get_rtp_elements(media_streamer_node_s *ms_node,
-                               GstElement **rtp_elem, GstElement **rtcp_elem, const gchar *elem_name);
+                               GstElement **rtp_elem,
+                               GstElement **rtcp_elem,
+                               const gchar *elem_name,
+                               const gchar *direction,
+                               gboolean auto_create);
 
 /**
  * @brief Converts key-value property into needed GType
@@ -128,18 +125,25 @@ int __ms_add_node_into_bin(media_streamer_s *ms_streamer, media_streamer_node_s 
 int __ms_element_set_state(GstElement *gst_element, GstState gst_state);
 
 /**
+ * @brief Iterates pas inside gst element.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_iterate_pads(GstElement *gst_element, GstPadDirection pad_type, char ***pad_name_array, int *pads_count);
+
+/**
  * @brief Gets mediaformat from the GstElement's pad by pad name.
  *
  * @since_tizen 3.0
  */
-media_format_h __ms_element_get_pad_fmt(GstElement *gst_element, const char* pad_name);
+media_format_h __ms_element_get_pad_fmt(GstElement *gst_element, const char *pad_name);
 
 /**
  * @brief Sets mediaformat into GstElement.
  *
  * @since_tizen 3.0
  */
-int __ms_element_set_fmt(media_streamer_node_s *node, media_format_h fmt);
+int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, media_format_h fmt);
 
 /**
  * @brief Push the media packet buffer to the source element.

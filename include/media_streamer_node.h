@@ -84,3 +84,11 @@ int __ms_node_read_params_from_bundle(media_streamer_node_s *node,
  */
 int __ms_node_write_params_into_bundle(media_streamer_node_s *node,
                                        bundle *param_list);
+
+/**
+ * @brief Writes GstElement property into user's value.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_node_write_param_into_value(media_streamer_node_s *node,
+                                     const char *param_name, char **param_value);

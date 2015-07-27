@@ -194,6 +194,8 @@ int media_streamer_prepare(media_streamer_h streamer)
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
+	__ms_autoplug_prepare(ms_streamer);
+
 	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_error("Error: can not set state [%d]", MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
@@ -492,7 +494,7 @@ int media_streamer_stop(media_streamer_h streamer)
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
-	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY) != MEDIA_STREAMER_ERROR_NONE) {
+	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_PAUSED) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_error("Error: can not set state [%d]", MEDIA_STREAMER_ERROR_INVALID_OPERATION);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -582,7 +584,7 @@ int media_streamer_node_set_pad_format(media_streamer_node_h node,
 	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Format is NULL");
 
 	/* By default it sets format to object's property 'caps'*/
-	return __ms_element_set_fmt(node, fmt);
+	return __ms_element_set_fmt(node, pad_name, fmt);
 }
 
 int media_streamer_node_get_pad_format(media_streamer_node_h node,
@@ -599,6 +601,31 @@ int media_streamer_node_get_pad_format(media_streamer_node_h node,
 	ms_retvm_if(*fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error while getting node fmt");
 
 	return MEDIA_STREAMER_ERROR_NONE;
+}
+
+int media_streamer_node_get_pad_name(media_streamer_node_h node,
+                                     char ***src_pad_name,
+                                     int *src_pad_num,
+                                     char ***sink_pad_name,
+                                     int *sink_pad_num)
+{
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
+
+	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(src_pad_name == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Empty src pad name");
+	ms_retvm_if(src_pad_num == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Number of src_pads is NULL");
+	ms_retvm_if(sink_pad_name == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Empty sink pad name");
+	ms_retvm_if(sink_pad_num == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Number of sink_pads is NULL");
+	ms_retvm_if(ms_node->gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	ret = __ms_iterate_pads(ms_node->gst_element, GST_PAD_SRC, src_pad_name, src_pad_num);
+	ms_retvm_if(ret, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error iterating src pads");
+
+	ret = __ms_iterate_pads(ms_node->gst_element, GST_PAD_SINK, sink_pad_name, sink_pad_num);
+	ms_retvm_if(ret, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error iterating sink pads");
+
+	return ret;
 }
 
 int media_streamer_node_set_params(media_streamer_node_h node,
@@ -630,7 +657,7 @@ int media_streamer_node_get_params(media_streamer_node_h node,
 	ms_retvm_if(ms_params == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Error creating new params object");
 
 	if (__ms_node_write_params_into_bundle(ms_node, ms_params) != MEDIA_STREAMER_ERROR_NONE) {
-		ms_info("Node [%s] do not have any params.", ms_node->name);
+		ms_info("Node [%s] does not have any params.", ms_node->name);
 		bundle_free(ms_params);
 		*param_list = NULL;
 
@@ -651,7 +678,7 @@ int media_streamer_node_set_param(media_streamer_node_h node,
 	ms_retvm_if(param_name == NULL || param_value == NULL,
 	            MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Parameters name or value is NULL");
 
-	return ms_node->set_param(ms_node, param_name, param_value);
+	return ms_node->set_param((struct media_streamer_node_s *)ms_node, param_name, param_value);
 }
 
 int media_streamer_node_get_param(media_streamer_node_h node,
@@ -660,9 +687,17 @@ int media_streamer_node_get_param(media_streamer_node_h node,
 	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(param_name == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Param name is NULL");
+	ms_retvm_if(param_value == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Param value is NULL");
 
-  // TBD
+	char *ms_param = NULL;
 
+	if (__ms_node_write_param_into_value(ms_node, param_name,&ms_param) != MEDIA_STREAMER_ERROR_NONE) {
+		ms_info("Node [%s] does not have param [%s]", ms_node->name, param_name);
+
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+
+	*param_value = ms_param;
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 

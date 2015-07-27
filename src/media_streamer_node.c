@@ -37,43 +37,70 @@ static int __ms_rtp_node_set_property(media_streamer_node_s *ms_node,
 	ms_retvm_if(!ms_node && !ms_node->gst_element, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error: empty node");
 
 	gchar **tokens = NULL;
-	gchar *elem_name = NULL;
-	guint i = 0;
 	GstElement *rtp_elem = NULL;
 	GstElement *rtcp_elem = NULL;
 
-	tokens = g_strsplit(param_key, ",", 3);
-	ms_retvm_if(tokens == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Invalid rtp parameter line.");
-	elem_name = tokens[0];
+	gchar *elem_name, *direction, *param;
 
-	if (FALSE == __ms_get_rtp_elements(ms_node, &rtp_elem, &rtcp_elem, elem_name)) {
-		ms_error("Error: invalid parameter [%s]", param_key);
-		g_strfreev(tokens);
-		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
-	}
+	tokens = g_strsplit(param_key, "_", 3);
+	if (tokens && tokens[0] && !tokens[1]) {
+		/*In this case can be param names without direction description
+		 * parameter 'host' will be set to all udpsink
+		 * parameter 'format' will be set all udpsrc
+		 */
 
-	for (i = 1; (tokens && tokens[i]); i++) {
-		ms_retvm_if(!rtp_elem || !rtcp_elem,
-		            MEDIA_STREAMER_ERROR_INVALID_OPERATION,
-		            "Error: [%s] did not found or created into streamer", tokens[i]);
+		param = tokens[0];
+		if (!g_strcmp0(param, MEDIA_STREAMER_PARAM_HOST)) {
+			__ms_get_rtp_elements(ms_node, &rtp_elem, &rtcp_elem, "audio", "out", FALSE);
+			if (rtp_elem && rtcp_elem) {
+				__ms_element_set_property(rtp_elem, param, param_value);
+				__ms_element_set_property(rtcp_elem, param, param_value);
+			}
 
-		if (!g_strcmp0(tokens[i], "port")) {
-			__ms_element_set_property(rtp_elem, tokens[i], param_value);
-			gchar *next_port = g_strdup(param_value);
-			next_port[strlen(next_port) - 1] += 1;
-			__ms_element_set_property(rtcp_elem, tokens[i], next_port);
-			MS_SAFE_GFREE(next_port);
-		} else if (!g_strcmp0(tokens[i], "host") && MS_ELEMENT_IS_SINK(elem_name)) {
-			__ms_element_set_property(rtp_elem, tokens[i], param_value);
-			__ms_element_set_property(rtcp_elem, tokens[i], param_value);
-		} else if (!g_strcmp0(tokens[i], "format") && MS_ELEMENT_IS_SOURCE(elem_name)) {
-			__ms_element_set_property(rtp_elem, "caps", param_value);
+			__ms_get_rtp_elements(ms_node, &rtp_elem, &rtcp_elem, "video", "out", FALSE);
+			if (rtp_elem && rtcp_elem) {
+				__ms_element_set_property(rtp_elem, param, param_value);
+				__ms_element_set_property(rtcp_elem, param, param_value);
+			}
+		} else {
+			ms_error("Error: Unsupported parameter [%s] for rtp node.");
 		}
 
+		g_strfreev(tokens);
+		return MEDIA_STREAMER_ERROR_NONE;
+	} else if (tokens || tokens[0] || tokens[1] || tokens[2]) {
+
+		/*
+		 * Rtp node parameter name consist of three fields separated with symbol '_':
+		 * <video/audio>_<in/out>_<param_key>
+		 */
+
+		elem_name = tokens[0];
+		direction = tokens[1];
+		param = tokens[2];
+		if (FALSE == __ms_get_rtp_elements(ms_node, &rtp_elem, &rtcp_elem, elem_name, direction, TRUE)) {
+			ms_error("Error: invalid parameter [%s]", param_key);
+			g_strfreev(tokens);
+			return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+		}
+
+		if (!g_strcmp0(param, MEDIA_STREAMER_PARAM_PORT)) {
+			__ms_element_set_property(rtp_elem, param, param_value);
+			gchar *next_port = g_strdup(param_value);
+			next_port[strlen(next_port) - 1] += 1;
+			__ms_element_set_property(rtcp_elem, param, next_port);
+			MS_SAFE_GFREE(next_port);
+		}
+
+		g_strfreev(tokens);
+		return MEDIA_STREAMER_ERROR_NONE;
+	} else {
+		ms_error("Invalid rtp parameter name.");
 	}
+
 	g_strfreev(tokens);
 
-	return MEDIA_STREAMER_ERROR_NONE;
+	return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
 }
 
 int __ms_node_create(media_streamer_node_s *node,
@@ -476,7 +503,7 @@ static void __params_foreach_cb(const char *key,
 		ms_info("Read param value[%s] with size [%d].", (gchar *)basic_val, basic_size);
 
 		if (ms_node->set_param != NULL) {
-			ret = ms_node->set_param(ms_node, (gchar *)key, (gchar *)basic_val);
+			ret = ms_node->set_param((struct media_streamer_node_s *)ms_node, (char *)key, (char *)basic_val);
 		} else {
 			ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 		}
@@ -498,6 +525,94 @@ int __ms_node_read_params_from_bundle(media_streamer_node_s *node,
 	return ret;
 }
 
+static void __ms_node_get_param_value(GParamSpec *param, GValue value,char **string_value)
+{
+	char *value_in_string = NULL;
+
+	ms_info("%-20s: %s\n", g_param_spec_get_name(param), g_param_spec_get_blurb(param));
+
+	switch (G_VALUE_TYPE(&value)) {
+	case G_TYPE_STRING:
+		ms_info("Got string value: [%s]", g_value_get_string(&value));
+		break;
+
+	case G_TYPE_BOOLEAN:
+		value_in_string = g_strdup_printf("%s", g_value_get_boolean(&value) ? "true" : "false");
+		ms_info("Got boolean value: [%s]", value_in_string);
+		break;
+
+	case G_TYPE_ULONG: {
+		GParamSpecULong *pulong = G_PARAM_SPEC_ULONG(param);
+		value_in_string = g_strdup_printf("%lu", g_value_get_ulong(&value));
+		ms_info("Got ulong value: [%s], range: %lu - %lu (default %s)",
+				value_in_string, pulong->minimum, pulong->maximum);
+		break;
+	}
+
+	case G_TYPE_LONG: {
+		GParamSpecLong *plong = G_PARAM_SPEC_LONG(param);
+		value_in_string = g_strdup_printf("%ld", g_value_get_long(&value));
+		ms_info("Got long value: [%s], range: %ld - %ld (default %s)",
+				value_in_string, plong->minimum, plong->maximum);
+		break;
+	}
+
+	case G_TYPE_UINT: {
+		GParamSpecUInt *puint = G_PARAM_SPEC_UINT(param);
+		value_in_string = g_strdup_printf("%u", g_value_get_uint(&value));
+		ms_info("Got uint value: [%s], range: %u - %u",
+				value_in_string, puint->minimum, puint->maximum);
+		break;
+	}
+
+	case G_TYPE_INT: {
+		GParamSpecInt *pint = G_PARAM_SPEC_INT(param);
+		value_in_string = g_strdup_printf("%d", g_value_get_int(&value));
+		ms_info("Got int value: [%s], range: %d - %d",
+				value_in_string, pint->minimum, pint->maximum);
+		break;
+	}
+
+	case G_TYPE_UINT64: {
+		GParamSpecUInt64 *puint64 = G_PARAM_SPEC_UINT64(param);
+		value_in_string = g_strdup_printf("%" G_GUINT64_FORMAT, g_value_get_uint64(&value));
+		ms_info("Got uint64 value: [%s], range: %" G_GUINT64_FORMAT "- %" G_GUINT64_FORMAT,
+				value_in_string, puint64->minimum, puint64->maximum);
+		break;
+	}
+
+	case G_TYPE_INT64: {
+		GParamSpecInt64 *pint64 = G_PARAM_SPEC_INT64(param);
+		value_in_string = g_strdup_printf("%" G_GINT64_FORMAT, g_value_get_int64(&value));
+		ms_info("Got uint64 value: [%s], range: %" G_GINT64_FORMAT "- %" G_GINT64_FORMAT,
+				value_in_string, pint64->minimum, pint64->maximum);
+		break;
+	}
+
+	case G_TYPE_FLOAT: {
+		GParamSpecFloat *pfloat = G_PARAM_SPEC_FLOAT(param);
+		value_in_string = g_strdup_printf("%15.7g", g_value_get_float(&value));
+		ms_info("Got float value: [%s], range:%15.7g -%15.7g",
+				value_in_string, pfloat->minimum, pfloat->maximum);
+		break;
+	}
+
+	case G_TYPE_DOUBLE: {
+		GParamSpecDouble *pdouble = G_PARAM_SPEC_DOUBLE(param);
+		value_in_string = g_strdup_printf("%15.7g", g_value_get_double(&value));
+		ms_info("Got double value: [%s], range:%15.7g -%15.7g",
+				value_in_string, pdouble->minimum, pdouble->maximum);
+		break;
+	}
+
+	default:
+		ms_info("Got unknown type with param->value_type [%d]", param->value_type);
+		break;
+	}
+
+	*string_value = value_in_string;
+}
+
 int __ms_node_write_params_into_bundle(media_streamer_node_s *node,
                                        bundle *param_list)
 {
@@ -505,8 +620,8 @@ int __ms_node_write_params_into_bundle(media_streamer_node_s *node,
 	guint num_properties, i;
 	char *string_val = NULL;
 
-	property_specs = g_object_class_list_properties
-	                 (G_OBJECT_GET_CLASS(node->gst_element), &num_properties);
+	property_specs = g_object_class_list_properties(G_OBJECT_GET_CLASS(node->gst_element),
+                                                        &num_properties);
 
 	if (num_properties <= 0) {
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
@@ -526,98 +641,36 @@ int __ms_node_write_params_into_bundle(media_streamer_node_s *node,
 			continue;
 		}
 
-		ms_info("%-20s: %s\n", g_param_spec_get_name(param), g_param_spec_get_blurb(param));
+		__ms_node_get_param_value(param, value, &string_val);
 
-		switch (G_VALUE_TYPE(&value)) {
-			case G_TYPE_STRING:
-				bundle_add_str(param_list, g_param_spec_get_name(param), g_value_get_string(&value));
-				ms_info("Got string value: [%s]", g_value_get_string(&value));
-				break;
-
-			case G_TYPE_BOOLEAN:
-				string_val = g_strdup_printf("%s", g_value_get_boolean(&value) ? "true" : "false");
-				bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
-				ms_info("Got boolean value: [%s]", string_val);
-				break;
-
-			case G_TYPE_ULONG: {
-					GParamSpecULong *pulong = G_PARAM_SPEC_ULONG(param);
-					string_val = g_strdup_printf("%lu", g_value_get_ulong(&value));
-					bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
-					ms_info("Got ulong value: [%s], range: %lu - %lu (default %s)",
-					        string_val, pulong->minimum, pulong->maximum);
-					break;
-				}
-
-			case G_TYPE_LONG: {
-					GParamSpecLong *plong = G_PARAM_SPEC_LONG(param);
-					string_val = g_strdup_printf("%ld", g_value_get_long(&value));
-					bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
-					ms_info("Got long value: [%s], range: %ld - %ld (default %s)",
-					        string_val, plong->minimum, plong->maximum);
-					break;
-				}
-
-			case G_TYPE_UINT: {
-					GParamSpecUInt *puint = G_PARAM_SPEC_UINT(param);
-					string_val = g_strdup_printf("%u", g_value_get_uint(&value));
-					bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
-					ms_info("Got uint value: [%s], range: %u - %u",
-					        string_val, puint->minimum, puint->maximum);
-					break;
-				}
-
-			case G_TYPE_INT: {
-					GParamSpecInt *pint = G_PARAM_SPEC_INT(param);
-					string_val = g_strdup_printf("%d", g_value_get_int(&value));
-					bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
-					ms_info("Got int value: [%s], range: %d - %d",
-					        string_val, pint->minimum, pint->maximum);
-					break;
-				}
-
-			case G_TYPE_UINT64: {
-					GParamSpecUInt64 *puint64 = G_PARAM_SPEC_UINT64(param);
-					string_val = g_strdup_printf("%" G_GUINT64_FORMAT, g_value_get_uint64(&value));
-					bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
-					ms_info("Got uint64 value: [%s], range: %" G_GUINT64_FORMAT "- %" G_GUINT64_FORMAT,
-					        string_val, puint64->minimum, puint64->maximum);
-					break;
-				}
-
-			case G_TYPE_INT64: {
-					GParamSpecInt64 *pint64 = G_PARAM_SPEC_INT64(param);
-					string_val = g_strdup_printf("%" G_GINT64_FORMAT, g_value_get_int64(&value));
-					bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
-					ms_info("Got uint64 value: [%s], range: %" G_GINT64_FORMAT "- %" G_GINT64_FORMAT,
-					        string_val, pint64->minimum, pint64->maximum);
-					break;
-				}
-
-			case G_TYPE_FLOAT: {
-					GParamSpecFloat *pfloat = G_PARAM_SPEC_FLOAT(param);
-					string_val = g_strdup_printf("%15.7g", g_value_get_float(&value));
-					bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
-					ms_info("Got float value: [%s], range:%15.7g -%15.7g",
-					        string_val, pfloat->minimum, pfloat->maximum);
-					break;
-				}
-
-			case G_TYPE_DOUBLE: {
-					GParamSpecDouble *pdouble = G_PARAM_SPEC_DOUBLE(param);
-					string_val = g_strdup_printf("%15.7g", g_value_get_double(&value));
-					bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
-					ms_info("Got double value: [%s], range:%15.7g -%15.7g",
-					        string_val, pdouble->minimum, pdouble->maximum);
-					break;
-				}
-
-			default:
-				ms_info("Got unknown type with param->value_type [%d]", param->value_type);
-				break;
-
-				MS_SAFE_FREE(string_val);
-		}
+		bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
 	}
+
+	return MEDIA_STREAMER_ERROR_NONE;
+}
+
+int __ms_node_write_param_into_value(media_streamer_node_s *node,
+                                     const char *param_name, char **param_value)
+{
+	GParamSpec *property_specs;
+	char *string_val = NULL;
+
+	property_specs = g_object_class_find_property(G_OBJECT_GET_CLASS(node->gst_element),
+                                                      param_name);
+
+	ms_info("Getting parameter of the Node [%s]", node->name);
+
+	GValue value = { 0, };
+	GParamSpec *param = property_specs;
+
+	g_value_init(&value, param->value_type);
+	if (param->flags & G_PARAM_READWRITE) {
+		g_object_get_property(G_OBJECT(node->gst_element), param->name, &value);
+	}
+
+	__ms_node_get_param_value(param, value, &string_val);
+
+	*param_value = string_val;
+
 	return MEDIA_STREAMER_ERROR_NONE;
 }

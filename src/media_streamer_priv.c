@@ -47,7 +47,7 @@ int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e stat
 			}
 			break;
 		case MEDIA_STREAMER_STATE_READY:
-			ret = __ms_autoplug_prepare(ms_streamer);
+			ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_READY);
 			break;
 		case MEDIA_STREAMER_STATE_PLAYING:
 			ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PLAYING);
@@ -150,13 +150,13 @@ void __ms_streamer_destroy(media_streamer_s *ms_streamer)
 	MS_TABLE_SAFE_UNREF(ms_streamer->nodes_table);
 
 	if (ms_streamer->sink_video_bin &&
-			GST_OBJECT_PARENT(ms_streamer->sink_video_bin) != ms_streamer->pipeline) {
+			GST_OBJECT_PARENT(ms_streamer->sink_video_bin) != GST_OBJECT(ms_streamer->pipeline)) {
 		MS_SAFE_UNREF(ms_streamer->sink_video_bin);
 		ms_info("sink_video_bin removed from pipeline");
 	}
 
 	if (ms_streamer->sink_audio_bin &&
-			GST_OBJECT_PARENT(ms_streamer->sink_audio_bin) != ms_streamer->pipeline) {
+			GST_OBJECT_PARENT(ms_streamer->sink_audio_bin) != GST_OBJECT(ms_streamer->pipeline)) {
 		MS_SAFE_UNREF(ms_streamer->sink_audio_bin);
 		ms_info("sink_audio_bin removed from pipeline");
 	}

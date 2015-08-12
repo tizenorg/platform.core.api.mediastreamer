@@ -18,6 +18,33 @@
 #include <media_streamer_util.h>
 #include <media_streamer_gst.h>
 
+char *param_table[PROPERTY_COUNT][2] = {
+	{MEDIA_STREAMER_PARAM_CAMERA_ID, "camera-id"},
+	{MEDIA_STREAMER_PARAM_CAMERA_ID, "camera"},
+	{MEDIA_STREAMER_PARAM_CAMERA_ID, "device-name"},
+	{MEDIA_STREAMER_PARAM_CAPTURE_WIDTH, "capture-width"},
+	{MEDIA_STREAMER_PARAM_CAPTURE_HEIGHT, "capture-height"},
+	{MEDIA_STREAMER_PARAM_IS_LIVE_STREAM, "is-live"},
+	{MEDIA_STREAMER_PARAM_IS_LIVE_STREAM, "living"},
+	{MEDIA_STREAMER_PARAM_URI, "uri"},
+	{MEDIA_STREAMER_PARAM_URI, "location"},
+	{MEDIA_STREAMER_PARAM_USER_AGENT, "user-agent"},
+	{MEDIA_STREAMER_PARAM_STREAM_TYPE, "stream-type"},
+	{MEDIA_STREAMER_PARAM_PORT, "port"},
+	{MEDIA_STREAMER_PARAM_VIDEO_IN_PORT, "video_in_port"},
+	{MEDIA_STREAMER_PARAM_AUDIO_IN_PORT, "audio_in_port"},
+	{MEDIA_STREAMER_PARAM_VIDEO_OUT_PORT, "video_out_port"},
+	{MEDIA_STREAMER_PARAM_AUDIO_OUT_PORT, "audio_out_port"},
+	{MEDIA_STREAMER_PARAM_IP_ADDRESS, "address"},
+	{MEDIA_STREAMER_PARAM_AUDIO_DEVICE, "audio_device"},
+	{MEDIA_STREAMER_PARAM_CLOCK_SYNCHRONIZED, "sync"},
+	{MEDIA_STREAMER_PARAM_ROTATE, "rotate"},
+	{MEDIA_STREAMER_PARAM_FLIP, "flip"},
+	{MEDIA_STREAMER_PARAM_DISPLAY_GEOMETRY_METHOD, "display-geometry-method"},
+	{MEDIA_STREAMER_PARAM_VISIBLE, "visible"},
+	{MEDIA_STREAMER_PARAM_HOST, "host"}
+};
+
 static int __ms_node_set_property(media_streamer_node_s *ms_node,
                                   const gchar *param_key,
                                   const gchar *param_value)
@@ -525,92 +552,124 @@ int __ms_node_read_params_from_bundle(media_streamer_node_s *node,
 	return ret;
 }
 
-static void __ms_node_get_param_value(GParamSpec *param, GValue value,char **string_value)
+static void __ms_node_get_param_value(GParamSpec *param, GValue value, char **string_value)
 {
-	char *value_in_string = NULL;
+	char *string_val = NULL;
+	GParamSpecInt *pint = NULL;
 
-	ms_info("%-20s: %s\n", g_param_spec_get_name(param), g_param_spec_get_blurb(param));
-
-	switch (G_VALUE_TYPE(&value)) {
-	case G_TYPE_STRING:
+	if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_CAMERA_ID)) {
+		pint = G_PARAM_SPEC_INT(param);
+		string_val = g_strdup_printf("%d", g_value_get_int(&value));
+		ms_info("Got int value: [%s], range: %d - %d", string_val,
+				pint->minimum, pint->maximum);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_CAPTURE_WIDTH)) {
+		pint = G_PARAM_SPEC_INT(param);
+		string_val = g_strdup_printf("%d", g_value_get_int(&value));
+		ms_info("Got int value: [%s], range: %d - %d", string_val,
+				pint->minimum, pint->maximum);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_CAPTURE_HEIGHT)) {
+		pint = G_PARAM_SPEC_INT(param);
+		string_val = g_strdup_printf("%d", g_value_get_int(&value));
+		ms_info("Got int value: [%s], range: %d - %d", string_val,
+				pint->minimum, pint->maximum);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_IS_LIVE_STREAM)) {
+		string_val = g_strdup_printf("%s", g_value_get_boolean(&value) ? "true" : "false");
+		ms_info("Got boolean value: [%s]", string_val);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_URI)) {
+		string_val = g_strdup_printf("%s", g_value_get_string(&value));
 		ms_info("Got string value: [%s]", g_value_get_string(&value));
-		break;
-
-	case G_TYPE_BOOLEAN:
-		value_in_string = g_strdup_printf("%s", g_value_get_boolean(&value) ? "true" : "false");
-		ms_info("Got boolean value: [%s]", value_in_string);
-		break;
-
-	case G_TYPE_ULONG: {
-		GParamSpecULong *pulong = G_PARAM_SPEC_ULONG(param);
-		value_in_string = g_strdup_printf("%lu", g_value_get_ulong(&value));
-		ms_info("Got ulong value: [%s], range: %lu - %lu (default %s)",
-				value_in_string, pulong->minimum, pulong->maximum);
-		break;
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_USER_AGENT)) {
+		string_val = g_strdup_printf("%s", g_value_get_string(&value));
+		ms_info("Got string value: [%s]", g_value_get_string(&value));
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_STREAM_TYPE)) {
+		string_val = g_strdup_printf("%d", g_value_get_enum(&value));
+		ms_info("Got int value: [%s] ", string_val);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_PORT)) {
+		pint = G_PARAM_SPEC_INT(param);
+		string_val = g_strdup_printf("%d", g_value_get_int(&value));
+		ms_info("Got int value: [%s], range: %d - %d", string_val,
+                pint->minimum, pint->maximum);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_VIDEO_IN_PORT)) {
+		pint = G_PARAM_SPEC_INT(param);
+		string_val = g_strdup_printf("%d", g_value_get_int(&value));
+		ms_info("Got int value: [%s], range: %d - %d", string_val,
+				pint->minimum, pint->maximum);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_AUDIO_IN_PORT)) {
+		pint = G_PARAM_SPEC_INT(param);
+		string_val = g_strdup_printf("%d", g_value_get_int(&value));
+		ms_info("Got int value: [%s], range: %d - %d", string_val,
+				pint->minimum, pint->maximum);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_VIDEO_OUT_PORT)) {
+		pint = G_PARAM_SPEC_INT(param);
+		string_val = g_strdup_printf("%d", g_value_get_int(&value));
+		ms_info("Got int value: [%s], range: %d - %d", string_val,
+				pint->minimum, pint->maximum);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_AUDIO_OUT_PORT)) {
+		pint = G_PARAM_SPEC_INT(param);
+		string_val = g_strdup_printf("%d", g_value_get_int(&value));
+		ms_info("Got int value: [%s], range: %d - %d", string_val,
+				pint->minimum, pint->maximum);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_IP_ADDRESS)) {
+		string_val = g_strdup_printf("%s", g_value_get_string(&value));
+		ms_info("Got string value: [%s]", g_value_get_string(&value));
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_AUDIO_DEVICE)) {
+		string_val = g_strdup_printf("%s", g_value_get_string(&value));
+		ms_info("Got string value: [%s]", g_value_get_string(&value));
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_CLOCK_SYNCHRONIZED)) {
+		string_val = g_strdup_printf("%s", g_value_get_boolean(&value) ? "true" : "false");
+		ms_info("Got boolean value: [%s]", string_val);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_ROTATE)) {
+		string_val = g_strdup_printf("%d", g_value_get_enum(&value));
+		ms_info("Got enum value: [%s] ", string_val);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_FLIP)) {
+		string_val = g_strdup_printf("%d", g_value_get_enum(&value));
+		ms_info("Got enum value: [%s] ", string_val);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_DISPLAY_GEOMETRY_METHOD)) {
+		string_val = g_strdup_printf("%d", g_value_get_enum(&value));
+		ms_info("Got enum value: [%s] ", string_val);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_VISIBLE)) {
+		string_val = g_strdup_printf("%s", g_value_get_boolean(&value) ? "true" : "false");
+		ms_info("Got boolean value: [%s]", string_val);
+	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_HOST)) {
+		string_val = g_strdup_printf("%s", g_value_get_string(&value));
+		ms_info("Got string value: [%s]", g_value_get_string(&value));
 	}
 
-	case G_TYPE_LONG: {
-		GParamSpecLong *plong = G_PARAM_SPEC_LONG(param);
-		value_in_string = g_strdup_printf("%ld", g_value_get_long(&value));
-		ms_info("Got long value: [%s], range: %ld - %ld (default %s)",
-				value_in_string, plong->minimum, plong->maximum);
-		break;
-	}
+	*string_value = string_val;
+}
 
-	case G_TYPE_UINT: {
-		GParamSpecUInt *puint = G_PARAM_SPEC_UINT(param);
-		value_in_string = g_strdup_printf("%u", g_value_get_uint(&value));
-		ms_info("Got uint value: [%s], range: %u - %u",
-				value_in_string, puint->minimum, puint->maximum);
-		break;
-	}
+void __ms_node_check_param_name(GstElement *element, gboolean name_is_known,
+                                const char *param_name, char **init_param_name)
+{
+	char *set_param_name = NULL;
+	char *orig_param_name = NULL;
+	int it_param=0;
 
-	case G_TYPE_INT: {
-		GParamSpecInt *pint = G_PARAM_SPEC_INT(param);
-		value_in_string = g_strdup_printf("%d", g_value_get_int(&value));
-		ms_info("Got int value: [%s], range: %d - %d",
-				value_in_string, pint->minimum, pint->maximum);
-		break;
-	}
+	GParamSpec *param;
 
-	case G_TYPE_UINT64: {
-		GParamSpecUInt64 *puint64 = G_PARAM_SPEC_UINT64(param);
-		value_in_string = g_strdup_printf("%" G_GUINT64_FORMAT, g_value_get_uint64(&value));
-		ms_info("Got uint64 value: [%s], range: %" G_GUINT64_FORMAT "- %" G_GUINT64_FORMAT,
-				value_in_string, puint64->minimum, puint64->maximum);
-		break;
-	}
+	for(it_param = 0; it_param < PROPERTY_COUNT; it_param++)
+	{
+		set_param_name = param_table[it_param][0];
+		orig_param_name = param_table[it_param][1];
 
-	case G_TYPE_INT64: {
-		GParamSpecInt64 *pint64 = G_PARAM_SPEC_INT64(param);
-		value_in_string = g_strdup_printf("%" G_GINT64_FORMAT, g_value_get_int64(&value));
-		ms_info("Got uint64 value: [%s], range: %" G_GINT64_FORMAT "- %" G_GINT64_FORMAT,
-				value_in_string, pint64->minimum, pint64->maximum);
-		break;
+		if (name_is_known) {
+			if(!g_strcmp0(param_name, set_param_name)) {
+				param = g_object_class_find_property(G_OBJECT_GET_CLASS(element), orig_param_name);
+				if (param) {
+					*init_param_name = orig_param_name;
+					break;
+				}
+			}
+		} else {
+			if(!g_strcmp0(param_name, orig_param_name)) {
+				param = g_object_class_find_property(G_OBJECT_GET_CLASS(element), orig_param_name);
+				if (param) {
+					*init_param_name = set_param_name;
+					break;
+				}
+			}
+		}
 	}
-
-	case G_TYPE_FLOAT: {
-		GParamSpecFloat *pfloat = G_PARAM_SPEC_FLOAT(param);
-		value_in_string = g_strdup_printf("%15.7g", g_value_get_float(&value));
-		ms_info("Got float value: [%s], range:%15.7g -%15.7g",
-				value_in_string, pfloat->minimum, pfloat->maximum);
-		break;
-	}
-
-	case G_TYPE_DOUBLE: {
-		GParamSpecDouble *pdouble = G_PARAM_SPEC_DOUBLE(param);
-		value_in_string = g_strdup_printf("%15.7g", g_value_get_double(&value));
-		ms_info("Got double value: [%s], range:%15.7g -%15.7g",
-				value_in_string, pdouble->minimum, pdouble->maximum);
-		break;
-	}
-
-	default:
-		ms_info("Got unknown type with param->value_type [%d]", param->value_type);
-		break;
-	}
-
-	*string_value = value_in_string;
 }
 
 int __ms_node_write_params_into_bundle(media_streamer_node_s *node,
@@ -619,9 +678,10 @@ int __ms_node_write_params_into_bundle(media_streamer_node_s *node,
 	GParamSpec **property_specs;
 	guint num_properties, i;
 	char *string_val = NULL;
+	char *param_init_name = NULL;
 
 	property_specs = g_object_class_list_properties(G_OBJECT_GET_CLASS(node->gst_element),
-                                                        &num_properties);
+                                                    &num_properties);
 
 	if (num_properties <= 0) {
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
@@ -633,42 +693,60 @@ int __ms_node_write_params_into_bundle(media_streamer_node_s *node,
 		GValue value = { 0, };
 		GParamSpec *param = property_specs[i];
 
-		g_value_init(&value, param->value_type);
-		if (param->flags & G_PARAM_READWRITE) {
-			g_object_get_property(G_OBJECT(node->gst_element), param->name, &value);
-		} else {
-			/* Skip properties which user can not change. */
-			continue;
+		__ms_node_check_param_name(node->gst_element, FALSE, param->name, &param_init_name);
+
+		if (param_init_name) {
+			g_value_init(&value, param->value_type);
+
+			if (param->flags & G_PARAM_READWRITE) {
+				g_object_get_property(G_OBJECT(node->gst_element), param->name, &value);
+			} else {
+
+				/* Skip properties which user can not change. */
+				continue;
+			}
+
+			ms_info("%-20s: %s\n", param_init_name, g_param_spec_get_blurb(param));
+			__ms_node_get_param_value(param, value, &string_val);
+
+			bundle_add_str(param_list, param_init_name, string_val);
+			param_init_name = NULL;
 		}
-
-		__ms_node_get_param_value(param, value, &string_val);
-
-		bundle_add_str(param_list, g_param_spec_get_name(param), string_val);
 	}
 
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
-int __ms_node_write_param_into_value(media_streamer_node_s *node,
-                                     const char *param_name, char **param_value)
+int __ms_node_write_param_into_value(media_streamer_node_s *node, const char *param_name,
+                                     char **param_value)
 {
-	GParamSpec *property_specs;
 	char *string_val = NULL;
-
-	property_specs = g_object_class_find_property(G_OBJECT_GET_CLASS(node->gst_element),
-                                                      param_name);
-
-	ms_info("Getting parameter of the Node [%s]", node->name);
+	char *param_init_name = NULL;
 
 	GValue value = { 0, };
-	GParamSpec *param = property_specs;
+	GParamSpec *param;
 
-	g_value_init(&value, param->value_type);
-	if (param->flags & G_PARAM_READWRITE) {
-		g_object_get_property(G_OBJECT(node->gst_element), param->name, &value);
+	__ms_node_check_param_name(node->gst_element, TRUE, param_name, &param_init_name);
+
+	if (param_init_name)
+	{
+		param = g_object_class_find_property(G_OBJECT_GET_CLASS(node->gst_element), param_init_name);
+
+		ms_info("Getting parameter of the Node [%s]", node->name);
+
+		g_value_init(&value, param->value_type);
+
+		if (param->flags & G_PARAM_READWRITE) {
+			g_object_get_property(G_OBJECT(node->gst_element), param_init_name, &value);
+		}
+
+		ms_info("%-20s: %s\n", param_name, g_param_spec_get_blurb(param));
+		__ms_node_get_param_value(param, value, &string_val);
 	}
 
-	__ms_node_get_param_value(param, value, &string_val);
+	if (!string_val) {
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
 
 	*param_value = string_val;
 

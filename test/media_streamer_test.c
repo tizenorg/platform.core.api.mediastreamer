@@ -92,6 +92,12 @@ media_format_h afmt_raw = NULL;
 |    LOCAL FUNCTION PROTOTYPES:                       |
 ---------------------------------------------------------------------------*/
 
+static void streamer_error_cb(media_streamer_h streamer,
+                              media_streamer_error_e error,
+                              void *user_data)
+{
+	g_print("Media Streamer posted error [%d] \n", error);
+}
 static gboolean _create(media_streamer_h *streamer)
 {
 	g_print("== create \n");
@@ -108,6 +114,8 @@ static gboolean _create(media_streamer_h *streamer)
 		g_print("Fail to create media streamer");
 		return FALSE;
 	}
+
+	media_streamer_set_error_cb(*streamer, streamer_error_cb, NULL);
 
 	return TRUE;
 }
@@ -424,7 +432,6 @@ static gboolean _create_rtp_client(media_streamer_node_h rtp_bin)
 	/*====================Linking Video Client=========================== */
 	media_streamer_node_link(video_depay, "src", video_dec, "sink");
 	media_streamer_node_link(video_dec, "src", video_sink, "sink");
-	/*	media_streamer_node_link(rtp_bin, "video_out", video_depay,"sink"); */
 
 	g_print("== success client video part \n");
 #endif

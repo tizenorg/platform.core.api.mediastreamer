@@ -106,15 +106,13 @@ static GObject *__ms_get_property_owner(GstElement *element, const gchar *key, G
 		ms_retvm_if(param == NULL || obj == NULL, NULL, "Error: Bin object does not have property [%s].", key);
 	} else {
 		obj = G_OBJECT(element);
-		param = g_object_class_find_property
-		        (G_OBJECT_GET_CLASS(obj), key);
+		param = g_object_class_find_property(G_OBJECT_GET_CLASS(obj), key);
 	}
 
 	g_value_init(value, param->value_type);
 
-	if (param->flags & G_PARAM_WRITABLE) {
-		g_object_get_property(G_OBJECT(obj), key, value);
-	} else {
+	if (!param->flags & G_PARAM_WRITABLE) {
+
 		/* Skip properties which user can not change. */
 		ms_error("Error: node param [%s] is not writable!", key);
 		return NULL;
@@ -124,104 +122,126 @@ static GObject *__ms_get_property_owner(GstElement *element, const gchar *key, G
 	return obj;
 }
 
-gboolean __ms_element_set_property(GstElement *element, const gchar *key, const gchar *param_value)
+gboolean __ms_element_set_property(GstElement *element, const char *key, const gchar *param_value)
 {
 	gchar *element_name = gst_element_get_name(element);
 	GValue value = G_VALUE_INIT;
-	GObject *obj = __ms_get_property_owner(element, key, &value);
 
-	if (obj == NULL) {
-		ms_debug("Element [%s] does not have property [%s].", element_name, key);
-		MS_SAFE_GFREE(element_name);
-		return FALSE;
-	}
+	char *init_name = NULL;
+	int pint = 0;
+	gboolean bool_val = false;
 
-	switch (G_VALUE_TYPE(&value)) {
-		case G_TYPE_STRING:
+	__ms_node_check_param_name(element, TRUE, key, &init_name);
+
+	if (init_name)
+	{
+		GObject *obj = __ms_get_property_owner(element, init_name, &value);
+
+		if (obj == NULL) {
+			ms_debug("Element [%s] does not have property [%s].", element_name, init_name);
+			MS_SAFE_GFREE(element_name);
+			return FALSE;
+		}
+
+		if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_CAMERA_ID)) {
+			pint = atoi(param_value);
+			g_value_set_int(&value, pint);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d]", g_value_get_int(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_CAPTURE_WIDTH)) {
+			pint = atoi(param_value);
+			g_value_set_int(&value, pint);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d]", g_value_get_int(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_CAPTURE_HEIGHT)) {
+			pint = atoi(param_value);
+			g_value_set_int(&value, pint);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d]", g_value_get_int(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_IS_LIVE_STREAM)) {
+			bool_val = !g_strcmp0(param_value, "true") ? TRUE : FALSE;
+			g_value_set_boolean(&value, bool_val);
+			g_object_set(obj, init_name, bool_val, NULL);
+			ms_info("Set boolean value: [%d]", g_value_get_boolean(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_URI)) {
 			g_value_set_string(&value, param_value);
+			g_object_set(obj, init_name, param_value, NULL);
 			ms_info("Set string value: [%s]", g_value_get_string(&value));
-			break;
-
-		case G_TYPE_BOOLEAN: {
-				gboolean bool_val = !g_strcmp0(param_value, "true") ? TRUE : FALSE;
-				g_value_set_boolean(&value, bool_val);
-				ms_info("Set boolean value: [%d]", g_value_get_boolean(&value));
-				break;
-			}
-
-		case G_TYPE_ULONG: {
-				unsigned long pulong = atol(param_value);
-				g_value_set_ulong(&value, pulong);
-				ms_info("Set ulong value: [%lu]", g_value_get_ulong(&value));
-				break;
-			}
-
-		case G_TYPE_LONG: {
-				long plong = atol(param_value);
-				g_value_set_long(&value, plong);
-				ms_info("Set long value: [%ld]", g_value_get_long(&value));
-				break;
-			}
-
-		case G_TYPE_UINT: {
-				unsigned int puint = atoi(param_value);
-				g_value_set_uint(&value, puint);
-				ms_info("Set uint value: [%u]", g_value_get_uint(&value));
-				break;
-			}
-
-		case G_TYPE_INT: {
-				int pint = atoi(param_value);
-				g_value_set_int(&value, pint);
-				ms_info("Set int value: [%d]", g_value_get_int(&value));
-				break;
-			}
-
-		case G_TYPE_UINT64: {
-				unsigned long long puint64 = strtoull(param_value, NULL, 10);
-				g_value_set_uint64(&value, puint64);
-				ms_info("Set long value: [%llu]", g_value_get_uint64(&value));
-				break;
-			}
-
-		case G_TYPE_INT64: {
-				long long pint64 = strtoll(param_value, NULL, 10);
-				g_value_set_int64(&value, pint64);
-				ms_info("Set long value: [%ll]", g_value_get_int64(&value));
-				break;
-			}
-		case G_TYPE_FLOAT: {
-				float pfloat = strtof(param_value, NULL);
-				g_value_set_float(&value, pfloat);
-				ms_info("Set long value: [%15.7g]", g_value_get_float(&value));
-				break;
-			}
-		case G_TYPE_DOUBLE: {
-				double pdouble = strtod(param_value, NULL);
-				g_value_set_double(&value, pdouble);
-				ms_info("Set long value: [%15.7g]", g_value_get_float(&value));
-				break;
-			}
-		default:
-			if (G_VALUE_TYPE(&value) == GST_TYPE_CAPS) {
-				GstCaps *caps = gst_caps_from_string(param_value);
-
-				if (!caps) {
-					ms_error("Can not create caps from param value.");
-					return FALSE;
-				} else {
-					ms_info("Create Caps from params and set to the object.");
-					g_object_set(obj, key, caps, NULL);
-					gst_caps_unref(caps);
-				}
-				return TRUE;
-			} else {
-				ms_info("Got unknown type with param->value_type [%d]", G_VALUE_TYPE(&value));
-				return FALSE;
-			}
-			break;
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_USER_AGENT)) {
+			g_value_set_string(&value, param_value);
+			g_object_set(obj, init_name, param_value, NULL);
+			ms_info("Set string value: [%s]", g_value_get_string(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_STREAM_TYPE)) {
+			pint = atoi(param_value);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d] ", pint);
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_PORT)) {
+			pint = atoi(param_value);
+			g_value_set_int(&value, pint);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d]", g_value_get_int(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_VIDEO_IN_PORT)) {
+			pint = atoi(param_value);
+			g_value_set_int(&value, pint);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d]", g_value_get_int(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_AUDIO_IN_PORT)) {
+			pint = atoi(param_value);
+			g_value_set_int(&value, pint);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d]", g_value_get_int(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_VIDEO_OUT_PORT)) {
+			pint = atoi(param_value);
+			g_value_set_int(&value, pint);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d]", g_value_get_int(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_AUDIO_OUT_PORT)) {
+			pint = atoi(param_value);
+			g_value_set_int(&value, pint);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d]", g_value_get_int(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_IP_ADDRESS)) {
+			g_value_set_string(&value, param_value);
+			g_object_set(obj, init_name, param_value, NULL);
+			ms_info("Set string value: [%s]", g_value_get_string(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_AUDIO_DEVICE)) {
+			g_value_set_string(&value, param_value);
+			g_object_set(obj, init_name, param_value, NULL);
+			ms_info("Set string value: [%s]", g_value_get_string(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_CLOCK_SYNCHRONIZED)) {
+			bool_val = !g_strcmp0(param_value, "true") ? TRUE : FALSE;
+			g_value_set_boolean(&value, bool_val);
+			g_object_set(obj, init_name, bool_val, NULL);
+			ms_info("Set boolean value: [%d]", g_value_get_boolean(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_ROTATE)) {
+			pint = atoi(param_value);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d] ", pint);
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_FLIP)) {
+			pint = atoi(param_value);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d] ", pint);
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_DISPLAY_GEOMETRY_METHOD)) {
+			pint = atoi(param_value);
+			g_object_set(obj, init_name, pint, NULL);
+			ms_info("Set int value: [%d] ", pint);
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_VISIBLE)) {
+			bool_val = !g_strcmp0(param_value, "true") ? TRUE : FALSE;
+			g_value_set_boolean(&value, bool_val);
+			g_object_set(obj, init_name, bool_val, NULL);
+			ms_info("Set boolean value: [%d]", g_value_get_boolean(&value));
+		} else if (!g_strcmp0(init_name, MEDIA_STREAMER_PARAM_HOST)) {
+			g_value_set_string(&value, param_value);
+			g_object_set(obj, init_name, param_value, NULL);
+			ms_info("Set string value: [%s]", g_value_get_string(&value));
+		} else {
+			ms_info("Got unknown type with param->value_type [%d]", G_VALUE_TYPE(&value));
+			return FALSE;
+		}
+	} else {
+		ms_info("Can not set parameter [%s] in the node [%s]\n", key, gst_element_get_name(element));
 	}
-	g_object_set_property(obj, key, &value);
+
 	MS_SAFE_GFREE(element_name);
 
 	return TRUE;
@@ -862,6 +882,34 @@ int __ms_add_node_into_bin(media_streamer_s *ms_streamer, media_streamer_node_s 
 	return ret;
 }
 
+static gboolean
+__ms_parse_gst_error(media_streamer_s *ms_streamer, GstMessage *message, GError *error)
+{
+	ms_retvm_if(!ms_streamer, FALSE, "Error: invalid Media Streamer handle.");
+	ms_retvm_if(!error, FALSE, "Error: invalid error handle.");
+	ms_retvm_if(!message, FALSE, "Error: invalid bus message handle.");
+
+	media_streamer_error_e ret_error = MEDIA_STREAMER_ERROR_NONE;
+	if (error->domain == GST_CORE_ERROR) {
+		ret_error = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	} else if (error->domain == GST_LIBRARY_ERROR) {
+		ret_error = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	} else if (error->domain == GST_RESOURCE_ERROR) {
+		ret_error = MEDIA_STREAMER_ERROR_RESOURCE_CONFLICT;
+	} else if (error->domain == GST_STREAM_ERROR) {
+		ret_error = MEDIA_STREAMER_ERROR_CONNECTION_FAILED;
+	} else {
+		ret_error = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+
+	/* post error to application */
+	if(ms_streamer->error_cb.callback) {
+		media_streamer_error_cb error_cb = (media_streamer_error_cb)ms_streamer->error_cb.callback;
+		error_cb((media_streamer_h)ms_streamer, ret_error, ms_streamer->error_cb.user_data);
+	}
+
+	return TRUE;
+}
 
 static gboolean __ms_bus_cb(GstBus *bus, GstMessage *message, gpointer userdata)
 {
@@ -878,7 +926,13 @@ static gboolean __ms_bus_cb(GstBus *bus, GstMessage *message, gpointer userdata)
 					gchar *debug = NULL;
 					gst_message_parse_error(message, &err, &debug);
 
-					ms_error("[Source: %s] Error: %s", GST_OBJECT_NAME(GST_OBJECT_CAST(GST_ELEMENT(GST_MESSAGE_SRC(message)))), err->message);
+					/* Transform gst error code to media streamer error code.
+					 * then post it to application if needed */
+					__ms_parse_gst_error(ms_streamer, message, err);
+
+					ms_error("[Source: %s] Error: %s",
+					         GST_OBJECT_NAME(GST_OBJECT_CAST(GST_ELEMENT(GST_MESSAGE_SRC(message)))),
+					         err->message);
 
 					g_error_free(err);
 					MS_SAFE_FREE(debug);

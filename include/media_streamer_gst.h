@@ -94,7 +94,7 @@ gboolean __ms_get_rtp_elements(media_streamer_node_s *ms_node,
  * @since_tizen 3.0
  */
 gboolean __ms_element_set_property(GstElement *src_element,
-                                   const gchar *key, const gchar *param_value);
+                                   const char *key, const gchar *param_value);
 
 /**
  * @brief Unlink all pads into GstElement.

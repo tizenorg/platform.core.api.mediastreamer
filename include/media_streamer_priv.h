@@ -39,6 +39,9 @@ typedef struct {
 	void *user_data;
 } media_streamer_callback_s;
 
+#define PROPERTY_COUNT 24
+extern char *param_table[PROPERTY_COUNT][2];
+
 /**
  * @brief Media Streamer sink callbacks structure.
  *
@@ -122,6 +125,14 @@ int __ms_create(media_streamer_s *ms_streamer);
  * @since_tizen 3.0
  */
 int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e state);
+
+/**
+ * @brief Returns initial parameter name among defined parameter values.
+ *
+ * @since_tizen 3.0
+ */
+void __ms_node_check_param_name(GstElement *element, gboolean name_is_known,
+                                const char *param_name, char **init_param_name);
 
 #ifdef __cplusplus
 }

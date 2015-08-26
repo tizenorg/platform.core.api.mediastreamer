@@ -387,7 +387,7 @@ static gboolean __ms_sink_bin_prepare(GstElement *sink_bin, GstPad *source_pad)
 		if (MS_ELEMENT_IS_AUDIO(source_pad_name)) {
 			found_element = __ms_element_create(DEFAULT_AUDIO_RTPDEPAY, NULL);
 		} else {
-			found_element = __ms_element_create("rtph263depay", NULL);
+			found_element = __ms_element_create(DEFAULT_VIDEO_RTPDEPAY, NULL);
 		}
 		gst_bin_add(GST_BIN(sink_bin), found_element);
 	}

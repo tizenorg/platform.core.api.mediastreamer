@@ -332,7 +332,9 @@ static void __ms_sink_new_buffer_cb(GstElement *sink, gpointer *data)
 		media_streamer_sink_data_ready_cb data_ready_cb =
 				(media_streamer_sink_data_ready_cb) sink_callbacks->data_ready_cb.callback;
 
-		data_ready_cb((media_streamer_node_h)ms_sink, sink_callbacks->data_ready_cb.user_data);
+		if (data_ready_cb) {
+			data_ready_cb((media_streamer_node_h)ms_sink, sink_callbacks->data_ready_cb.user_data);
+		}
 	}
 }
 
@@ -348,7 +350,9 @@ static void sink_eos(GstElement *sink, gpointer *data)
 		media_streamer_sink_eos_cb eos_cb =
 				(media_streamer_sink_eos_cb) sink_callbacks->eos_cb.callback;
 
-		eos_cb((media_streamer_node_h)ms_sink, sink_callbacks->eos_cb.user_data);
+		if (eos_cb) {
+			eos_cb((media_streamer_node_h)ms_sink, sink_callbacks->eos_cb.user_data);
+		}
 	}
 }
 

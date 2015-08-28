@@ -1252,12 +1252,9 @@ int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, medi
 
 int __ms_element_push_packet(GstElement *src_element, media_packet_h packet)
 {
-	GstBuffer *buffer;
+	GstBuffer *buffer = NULL;
 	GstFlowReturn gst_ret = GST_FLOW_OK;
-	guint64 pts = 0;
-	guint64 duration = 0;
 	guchar *buffer_data = NULL;
-	guint64 size  = 0;
 
 	ms_retvm_if(src_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
@@ -1266,17 +1263,39 @@ int __ms_element_push_packet(GstElement *src_element, media_packet_h packet)
 		return MEDIA_STREAMER_ERROR_NONE;
 	}
 
-	media_packet_get_buffer_size(packet, &size);
 	media_packet_get_buffer_data_ptr(packet, (void **)&buffer_data);
-	media_packet_get_pts(packet, &pts);
-	media_packet_get_duration(packet, &duration);
 
-	buffer = gst_buffer_new_wrapped(buffer_data, size);
+	if(buffer_data != NULL) {
+		GstMapInfo buff_info = GST_MAP_INFO_INIT;
+		guint64 pts = 0;
+		guint64 duration = 0;
+		guint64 size  = 0;
 
-	GST_BUFFER_PTS(buffer) = pts;
-	GST_BUFFER_DURATION(buffer) = duration;
+		media_packet_get_buffer_size(packet, &size);
 
-	g_signal_emit_by_name(G_OBJECT(src_element), "push-buffer", buffer, &gst_ret, NULL);
+		buffer = gst_buffer_new_and_alloc (size);
+		if (!buffer) {
+			ms_error("Failed to allocate memory for push buffer");
+			return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+		}
+
+		if (gst_buffer_map (buffer, &buff_info, GST_MAP_READWRITE)) {
+			memcpy (buff_info.data, buffer_data, size);
+			buff_info.size = size;
+			gst_buffer_unmap (buffer, &buff_info);
+		}
+
+		media_packet_get_pts(packet, &pts);
+		GST_BUFFER_PTS(buffer) = pts;
+
+		media_packet_get_duration(packet, &duration);
+		GST_BUFFER_DURATION(buffer) = duration;
+
+		g_signal_emit_by_name(G_OBJECT(src_element), "push-buffer", buffer, &gst_ret, NULL);
+
+	 } else {
+		 g_signal_emit_by_name(G_OBJECT(src_element), "end-of-stream", &gst_ret, NULL);
+	 }
 
 	gst_buffer_unref(buffer);
 

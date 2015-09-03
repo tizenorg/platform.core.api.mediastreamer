@@ -108,7 +108,10 @@ int __ms_load_ini_settings(media_streamer_ini_t *ini)
 			g_setenv("GST_DEBUG_DUMP_DOT_DIR", dot_path, FALSE);
 		}
 
-	} else { /* if dict is not available just fill the structure with default value */
+		ini->use_decodebin = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
+	}
+
+	 else { /* if dict is not available just fill the structure with default value */
 		ms_debug("failed to load ini. using hardcoded default");
 
 		/* general settings*/
@@ -119,6 +122,7 @@ int __ms_load_ini_settings(media_streamer_ini_t *ini)
 
 	/* general */
 	ms_debug("generate_dot : %d\n", ini->generate_dot);
+	ms_debug("Use_decodebin : %d\n", ini->use_decodebin);
 
 	return MEDIA_STREAMER_ERROR_NONE;
 }

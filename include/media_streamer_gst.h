@@ -26,6 +26,12 @@
 #define MEDIA_STREAMER_AUDIO_SINK_BIN_NAME "streamer_audio_sink"
 #define MEDIA_STREAMER_TOPOLOGY_BIN_NAME "streamer_topology"
 
+#define MEDIA_STREAMER_DEPAYLOADER_KLASS "Depayloader/Network/RTP"
+#define MEDIA_STREAMER_DECODEBIN_KLASS "Generic/Bin"
+#define MEDIA_STREAMER_PARSER_KLASS "Parser/Converter"
+#define MEDIA_STREAMER_DECODER_KLASS "Codec/Decoder"
+#define MEDIA_STREAMER_SINK_KLASS "Sink"
+
 /**
  * @brief Generates dot files for GStreamer pipeline.
  *
@@ -102,6 +108,13 @@ gboolean __ms_element_set_property(GstElement *src_element,
  * @since_tizen 3.0
  */
 gboolean __ms_element_unlink(GstElement *src_element);
+
+/**
+ * @brief Callback function to link decodebin with the sink element.
+ *
+ * @since_tizen 3.0
+ */
+void __decodebin_newpad_cb(GstElement *decodebin, GstPad *pad, gpointer user_data);
 
 /**
  * @brief Creates pipeline, bus and src/sink/topology bins.

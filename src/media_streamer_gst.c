@@ -375,67 +375,306 @@ static GstElement *__ms_bin_find_element_by_klass(GstElement *sink_bin, const gc
 	return found ? found_element : NULL;
 }
 
-static gboolean __ms_sink_bin_prepare(GstElement *sink_bin, GstPad *source_pad)
+gboolean __ms_feature_filter(GstPluginFeature *feature, gpointer data)
 {
-	gboolean ret = FALSE;
-	GstPad *src_pad = NULL; //pad of unlinked inner element
-
-	gchar *source_pad_name = gst_pad_get_name(source_pad);
-
-	GstElement *found_element = __ms_bin_find_element_by_klass(sink_bin, "Depayloader/Network/RTP");
-	if (!found_element) {
-		if (MS_ELEMENT_IS_AUDIO(source_pad_name)) {
-			found_element = __ms_element_create(DEFAULT_AUDIO_RTPDEPAY, NULL);
-		} else {
-			found_element = __ms_element_create(DEFAULT_VIDEO_RTPDEPAY, NULL);
-		}
-		gst_bin_add(GST_BIN(sink_bin), found_element);
-	}
-	__ms_add_ghostpad(found_element, "sink", sink_bin, "sink");
-	src_pad = gst_element_get_static_pad(found_element, "src");
-
-	if (MS_ELEMENT_IS_AUDIO(source_pad_name)) {
-		found_element = __ms_bin_find_element_by_klass(sink_bin, "Converter/Audio");
-		if (!found_element) {
-			found_element = __ms_element_create(DEFAULT_AUDIO_CONVERT, NULL);
-			gst_bin_add(GST_BIN(sink_bin), found_element);
-		}
-//			GstElement *resample = __ms_element_create(DEFAULT_AUDIO_RESAMPLE, NULL);
-//			gst_bin_add(GST_BIN(sink_bin), resample);
-//			g_assert(gst_element_link(found_element, resample));
-	} else if (MS_ELEMENT_IS_VIDEO(source_pad_name)) {
-		found_element = __ms_bin_find_element_by_klass(sink_bin, "Generic/Bin");
-		if (!found_element) {
-			dictionary *dict = NULL;
-			__ms_load_ini_dictionary(&dict);
-			found_element = __ms_video_decoder_element_create(dict, MEDIA_FORMAT_H263);
-			gst_bin_add(GST_BIN(sink_bin), found_element);
-			__ms_destroy_ini_dictionary(dict);
-		}
-	} else {
+	if (!GST_IS_ELEMENT_FACTORY(feature))
 		return FALSE;
+
+	return TRUE;
+}
+
+static GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_name)
+{
+	GList *factories;
+	const GList *pads;
+	GstElement *next_element = NULL;
+	GstCaps *new_pad_caps = NULL;
+
+	new_pad_caps = gst_pad_query_caps(src_pad, NULL);
+
+	factories = gst_registry_feature_filter(gst_registry_get(),
+                                               (GstPluginFeatureFilter)__ms_feature_filter, FALSE, NULL);
+
+	for(; factories != NULL ; factories = factories->next) {
+		GstElementFactory *factory = GST_ELEMENT_FACTORY(factories->data);
+
+		if (g_strrstr(gst_element_factory_get_klass(GST_ELEMENT_FACTORY(factory)), klass_name))
+		{
+			for(pads = gst_element_factory_get_static_pad_templates(factory); pads != NULL; pads = pads->next) {
+
+				GstCaps *intersect_caps = NULL;
+				GstCaps *static_caps = NULL;
+				GstStaticPadTemplate *pad_temp = pads->data;
+
+				if (pad_temp->presence != GST_PAD_ALWAYS || pad_temp->direction != GST_PAD_SINK) {
+					continue;
+				}
+
+				if (GST_IS_CAPS(&pad_temp->static_caps.caps)) {
+					static_caps = gst_caps_ref(&pad_temp->static_caps.caps);
+				} else {
+					static_caps = gst_caps_from_string(pad_temp->static_caps.string);
+				}
+
+				intersect_caps = gst_caps_intersect_full(new_pad_caps, static_caps, GST_CAPS_INTERSECT_FIRST);
+
+				if (!gst_caps_is_empty(intersect_caps)) {
+					if (!next_element) {
+						next_element = __ms_element_create(GST_OBJECT_NAME(factory), NULL);
+					}
+				}
+				gst_caps_unref(intersect_caps);
+				gst_caps_unref(static_caps);
+			}
+		}
 	}
 
-	if (!gst_pad_is_linked(src_pad))
-	{
-		GstPad *sink_pad = gst_element_get_static_pad(found_element, "sink");
-		g_assert(!gst_pad_link(src_pad, sink_pad));
-		MS_SAFE_UNREF(sink_pad);
-	}
-	MS_SAFE_UNREF(src_pad);
+	return next_element;
+}
 
+static GstElement *__ms_link_with_new_element (GstElement *previous_element, GstElement *new_element)
+{
+	gboolean ret = gst_element_link_pads_filtered(previous_element, NULL, new_element, NULL, NULL);
+
+	if (!ret) {
+		ms_error("Failed to link [%s] and [%s] \n", GST_ELEMENT_NAME(previous_element),
+				 GST_ELEMENT_NAME(new_element));
+		new_element = NULL;
+	} else {
+		ms_info("Succeeded to link [%s] -> [%s]\n", GST_ELEMENT_NAME(previous_element),
+				 GST_ELEMENT_NAME(new_element));
+	}
+
+	return new_element;
+}
+
+void __decodebin_newpad_cb(GstElement *decodebin, GstPad *new_pad, gpointer user_data)
+{
+	GstElement *previous_element = NULL;
+	GstElement *found_element = NULL;
+	GstElement *parent = NULL;
+
+	GstCaps *new_pad_caps = NULL;
+	GstStructure *new_pad_struct = NULL;
+	const gchar *new_pad_type = NULL;
+
+	ms_info("Received new pad '%s' from [%s]", GST_PAD_NAME(new_pad), GST_ELEMENT_NAME(decodebin));
+	parent = (GstElement *)gst_element_get_parent(GST_OBJECT_CAST(decodebin));
+
+	/* Check the new pad's type */
+	new_pad_caps = gst_pad_query_caps(new_pad,0);
+	new_pad_struct = gst_caps_get_structure(new_pad_caps, 0);
+	new_pad_type = gst_structure_get_name(new_pad_struct);
+
+	if (g_str_has_prefix(new_pad_type, "video")) {
+		found_element = __ms_element_create("videoconvert", NULL);
+	} else if (g_str_has_prefix(new_pad_type, "audio")) {
+		found_element = __ms_element_create("audioconvert", NULL);
+	} else {
+		ms_error("Could not create converting element according to media pad type");
+	}
+
+	if (!gst_bin_add(GST_BIN(parent), found_element)) {
+		ms_error("Failed to add element [%s] into bin [%s]", GST_ELEMENT_NAME(found_element),
+				GST_ELEMENT_NAME(parent));
+	}
+	gst_element_sync_state_with_parent(found_element);
+
+	previous_element = __ms_link_with_new_element(decodebin, found_element);
+	if (!previous_element) {
+		gst_bin_remove(GST_BIN(parent), found_element);
+	}
+
+
+	/* Getting Sink */
+	found_element = __ms_bin_find_element_by_klass(parent, MEDIA_STREAMER_SINK_KLASS);
+	if (!found_element) {
+		ms_error("There are no any SINK elements created by user");
+	}
+	gst_element_sync_state_with_parent(found_element);
+
+	previous_element = __ms_link_with_new_element(previous_element, found_element);
+	if (!previous_element) {
+		gst_bin_remove(GST_BIN(parent), found_element);
+	}
+
+	__ms_element_set_state(parent, GST_STATE_PLAYING);
+}
+
+static gboolean __ms_sink_bin_prepare(media_streamer_node_s *ms_node, GstElement *sink_bin, GstPad *source_pad)
+{
+	GstPad *src_pad = NULL;
+	gboolean decodebin_usage = FALSE;
+	GstElement *found_element = NULL;
+	GstElement *previous_element = NULL;
+
+	GstCaps *new_pad_caps = NULL;
+	GstStructure *new_pad_struct = NULL;
+	const gchar *new_pad_type = NULL;
+
+
+	/* Getting Depayloader */
+	found_element = __ms_bin_find_element_by_klass(sink_bin, MEDIA_STREAMER_DEPAYLOADER_KLASS);
+
+	if (!found_element) {
+		found_element = __ms_create_element_by_registry(source_pad, MEDIA_STREAMER_DEPAYLOADER_KLASS);
+		if (!gst_bin_add(GST_BIN(sink_bin), found_element)) {
+			ms_error("Failed to add element [%s] into bin [%s]", GST_ELEMENT_NAME(found_element),
+                     GST_ELEMENT_NAME(sink_bin));
+		}
+	}
+	previous_element = found_element;
 	src_pad = gst_element_get_static_pad(found_element, "src");
-	found_element = __ms_bin_find_element_by_klass(sink_bin, "Sink/");
-	if (!gst_pad_is_linked(src_pad))
-	{
-		GstPad *sink_pad = gst_element_get_static_pad(found_element, "sink");
-		g_assert(!gst_pad_link(src_pad, sink_pad));
-		MS_SAFE_UNREF(sink_pad);
-	}
-	MS_SAFE_UNREF(src_pad);
-	ret = TRUE;
 
-	return ret;
+	__ms_add_ghostpad(found_element, "sink", sink_bin, "sink");
+
+
+	/* Getting Decodebin */
+	decodebin_usage = ms_node->parent_streamer->ini.use_decodebin;
+
+	found_element = __ms_bin_find_element_by_klass(sink_bin, MEDIA_STREAMER_DECODEBIN_KLASS);
+
+	if (!found_element) {
+		if (decodebin_usage) {
+			found_element = __ms_create_element_by_registry(src_pad, MEDIA_STREAMER_DECODEBIN_KLASS);
+			if (!found_element) {
+				ms_error("Could not create element of MEDIA_STREAMER_DECODER_KLASS");
+			}
+			if (!gst_bin_add(GST_BIN(sink_bin), found_element)) {
+				ms_error("Failed to add element [%s] into bin [%s]", GST_ELEMENT_NAME(found_element),
+						 GST_ELEMENT_NAME(sink_bin));
+			}
+			if (ms_node->parent_streamer->ini.use_decodebin) {
+				g_signal_connect(found_element, "pad-added", G_CALLBACK(__decodebin_newpad_cb), (gpointer)ms_node);
+			}
+
+			previous_element = __ms_link_with_new_element(previous_element, found_element);
+			if (!previous_element) {
+				gst_bin_remove(sink_bin, found_element);
+				return FALSE;
+			}
+		} else {
+
+			src_pad = gst_element_get_static_pad(previous_element, "src");
+			new_pad_caps = gst_pad_query_caps(src_pad, 0);
+			new_pad_struct = gst_caps_get_structure(new_pad_caps, 0);
+			new_pad_type = gst_structure_get_name(new_pad_struct);
+
+			if (g_str_has_prefix(new_pad_type, "video")) {
+
+				/* Getting Parser */
+				found_element = __ms_bin_find_element_by_klass(sink_bin, MEDIA_STREAMER_PARSER_KLASS);
+				if (!found_element) {
+					found_element = __ms_create_element_by_registry(src_pad, MEDIA_STREAMER_PARSER_KLASS);
+					if (!found_element) {
+						ms_error("Could not create element of MEDIA_STREAMER_PARSER_KLASS");
+					}
+					if (!gst_bin_add(GST_BIN(sink_bin), found_element)) {
+						ms_error("Failed to add element [%s] into bin [%s]", GST_ELEMENT_NAME(found_element),
+								 GST_ELEMENT_NAME(sink_bin));
+					}
+				}
+				previous_element = __ms_link_with_new_element(previous_element, found_element);
+				if (!previous_element) {
+					gst_bin_remove(GST_BIN(sink_bin), found_element);
+					return FALSE;
+				}
+				src_pad = gst_element_get_static_pad(found_element, "src");
+
+
+				/* Getting Decoder */
+				found_element = __ms_bin_find_element_by_klass(sink_bin, MEDIA_STREAMER_DECODER_KLASS);
+				if (!found_element) {
+					found_element = __ms_create_element_by_registry(src_pad, MEDIA_STREAMER_DECODER_KLASS);
+					if (!found_element) {
+						ms_error("Could not create element of MEDIA_STREAMER_DECODER_KLASS");
+					}
+					if (!gst_bin_add(GST_BIN(sink_bin), found_element)) {
+						ms_error("Failed to add element [%s] into bin [%s]", GST_ELEMENT_NAME(found_element),
+								 GST_ELEMENT_NAME(sink_bin));
+					}
+				}
+				previous_element = __ms_link_with_new_element(previous_element, found_element);
+				if (!previous_element) {
+					gst_bin_remove(GST_BIN(sink_bin), found_element);
+					return FALSE;
+				}
+				src_pad = gst_element_get_static_pad(found_element, "src");
+
+
+				/* Getting Convertor */
+				found_element = __ms_element_create("videoconvert", NULL);
+
+			} else if (g_str_has_prefix(new_pad_type, "audio")) {
+				found_element = __ms_element_create("audioconvert", NULL);
+			} else {
+				ms_error("Could not create converting element according to media pad type");
+			}
+
+			if (!found_element) {
+				ms_error("Could not create element of MEDIA_STREAMER_CONVERTER_KLASS");
+			}
+			if (!gst_bin_add(GST_BIN(sink_bin), found_element)) {
+				ms_error("Failed to add element [%s] into bin [%s]", GST_ELEMENT_NAME(found_element),
+						 GST_ELEMENT_NAME(sink_bin));
+			}
+			previous_element = __ms_link_with_new_element(previous_element, found_element);
+			if (!previous_element) {
+				gst_bin_remove(GST_BIN(sink_bin), found_element);
+				return FALSE;
+			}
+
+
+		/* Getting Sink */
+		found_element = __ms_bin_find_element_by_klass(sink_bin, MEDIA_STREAMER_SINK_KLASS);
+		if (!found_element) {
+			ms_error("There are no any SINK elements created by user");
+		}
+		previous_element = __ms_link_with_new_element(previous_element, found_element);
+		if (!previous_element) {
+			gst_bin_remove(GST_BIN(sink_bin), found_element);
+			return FALSE;
+		}
+
+		__ms_generate_dots(ms_node->parent_streamer->pipeline, "pipeline_linked");
+		__ms_element_set_state(ms_node->parent_streamer->pipeline, GST_STATE_PLAYING);
+		}
+
+	} else {
+		if(!gst_pad_is_linked(src_pad)) {
+			previous_element = __ms_link_with_new_element(previous_element, found_element);
+			if (!previous_element) {
+				gst_bin_remove(GST_BIN(sink_bin), found_element);
+				return FALSE;
+			}
+		} else {
+			previous_element = found_element;
+		}
+
+		if (!decodebin_usage) {
+
+			/* Getting Sink */
+			found_element = __ms_bin_find_element_by_klass(sink_bin, MEDIA_STREAMER_SINK_KLASS);
+			if (!found_element) {
+				ms_error("There are no any SINK elements created by user");
+			}
+
+			if(!gst_pad_is_linked(src_pad)) {
+				previous_element = __ms_link_with_new_element(previous_element, found_element);
+				if (!previous_element) {
+					gst_bin_remove(GST_BIN(sink_bin), found_element);
+					return FALSE;
+				}
+			}
+
+			__ms_generate_dots(ms_node->parent_streamer->pipeline, "pipeline_linked");
+			__ms_element_set_state(ms_node->parent_streamer->pipeline, GST_STATE_PLAYING);
+		}
+	}
+
+	MS_SAFE_UNREF(src_pad);
+
+	return TRUE;
 }
 
 static void __ms_rtpbin_pad_added_cb(GstElement *src, GstPad *new_pad, gpointer user_data)
@@ -479,7 +718,7 @@ static void __ms_rtpbin_pad_added_cb(GstElement *src, GstPad *new_pad, gpointer 
 			gst_pad_set_active(source_pad, TRUE);
 
 			g_mutex_lock(&ms_node->parent_streamer->mutex_lock);
-			if (__ms_sink_bin_prepare(sink_bin, source_pad)) {
+			if (__ms_sink_bin_prepare(ms_node, sink_bin, source_pad)) {
 
 				if (gst_object_get_parent(GST_OBJECT(sink_bin)) == NULL) {
 					gst_bin_add(GST_BIN(ms_node->parent_streamer->pipeline), sink_bin);
@@ -506,7 +745,6 @@ static void __ms_rtpbin_pad_added_cb(GstElement *src, GstPad *new_pad, gpointer 
 		ms_debug("Node doesn`t have parent streamer or caps media type\n");
 	}
 
-	gst_caps_unref(src_pad_caps);
 	MS_SAFE_UNREF(target_pad);
 	MS_SAFE_GFREE(new_pad_name);
 	MS_SAFE_GFREE(src_element_name);

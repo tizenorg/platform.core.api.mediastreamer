@@ -479,14 +479,14 @@ static gboolean _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_add(current_media_streamer, audio_depay);
 
 		/*********************** audioconvert *********************************** */
-		media_streamer_node_h audio_converter = NULL;
-		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER, NULL, NULL, &audio_converter);
-		media_streamer_node_add(current_media_streamer, audio_converter);
+		/*media_streamer_node_h audio_converter = NULL;*/
+		/*media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER, NULL, NULL, &audio_converter);*/
+		/*media_streamer_node_add(current_media_streamer, audio_converter);*/
 
 		/*********************** audioresample *********************************** */
-		media_streamer_node_h audio_res = NULL;
-		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE, NULL, NULL, &audio_res);
-		media_streamer_node_add(current_media_streamer, audio_res);
+		/*media_streamer_node_h audio_res = NULL;*/
+		/*media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE, NULL, NULL, &audio_res);*/
+		/*media_streamer_node_add(current_media_streamer, audio_res);*/
 
 		/*********************** audiosink *********************************** */
 		media_streamer_node_h audio_sink = NULL;
@@ -494,9 +494,9 @@ static gboolean _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_add(current_media_streamer, audio_sink);
 
 		/*====================Linking Audio Client=========================== */
-		media_streamer_node_link(audio_depay, "src", audio_converter, "sink");
-		media_streamer_node_link(audio_converter, "src", audio_res, "sink");
-		media_streamer_node_link(audio_res, "src", audio_sink, "sink");
+		/*media_streamer_node_link(audio_depay, "src", audio_converter, "sink");*/
+		/*media_streamer_node_link(audio_converter, "src", audio_res, "sink");*/
+		/*media_streamer_node_link(audio_res, "src", audio_sink, "sink");*/
 		/*media_streamer_node_link(rtp_bin, "audio_out", audio_depay,"sink"); */
 		/*====================================================================== */
 

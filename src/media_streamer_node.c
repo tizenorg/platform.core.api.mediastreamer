@@ -139,6 +139,7 @@ int __ms_node_create(media_streamer_node_s *node,
 	dictionary *dict = NULL;
 	char *plugin_name = NULL;
 	media_format_mimetype_e mime;
+	gboolean dec_use;
 
 	if (MEDIA_FORMAT_ERROR_NONE != media_format_get_video_info(out_fmt, &mime, NULL, NULL, NULL, NULL)) {
 		media_format_get_audio_info(out_fmt, &mime, NULL, NULL, NULL, NULL);
@@ -157,10 +158,16 @@ int __ms_node_create(media_streamer_node_s *node,
 			node->gst_element = __ms_video_encoder_element_create(dict, mime);
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER:
-			format_prefix = g_strdup_printf("%s:decoder", __ms_convert_mime_to_string(mime));
-			plugin_name = __ms_ini_get_string(dict,
-			                                  format_prefix, DEFAULT_VIDEO_DECODER);
-			node->gst_element = __ms_video_decoder_element_create(dict, mime);
+			dec_use = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
+			if (dec_use) {
+				node->gst_element = __ms_element_create("decodebin", NULL);
+				g_signal_connect(node->gst_element, "pad-added", G_CALLBACK (__decodebin_newpad_cb), (gpointer)node);
+			} else {
+				format_prefix = g_strdup_printf("%s:decoder", __ms_convert_mime_to_string(mime));
+				plugin_name = __ms_ini_get_string(dict,
+					                              format_prefix, DEFAULT_VIDEO_DECODER);
+				node->gst_element = __ms_video_decoder_element_create(dict, mime);
+			}
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_PARSER:
 			format_prefix = g_strdup_printf("%s:parser", __ms_convert_mime_to_string(mime));
@@ -190,7 +197,7 @@ int __ms_node_create(media_streamer_node_s *node,
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY:
 			plugin_name = __ms_ini_get_string(dict,
-			                                  "audio-raw:rtpdepay", DEFAULT_AUDIO_RTPPAY);
+			                                  "audio-raw:rtpdepay", DEFAULT_AUDIO_RTPDEPAY);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_RTP:

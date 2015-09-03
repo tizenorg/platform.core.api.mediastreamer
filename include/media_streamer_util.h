@@ -94,6 +94,7 @@ extern "C" {
 typedef struct __media_streamer_ini {
 	/* general */
 	gboolean generate_dot;
+	gboolean use_decodebin;
 
 } media_streamer_ini_t;
 
@@ -106,6 +107,7 @@ typedef struct __media_streamer_ini {
 /* setting default values if each value is not specified in .ini file */
 /* general */
 #define DEFAULT_GENERATE_DOT                FALSE
+#define DEFAULT_USE_DECODEBIN				FALSE
 #define DEFAULT_AUDIO_SOURCE                "alsasrc"
 #define DEFAULT_CAMERA_SOURCE               "v4l2src"
 #define DEFAULT_VIDEO_SOURCE                "ximagesrc"
@@ -148,6 +150,7 @@ typedef struct __media_streamer_ini {
 [general] \n\
 ; generating dot file representing pipeline state \n\
 generate dot = no \n\
+use decodebin = yes \n\
 dot dir = /tmp \n\
 \n\
 \n\

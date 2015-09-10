@@ -1530,12 +1530,11 @@ int __ms_element_push_packet(GstElement *src_element, media_packet_h packet)
 		GST_BUFFER_DURATION(buffer) = duration;
 
 		g_signal_emit_by_name(G_OBJECT(src_element), "push-buffer", buffer, &gst_ret, NULL);
+		gst_buffer_unref(buffer);
 
-	 } else {
+	} else {
 		 g_signal_emit_by_name(G_OBJECT(src_element), "end-of-stream", &gst_ret, NULL);
-	 }
-
-	gst_buffer_unref(buffer);
+	}
 
 	if (gst_ret != GST_FLOW_OK) {
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
@@ -1549,8 +1548,10 @@ int __ms_element_pull_packet(GstElement *sink_element, media_packet_h *packet)
 	GstBuffer *buffer = NULL;
 	GstSample *sample = NULL;
 	GstMapInfo map;
+	guint8 *buffer_res = NULL;
 
 	ms_retvm_if(sink_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(packet == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	/* Retrieve the buffer */
 	g_signal_emit_by_name(sink_element, "pull-sample", &sample, NULL);
@@ -1560,10 +1561,18 @@ int __ms_element_pull_packet(GstElement *sink_element, media_packet_h *packet)
 	gst_buffer_map(buffer, &map, GST_MAP_READ);
 
 	media_format_h fmt = __ms_element_get_pad_fmt(sink_element, "sink");
-	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION,
-			"Error while getting media format from sink pad");
+	if (!fmt) {
+		ms_error("Error while getting media format from sink pad");
 
-	media_packet_create_from_external_memory(fmt, (void *)map.data, map.size, NULL, NULL, packet);
+		gst_buffer_unmap(buffer, &map);
+		gst_sample_unref(sample);
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+
+	buffer_res = (guint8 *)calloc(map.size, sizeof(guint8));
+	memcpy(buffer_res, map.data, map.size);
+
+	media_packet_create_from_external_memory(fmt, (void *)buffer_res, map.size, NULL, NULL, packet);
 	media_packet_set_pts(*packet, GST_BUFFER_PTS(buffer));
 	media_packet_set_dts(*packet, GST_BUFFER_DTS(buffer));
 	media_packet_set_pts(*packet, GST_BUFFER_DURATION(buffer));

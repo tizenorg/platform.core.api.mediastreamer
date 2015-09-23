@@ -26,9 +26,12 @@
 #define MEDIA_STREAMER_AUDIO_SINK_BIN_NAME "streamer_audio_sink"
 #define MEDIA_STREAMER_TOPOLOGY_BIN_NAME "streamer_topology"
 
+#define MEDIA_STREAMER_PAYLOADER_KLASS "Codec/Payloader/Network/RTP"
+#define MEDIA_STREAMER_RTP_KLASS "Filter/Network/RTP"
 #define MEDIA_STREAMER_DEPAYLOADER_KLASS "Depayloader/Network/RTP"
-#define MEDIA_STREAMER_DECODEBIN_KLASS "Generic/Bin"
-#define MEDIA_STREAMER_PARSER_KLASS "Parser/Converter"
+#define MEDIA_STREAMER_BIN_KLASS "Generic/Bin"
+#define MEDIA_STREAMER_PARSER_KLASS "Codec/Parser/Converter"
+#define MEDIA_STREAMER_CONVERTER_KLASS "Filter/Converter"
 #define MEDIA_STREAMER_DECODER_KLASS "Codec/Decoder"
 #define MEDIA_STREAMER_SINK_KLASS "Sink"
 
@@ -38,6 +41,22 @@
  * @since_tizen 3.0
  */
 void __ms_generate_dots(GstElement *bin, gchar *name_tag);
+
+/**
+ * @brief Creates GstElement by klass name.
+ *
+ * @since_tizen 3.0
+ */
+GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_name);
+
+/**
+ * @brief Links two Gstelements and returns the last one.
+ *
+ * @since_tizen 3.0
+ */
+GstElement * __ms_link_with_new_element(GstElement *previous_element,
+                                        GstElement *new_element,
+                                        const gchar *next_elem_bin_name);
 
 /**
  * @brief Creates GstElement by plugin name.
@@ -110,11 +129,29 @@ gboolean __ms_element_set_property(GstElement *src_element,
 gboolean __ms_element_unlink(GstElement *src_element);
 
 /**
- * @brief Callback function to link decodebin with the sink element.
+ * @brief Callback function to link decodebin with the sink element at the streamer part.
+ *
+ * @since_tizen 3.0
+ */
+void __decodebin_newpad_streamer_cb(GstElement *decodebin, GstPad *pad, gpointer user_data);
+
+/**
+ * @brief Callback function to link decodebin with the sink element at the client part.
  *
  * @since_tizen 3.0
  */
 void __decodebin_newpad_cb(GstElement *decodebin, GstPad *pad, gpointer user_data);
+
+/**
+ * @brief Creates next element by klass or by properties and links with the previous one.
+ *
+ * @since_tizen 3.0
+ */
+GstElement * __ms_combine_next_element(GstElement *previous_element,
+                                       const gchar *next_elem_klass_name,
+                                       const gchar *next_elem_bin_name,
+                                       const gchar *element_type,
+                                       gchar *default_element);
 
 /**
  * @brief Creates pipeline, bus and src/sink/topology bins.

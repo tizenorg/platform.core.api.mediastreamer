@@ -151,6 +151,7 @@ typedef enum {
 	MEDIA_STREAMER_ERROR_INVALID_STATE = TIZEN_ERROR_MEDIA_STREAMER | 0x01,              /**< Invalid state */
 	MEDIA_STREAMER_ERROR_CONNECTION_FAILED = TIZEN_ERROR_MEDIA_STREAMER | 0x02,          /**< Connection failed */
 	MEDIA_STREAMER_ERROR_RESOURCE_CONFLICT = TIZEN_ERROR_MEDIA_STREAMER | 0x03,          /**< Resource conflict */
+	MEDIA_STREAMER_ERROR_SEEK_FAILED = TIZEN_ERROR_MEDIA_STREAMER | 0x04,                /**< Seek operation failure */
 } media_streamer_error_e;
 
 /**
@@ -441,6 +442,14 @@ typedef void (*media_streamer_sink_data_ready_cb)(media_streamer_node_h node,
  */
 typedef void (*media_streamer_sink_eos_cb)(media_streamer_node_h node,
                                            void *user_data);
+
+/**
+ * @brief Called when the seek operation is completed.
+ * @since_tizen 3.0
+ * @param[in] user_data     The user data passed from the callback registration function
+ * @see media_streamer_set_play_position()
+ */
+typedef void (*media_streamer_seek_completed_cb)(void *user_data);
 
 /**
  * @brief Registers a error callback function to be invoked when an error occurs.
@@ -758,6 +767,45 @@ int media_streamer_stop(media_streamer_h streamer);
  * @see media_streamer_create()
  */
 int media_streamer_destroy(media_streamer_h streamer);
+
+/**
+ * @brief Change playback position to the defined time value, asynchronously.
+ * @since_tizen 3.0
+ * @param [in] streamer     Media streamer handle
+ * @param [in] time         Time in millisecond
+ * @param [in] accurate     If @c true the selected position is returned, but this might be considerably slow,
+ *                          otherwise @c false
+ * @param [in] callback	    The callback function to register
+ * @param [in] user_data	The user data to be passed to the callback function
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #MEDIA_STREAMER_ERROR_NONE    Successful
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #MEDIA_STREAMER_ERROR_SEEK_FAILED Seek operation failure
+ * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_READY, #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
+ * @post It invokes media_streamer_seek_completed_cb() when seek operation completes, if you set a callback.
+ * @see media_streamer_get_play_position()
+ */
+int media_streamer_set_play_position(media_streamer_h streamer,
+                                     int time,
+                                     bool accurate,
+                                     media_streamer_seek_completed_cb callback,
+                                     void *user_data);
+/**
+ * @brief Gets the current position in milliseconds.
+ * @since_tizen 3.0
+ * @param [in]  streamer     Media streamer handle
+ * @param [out] time         The current position in milliseconds
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #MEDIA_STREAMER_ERROR_NONE Successful
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_OPERATION Invalid operation
+ * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_READY, #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
+ * @see media_streamer_set_play_position()
+ */
+int media_streamer_get_play_position(media_streamer_h streamer, int *time);
 
 /**
  * @brief Gets media streamer state.

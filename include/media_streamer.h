@@ -55,6 +55,13 @@ typedef void *media_streamer_h;
 typedef void *media_streamer_node_h;
 
 /**
+ * @brief Media streamer time type.
+ *
+ * @since_tizen 3.0
+ */
+typedef long long media_streamer_time_value;
+
+/**
  * @brief Enumeration for media streamer node type.
  *
  * @since_tizen 3.0
@@ -774,6 +781,24 @@ int media_streamer_destroy(media_streamer_h streamer);
  */
 int media_streamer_get_state(media_streamer_h streamer,
                              media_streamer_state_e *state);
+
+/**
+ * @brief Seeks media streamer flow to defined time value.
+ * @since_tizen 3.0
+ * @param [in]  streamer     Media streamer handle
+ * @param [in]  time         Time in nanoseconds
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #MEDIA_STREAMER_ERROR_NONE    Successful
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @pre The media streamer state must be set to #MEDIA_STREAMER_STATE_PLAYING by calling media_streamer_play() or
+ *      set to #MEDIA_STREAMER_STATE_PAUSED by calling media_streamer_pause().
+ * @post The media streamer state will be #MEDIA_STREAMER_STATE_PLAYING or MEDIA_STREAMER_STATE_PAUSED.
+ * @see media_streamer_create()
+ * @see media_streamer_play()
+ */
+int media_streamer_seek(media_streamer_h streamer,
+						media_streamer_time_value time);
 
 /**
  * @brief Creates media streamer source node.

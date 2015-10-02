@@ -76,7 +76,6 @@ extern "C" {
 		} \
 	} while(0)
 
-
 #define MS_SAFE_FREE(src)           {if(src) {free(src); src = NULL;}}
 #define MS_SAFE_GFREE(src)          {if(src) {g_free(src); src = NULL;}}
 #define MS_SAFE_UNREF(src)          {if(src) {gst_object_unref(GST_OBJECT(src)); src = NULL;}}
@@ -97,6 +96,8 @@ typedef struct __media_streamer_ini {
 	gboolean use_decodebin;
 
 } media_streamer_ini_t;
+
+#define COMPARED_NUMBER			5
 
 /*Test elements*/
 #define DEFAULT_VIDEO_TEST_SOURCE           "videotestsrc"
@@ -132,6 +133,7 @@ typedef struct __media_streamer_ini {
 #define DEFAULT_VIDEO_RTPDEPAY              "rtph263depay"
 
 /* audio format defaults */
+#define DEFAULT_AUDIO_PARSER                "aacparse"
 #define DEFAULT_AUDIO_RTPPAY                "rtpL16pay"
 #define DEFAULT_AUDIO_RTPDEPAY              "rtpL16depay"
 
@@ -143,6 +145,8 @@ typedef struct __media_streamer_ini {
 #define MS_ELEMENT_IS_INPUT(el) g_strrstr(el, "in")
 #define MS_ELEMENT_IS_AUDIO(el) g_strrstr(el, "audio")
 #define MS_ELEMENT_IS_VIDEO(el) g_strrstr(el, "video")
+#define MS_ELEMENT_IS_ENCODER(el) g_strrstr(el, "encoder")
+#define MS_ELEMENT_IS_DECODER(el) g_strrstr(el, "decoder")
 
 #define MEDIA_STREAMER_DEFAULT_DOT_DIR "/tmp"
 #define MEDIA_STREAMER_DEFAULT_INI \

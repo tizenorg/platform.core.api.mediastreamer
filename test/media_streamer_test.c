@@ -32,10 +32,11 @@ typedef enum {
 } menu_state_e;
 
 typedef enum {
-	SUBMENU_STATE_UNKNOWN = 0,
+	SUBMENU_STATE_UNKNOWN,
 	SUBMENU_STATE_GETTING_IP,
-	SUBMENU_STATE_AUTOPLUG = 3,
-	SUBMENU_STATE_SCENARIO = 4,
+	SUBMENU_STATE_GETTING_URI,
+	SUBMENU_STATE_AUTOPLUG,
+	SUBMENU_STATE_SCENARIO,
 	SUBMENU_STATE_FORMAT
 } submenu_state_e;
 
@@ -56,14 +57,15 @@ typedef enum {
 
 typedef enum
 {
-	SCENARIO_MODE_UNKNOWN = 0,
-	SCENARIO_MODE_CAMERA_SCREEN = 1,
-	SCENARIO_MODE_MICROPHONE_PHONE = 2,
-	SCENARIO_MODE_FULL_VIDEO_AUDIO = 3,
-	SCENARIO_MODE_VIDEOTEST_SCREEN = 4,
-	SCENARIO_MODE_AUDIOTEST_PHONE = 5,
-	SCENARIO_MODE_TEST_VIDEO_AUDIO = 6,
-	SCENARIO_MODE_APPSRC_APPSINK = 7,
+	SCENARIO_MODE_UNKNOWN,
+	SCENARIO_MODE_CAMERA_SCREEN,
+	SCENARIO_MODE_MICROPHONE_PHONE,
+	SCENARIO_MODE_FULL_VIDEO_AUDIO,
+	SCENARIO_MODE_VIDEOTEST_SCREEN,
+	SCENARIO_MODE_AUDIOTEST_PHONE,
+	SCENARIO_MODE_TEST_VIDEO_AUDIO,
+	SCENARIO_MODE_FILESRC_VIDEO_AUDIO,
+	SCENARIO_MODE_APPSRC_APPSINK
 } scenario_mode_e;
 
 #define PACKAGE "media_streamer_test"
@@ -87,6 +89,7 @@ static media_streamer_h current_media_streamer = &g_media_streamer;
 GMainLoop *g_loop;
 
 gchar *g_broadcast_address = NULL;
+gchar *g_uri = NULL;
 menu_state_e g_menu_state = MENU_STATE_MAIN_MENU;
 submenu_state_e g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
 preset_type_e g_menu_preset = PRESET_UNKNOWN;
@@ -336,9 +339,11 @@ static gboolean _create_rtp_streamer(media_streamer_node_h rtp_bin)
 		} else if (g_scenario_mode == SCENARIO_MODE_VIDEOTEST_SCREEN ||
                    g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_TEST, &video_src);
+		} else if (g_scenario_mode == SCENARIO_MODE_FILESRC_VIDEO_AUDIO) {
+			media_streamer_node_create_src( MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &video_src);
+			media_streamer_node_set_param(video_src,MEDIA_STREAMER_PARAM_URI, g_uri);
 		}
 
-		media_streamer_node_set_param(video_src, "is-live", "true");
 		media_streamer_node_add(current_media_streamer, video_src);
 
 		/*********************** encoder **************************************** */
@@ -354,9 +359,9 @@ static gboolean _create_rtp_streamer(media_streamer_node_h rtp_bin)
 		media_streamer_node_add(current_media_streamer, video_pay);
 
 		/*====================Linking Video Streamer=========================== */
-		media_streamer_node_link(video_src, "src", video_enc, "sink");
-		media_streamer_node_link(video_enc, "src", video_pay, "sink");
-		media_streamer_node_link(video_pay, "src", rtp_bin, "video_in");
+		/* media_streamer_node_link(video_src, "src", video_enc, "sink"); */
+		/* media_streamer_node_link(video_enc, "src", video_pay, "sink"); */
+		/* media_streamer_node_link(video_pay, "src", rtp_bin, "video_in"); */
 		/*====================================================================== */
 
 		g_print("== success streamer video part \n");
@@ -388,9 +393,9 @@ static gboolean _create_rtp_streamer(media_streamer_node_h rtp_bin)
 		media_streamer_node_add(current_media_streamer, audio_pay);
 
 		/*====================Linking Audio Streamer========================== */
-		media_streamer_node_link(audio_src, "src", audio_enc, "sink");
-		media_streamer_node_link(audio_enc, "src", audio_pay, "sink");
-		media_streamer_node_link(audio_pay, "src", rtp_bin, "audio_in");
+		/* media_streamer_node_link(audio_src, "src", audio_enc, "sink"); */
+		/* media_streamer_node_link(audio_enc, "src", audio_pay, "sink"); */
+		/* media_streamer_node_link(audio_pay, "src", rtp_bin, "audio_in"); */
 		/*====================================================================== */
 
 		g_print("== success streamer audio part \n");
@@ -414,6 +419,9 @@ static gboolean _create_rtp_streamer_autoplug(media_streamer_node_h rtp_bin)
 		} else if (g_scenario_mode == SCENARIO_MODE_VIDEOTEST_SCREEN ||
                    g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_TEST, &video_src);
+		} else if (g_scenario_mode == SCENARIO_MODE_FILESRC_VIDEO_AUDIO) {
+			media_streamer_node_create_src( MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &video_src);
+			media_streamer_node_set_param(video_src,MEDIA_STREAMER_PARAM_URI, g_uri);
 		}
 
 		media_streamer_node_add(current_media_streamer, video_src);
@@ -465,8 +473,8 @@ static gboolean _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_add(current_media_streamer, video_sink);
 
 		/*====================Linking Video Client=========================== */
-		media_streamer_node_link(video_depay, "src", video_dec, "sink");
-		media_streamer_node_link(video_dec, "src", video_sink, "sink");
+		/* media_streamer_node_link(video_depay, "src", video_dec, "sink"); */
+		/* media_streamer_node_link(video_dec, "src", video_sink, "sink"); */
 
 		g_print("== success client video part \n");
 	}
@@ -553,9 +561,10 @@ static void buffer_status_cb(media_streamer_node_h node,
 		media_streamer_custom_buffer_status_e status,
 		void *user_data) {
 
-	static int count = 0; /* Try send only 10 packets*/
-	if (status == MEDIA_STREAMER_CUSTOM_BUFFER_UNDERRUN
-			&& count < 10) {
+	static int count = 0;
+
+	/* Try send only 10 packets*/
+	if (status == MEDIA_STREAMER_CUSTOM_BUFFER_UNDERRUN && count < 10) {
 		g_print("Buffer status cb got underflow\n");
 
 		char *test = g_strdup_printf("[%d]This is buffer_status_cb test!", count);
@@ -587,7 +596,6 @@ static void new_buffer_cb(media_streamer_node_h node, void *user_data)
 
 static void eos_cb(media_streamer_node_h node, void *user_data)
 {
-
 	g_print("Got EOS cb from appsink\n");
 }
 
@@ -648,6 +656,11 @@ void reset_current_menu_state(void)
 		g_free(g_broadcast_address);
 		g_broadcast_address = NULL;
 	}
+
+	if (g_uri != NULL) {
+		g_free(g_uri);
+		g_uri = NULL;
+	}
 }
 
 void quit()
@@ -661,6 +674,12 @@ static void display_getting_ip_menu(void)
 	g_print("\n");
 	g_print("Please input IP address for broadcasting\n");
 	g_print("By default will be used [%s]\n", DEFAULT_IP_ADDR);
+}
+
+static void display_getting_uri_menu(void)
+{
+	g_print("\n");
+	g_print("Please input URI for playing\n");
 }
 
 static void display_autoplug_select_menu(void)
@@ -685,7 +704,8 @@ static void display_scenario_select_menu(void)
 	g_print("4. Video test -> Screen\n");
 	g_print("5. Audio test -> Phones\n");
 	g_print("6. Video test + Audio test -> Screen + Phones\n");
-	g_print("7. Appsrc -> Appsink\n");
+	g_print("7. Filesrc -> Screen + Phones\n");
+	g_print("8. Appsrc -> Appsink\n");
 }
 
 static void display_preset_menu(void)
@@ -774,6 +794,9 @@ static void display_menu(void)
 		switch (g_sub_menu_state) {
 			case SUBMENU_STATE_GETTING_IP:
 				display_getting_ip_menu();
+				break;
+			case SUBMENU_STATE_GETTING_URI:
+				display_getting_uri_menu();
 				break;
 			case SUBMENU_STATE_AUTOPLUG:
 				display_autoplug_select_menu();
@@ -954,6 +977,14 @@ void _interpret_scenario_menu(char *cmd)
 			g_video_is_on = TRUE;
 			g_audio_is_on = TRUE;
 		} else if (!strncmp(cmd, "7", len)) {
+			g_scenario_mode = SCENARIO_MODE_FILESRC_VIDEO_AUDIO;
+			g_video_is_on = TRUE;
+			g_audio_is_on = TRUE;
+			if (g_menu_preset & PRESET_RTP_STREAMER) {
+				g_sub_menu_state = SUBMENU_STATE_GETTING_URI;
+				return;
+			}
+		} else if (!strncmp(cmd, "8", len)) {
 			g_scenario_mode = SCENARIO_MODE_APPSRC_APPSINK;
 			g_video_is_on = FALSE;
 			g_audio_is_on = FALSE;
@@ -981,6 +1012,23 @@ void _interpret_getting_ip_menu(char *cmd)
 	}
 
 	g_sub_menu_state = SUBMENU_STATE_SCENARIO;
+}
+
+void _interpret_getting_uri_menu(char *cmd)
+{
+	if (cmd) {
+		if (g_uri != NULL) {
+			g_free(g_uri);
+		}
+		g_uri = g_strdup(cmd);
+		g_print("== URI set to [%s]\n", g_uri);
+	} else {
+		g_print("Empty URI!\n");
+		return;
+	}
+
+	g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
+	run_preset();
 }
 
 void _interpret_autoplug_menu(char *cmd)
@@ -1075,6 +1123,9 @@ static void interpret_cmd(char *cmd)
 		switch (g_sub_menu_state) {
 			case SUBMENU_STATE_GETTING_IP:
 				_interpret_getting_ip_menu(cmd);
+				break;
+			case SUBMENU_STATE_GETTING_URI:
+				_interpret_getting_uri_menu(cmd);
 				break;
 			case SUBMENU_STATE_AUTOPLUG:
 				_interpret_autoplug_menu(cmd);

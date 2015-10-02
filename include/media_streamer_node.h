@@ -17,6 +17,15 @@
 #include <media_streamer_priv.h>
 
 /**
+ * @brief Sets property to media streamer node with key and value.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_node_set_property(media_streamer_node_s *ms_node,
+                                  const gchar *param_key,
+                                  const gchar *param_value);
+
+/**
  * @brief Creates media streamer node using input and output format.
  *
  * @since_tizen 3.0

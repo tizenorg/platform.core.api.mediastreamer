@@ -192,7 +192,27 @@ const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime)
 		default:
 			ms_error("Invalid or Unsupported media format [%d].", mime);
 			return NULL;
-			break;
+	}
+
+}
+
+const gchar *__ms_convert_mime_to_rtp_format(media_format_mimetype_e mime)
+{
+	switch (mime) {
+		case MEDIA_FORMAT_I420:
+		case MEDIA_FORMAT_YV12:
+			return "RAW";
+		case MEDIA_FORMAT_H263:
+			return "H263";
+		case MEDIA_FORMAT_H264_HP:
+		case MEDIA_FORMAT_H264_MP:
+		case MEDIA_FORMAT_H264_SP:
+			return "H264";
+		case MEDIA_FORMAT_PCM:
+			return "L16";
+		default:
+			ms_error("Invalid or Unsupported media format [%d].", mime);
+			return NULL;
 	}
 
 }

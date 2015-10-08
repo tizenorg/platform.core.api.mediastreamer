@@ -161,7 +161,8 @@ int __ms_node_create(media_streamer_node_s *node,
 			dec_use = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
 			if (dec_use) {
 				node->gst_element = __ms_element_create("decodebin", NULL);
-				g_signal_connect(node->gst_element, "pad-added", G_CALLBACK (__decodebin_newpad_cb), (gpointer)node);
+				g_signal_connect(node->gst_element, "pad-added", G_CALLBACK(__decodebin_newpad_client_cb), (gpointer )node);
+				g_signal_connect(node->gst_element, "autoplug-select", G_CALLBACK(__ms_decodebin_autoplug_select), NULL);
 			} else {
 				format_prefix = g_strdup_printf("%s:decoder", __ms_convert_mime_to_string(mime));
 				plugin_name = __ms_ini_get_string(dict,
@@ -284,7 +285,7 @@ int __ms_src_node_create(media_streamer_node_s *node)
 			node->gst_element = __ms_element_create(DEFAULT_UDP_SOURCE, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_SRC_TYPE_HTTP:
-			ms_error("Error: not implemented yet");
+			node->gst_element = __ms_element_create(DEFAULT_HTTP_SOURCE, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA:
 			plugin_name = __ms_ini_get_string(dict,
@@ -512,7 +513,13 @@ int __ms_autoplug_prepare(media_streamer_s *ms_streamer)
 			gst_bin_add_many((GstBin *)ms_streamer->topology_bin, found_element, NULL);
 
 			gst_element_sync_state_with_parent(found_element);
-			g_signal_connect(found_element, "pad-added", G_CALLBACK (__decodebin_newpad_streamer_cb), ms_streamer);
+
+			if(__ms_bin_find_element_by_klass(ms_streamer->topology_bin,MEDIA_STREAMER_BIN_KLASS, "rtp_container")) {
+				g_signal_connect(found_element, "pad-added", G_CALLBACK (__decodebin_newpad_streamer_cb), ms_streamer);
+			} else {
+				g_signal_connect(found_element, "pad-added", G_CALLBACK (__decodebin_newpad_cb), ms_streamer);
+			}
+			g_signal_connect(found_element, "autoplug-select", G_CALLBACK(__ms_decodebin_autoplug_select), NULL);
 
 			found_element = __ms_link_with_new_element(unlinked_element, found_element, NULL);
 			__ms_generate_dots(ms_streamer->pipeline, GST_ELEMENT_NAME(found_element));

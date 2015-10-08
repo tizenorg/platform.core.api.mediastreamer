@@ -28,8 +28,10 @@
 
 #define MEDIA_STREAMER_PAYLOADER_KLASS "Codec/Payloader/Network/RTP"
 #define MEDIA_STREAMER_RTP_KLASS "Filter/Network/RTP"
+
 #define MEDIA_STREAMER_DEPAYLOADER_KLASS "Depayloader/Network/RTP"
 #define MEDIA_STREAMER_BIN_KLASS "Generic/Bin"
+#define MEDIA_STREAMER_OVERLAY_KLASS "Filter/Editor"
 #define MEDIA_STREAMER_PARSER_KLASS "Codec/Parser/Converter"
 #define MEDIA_STREAMER_CONVERTER_KLASS "Filter/Converter"
 #define MEDIA_STREAMER_DECODER_KLASS "Codec/Decoder"
@@ -41,6 +43,14 @@
  * @since_tizen 3.0
  */
 void __ms_generate_dots(GstElement *bin, gchar *name_tag);
+
+/**
+ * @brief Finds GstElement by klass name.
+ *
+ * @since_tizen 3.0
+ */
+GstElement *__ms_bin_find_element_by_klass(GstElement *sink_bin,
+                                           const gchar *klass_name, const gchar *bin_name);
 
 /**
  * @brief Creates GstElement by klass name.
@@ -129,7 +139,18 @@ gboolean __ms_element_set_property(GstElement *src_element,
 gboolean __ms_element_unlink(GstElement *src_element);
 
 /**
- * @brief Callback function to link decodebin with the sink element at the streamer part.
+ * @brief Callback function to filter factories while decodebin is searching them.
+ *
+ * @since_tizen 3.0
+ */
+gint __ms_decodebin_autoplug_select(GstElement *bin,
+                                    GstPad *pad,
+                                    GstCaps *caps,
+                                    GstElementFactory *factory,
+                                    gpointer data);
+
+/**
+ * @brief Callback function to link decodebin for file playing.
  *
  * @since_tizen 3.0
  */
@@ -141,6 +162,13 @@ void __decodebin_newpad_streamer_cb(GstElement *decodebin, GstPad *pad, gpointer
  * @since_tizen 3.0
  */
 void __decodebin_newpad_cb(GstElement *decodebin, GstPad *pad, gpointer user_data);
+
+/**
+ * @brief Callback function to link decodebin with the sink element at the client part.
+ *
+ * @since_tizen 3.0
+ */
+void __decodebin_newpad_client_cb(GstElement *decodebin, GstPad *pad, gpointer user_data);
 
 /**
  * @brief Creates next element by klass or by properties and links with the previous one.

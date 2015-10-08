@@ -114,20 +114,22 @@ typedef struct __media_streamer_ini {
 #define DEFAULT_VIDEO_SOURCE                "ximagesrc"
 #define DEFAULT_APP_SOURCE                  "appsrc"
 #define DEFAULT_AUDIO_SINK                  "pulsesink"
-#define DEFAULT_VIDEO_SINK                  "autovideosink"
+#define DEFAULT_VIDEO_SINK                  "waylandsink"
 #define DEFAULT_VIDEO_CONVERT               "videoconvert"
+#define DEFAULT_TEXT_OVERLAY                "textoverlay"
 #define DEFAULT_AUDIO_CONVERT               "audioconvert"
 #define DEFAULT_AUDIO_RESAMPLE              "audioresample"
 #define DEFAULT_APP_SINK                    "appsink"
 
 /* udp streaming */
 #define DEFAULT_UDP_SOURCE                  "udpsrc"
+#define DEFAULT_HTTP_SOURCE                 "souphttpsrc"
 #define DEFAULT_UDP_SINK                    "udpsink"
 #define DEFAULT_RTP_BIN                     "rtpbin"
 
 /* video format defaults */
-#define DEFAULT_VIDEO_ENCODER               "omxh264enc"
-#define DEFAULT_VIDEO_DECODER               "omxh264dec"
+#define DEFAULT_VIDEO_ENCODER               "avenc_h263"
+#define DEFAULT_VIDEO_DECODER               "avdec_h263"
 #define DEFAULT_VIDEO_PARSER                "h263parse"
 #define DEFAULT_VIDEO_RTPPAY                "rtph263pay"
 #define DEFAULT_VIDEO_RTPDEPAY              "rtph263depay"
@@ -145,6 +147,7 @@ typedef struct __media_streamer_ini {
 #define MS_ELEMENT_IS_INPUT(el) g_strrstr(el, "in")
 #define MS_ELEMENT_IS_AUDIO(el) g_strrstr(el, "audio")
 #define MS_ELEMENT_IS_VIDEO(el) g_strrstr(el, "video")
+#define MS_ELEMENT_IS_TEXT(el) g_strrstr(el, "text")
 #define MS_ELEMENT_IS_ENCODER(el) g_strrstr(el, "encoder")
 #define MS_ELEMENT_IS_DECODER(el) g_strrstr(el, "decoder")
 
@@ -235,6 +238,13 @@ gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path,
  * @since_tizen 3.0
  */
 const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime);
+
+/**
+ * @brief Converts Media Format mime type into rtp media type.
+ *
+ * @since_tizen 3.0
+ */
+const gchar *__ms_convert_mime_to_rtp_format(media_format_mimetype_e mime);
 
 /**
  * @brief Converts Caps stream format into Media Format mime type.

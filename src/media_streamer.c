@@ -515,6 +515,44 @@ int media_streamer_get_state(media_streamer_h streamer,
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
+int media_streamer_set_play_position(media_streamer_h streamer,
+                                     int time,
+                                     bool accurate,
+				     media_streamer_position_changed_cb callback,
+                                     void *user_data)
+{
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	ms_retvm_if(ms_streamer->state < MEDIA_STREAMER_STATE_READY ||
+                ms_streamer->state > MEDIA_STREAMER_STATE_PAUSED,
+                MEDIA_STREAMER_ERROR_INVALID_STATE,
+                "The media streamer state is not in the appropriate state");
+
+	/* Notify: the seeking must be reseted while streamer got ASYNC_DONE message */
+	ms_retvm_if(ms_streamer->is_seeking, MEDIA_STREAMER_ERROR_INVALID_STATE, "Media streamer is seeking");
+
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+	g_mutex_lock(&ms_streamer->mutex_lock);
+
+	ms_streamer->seek_done_cb.callback = callback;
+	ms_streamer->seek_done_cb.user_data = user_data;
+
+	ret = __ms_streamer_seek(streamer, time, accurate);
+
+	g_mutex_unlock(&ms_streamer->mutex_lock);
+
+	return ret;
+}
+
+int media_streamer_get_play_position(media_streamer_h streamer, int *time)
+{
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	return MEDIA_STREAMER_ERROR_NONE;
+}
+
 int media_streamer_node_push_packet(media_streamer_node_h src,
                                media_packet_h packet)
 {

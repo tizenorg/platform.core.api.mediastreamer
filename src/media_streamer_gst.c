@@ -1482,6 +1482,21 @@ static gboolean __ms_bus_cb(GstBus *bus, GstMessage *message, gpointer userdata)
 					break;
 				}
 
+			case GST_MESSAGE_ASYNC_DONE: {
+				if (GST_MESSAGE_SRC(message) == GST_OBJECT(ms_streamer->pipeline)
+                                    && ms_streamer->is_seeking) {
+
+					if (ms_streamer->seek_done_cb.callback) {
+						media_streamer_position_changed_cb cb = (media_streamer_position_changed_cb) ms_streamer->seek_done_cb.callback;
+						cb(ms_streamer->seek_done_cb.user_data);
+					}
+
+					ms_streamer->is_seeking = FALSE;
+					ms_streamer->seek_done_cb.callback = NULL;
+					ms_streamer->seek_done_cb.user_data = NULL;
+				}
+				break;
+			}
 			case GST_MESSAGE_EOS: {
 					ms_info("GST_MESSAGE_EOS end-of-stream");
 					ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PAUSED);
@@ -1778,6 +1793,23 @@ int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, medi
 	gst_caps_unref(caps);
 
 	return MEDIA_STREAMER_ERROR_NONE;
+}
+
+gboolean __ms_gst_seek(GstElement *element, gint64 g_time, GstSeekFlags seek_flag)
+{
+	gboolean result = FALSE;
+
+	ms_retvm_if(element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Element is NULL");
+
+	GstEvent *event = gst_event_new_seek(1.0, GST_FORMAT_TIME, seek_flag,
+                                            GST_SEEK_TYPE_SET, g_time,
+                                            GST_SEEK_TYPE_NONE, GST_CLOCK_TIME_NONE);
+
+	if (event) {
+		result = gst_element_send_event(element, event);
+	}
+
+	return result;
 }
 
 int __ms_element_push_packet(GstElement *src_element, media_packet_h packet)

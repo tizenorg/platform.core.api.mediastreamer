@@ -35,6 +35,7 @@ typedef enum {
 typedef enum {
 	SUBMENU_STATE_UNKNOWN,
 	SUBMENU_STATE_GETTING_IP,
+	SUBMENU_STATE_GETTING_SEEK_POS,
 	SUBMENU_STATE_GETTING_VIDEOFILE_URI,
 	SUBMENU_STATE_GETTING_SUBFILE_URI,
 	SUBMENU_STATE_AUTOPLUG,
@@ -67,13 +68,23 @@ typedef enum
 	SCENARIO_MODE_VIDEOTEST_SCREEN,
 	SCENARIO_MODE_AUDIOTEST_PHONE,
 	SCENARIO_MODE_TEST_VIDEO_AUDIO,
-	SCENARIO_MODE_FILE_VIDEO_AUDIO,
+	SCENARIO_MODE_FILE_PLAY_VIDEO_AUDIO,
 	SCENARIO_MODE_FILE_SUBTITLE_VIDEO_AUDIO,
 	SCENARIO_MODE_HTTP_VIDEO_AUDIO,
 	SCENARIO_MODE_APPSRC_APPSINK
 } scenario_mode_e;
 
 #define PACKAGE "media_streamer_test"
+
+#define MAX_STRING_LEN    2048
+#define DEFAULT_IP_ADDR   "127.0.0.1"
+#define DEFAULT_SEEK_POS   0
+#define MSEC_MULTIPLIER   1000
+
+
+#define VIDEO_PORT 5000
+#define AUDIO_PORT 6000
+
 /*---------------------------------------------------------------------------
 |    GLOBAL VARIABLE DEFINITIONS:                     |
 ---------------------------------------------------------------------------*/
@@ -81,21 +92,14 @@ typedef enum
 static media_streamer_h g_media_streamer;
 static media_streamer_h g_media_streamer_2;
 static media_streamer_h current_media_streamer = &g_media_streamer;
-
-#define MAX_STRING_LEN    2048
-#define DEFAULT_IP_ADDR "127.0.0.1"
-
-#define VIDEO_PORT 5000
-#define AUDIO_PORT 6000
-
-/*---------------------------------------------------------------------------
-|    LOCAL VARIABLE DEFINITIONS:                      |
----------------------------------------------------------------------------*/
 GMainLoop *g_loop;
 
 gchar *g_broadcast_address = NULL;
+int g_seek_pos = 0;
+int g_time = 0;
 gchar *g_uri = NULL;
 gchar *g_sub_uri = NULL;
+
 menu_state_e g_menu_state = MENU_STATE_MAIN_MENU;
 submenu_state_e g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
 preset_type_e g_menu_preset = PRESET_UNKNOWN;
@@ -109,15 +113,15 @@ media_format_h vfmt_raw = NULL;
 media_format_h vfmt_encoded = NULL;
 media_format_h afmt_raw = NULL;
 
-/*---------------------------------------------------------------------------
-|    LOCAL FUNCTION PROTOTYPES:                       |
----------------------------------------------------------------------------*/
-
 static void streamer_error_cb(media_streamer_h streamer,
                               media_streamer_error_e error,
                               void *user_data)
 {
 	g_print("Media Streamer posted error [%d] \n", error);
+}
+
+static void streamer_seek_cb(void *user_data) {
+	g_print("Media Streamer seeked to required position \n");
 }
 
 static void _create(media_streamer_h *streamer)
@@ -189,6 +193,21 @@ static void _pause()
 		return;
 	}
 	g_print("== success pause \n");
+}
+
+static void _seek()
+{
+	g_print("== seek \n");
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+
+	ret = media_streamer_set_play_position(current_media_streamer, g_time, TRUE,
+                                           streamer_seek_cb, current_media_streamer);
+
+	if (ret != MEDIA_STREAMER_ERROR_NONE) {
+		g_print("Fail to seek media streamer");
+		return;
+	}
+	g_print("== success seek \n");
 }
 
 static void _stop()
@@ -314,7 +333,6 @@ static void set_rtp_params(media_streamer_node_h rtp_node,
 	media_streamer_node_set_pad_format(rtp_node, "audio_in_rtp", afmt_raw);
 
 	bundle_free(params);
-	params = NULL;
 }
 
 static void _create_file_playing()
@@ -700,6 +718,13 @@ static void display_getting_sub_uri_menu(void)
 	g_print("Please input Subtitle path for playing\n");
 }
 
+static void display_getting_seek_position_menu(void)
+{
+	g_print("\n");
+	g_print("Please enter desired position\n");
+	g_print("By default will be seeked to [%d]\n", DEFAULT_SEEK_POS);
+}
+
 static void display_autoplug_select_menu(void)
 {
 	g_print("\n");
@@ -721,7 +746,6 @@ static void display_scenario_select_menu(void)
 	g_print("4. Video test -> Screen\n");
 	g_print("5. Audio test -> Phones\n");
 	g_print("6. Video test + Audio test -> Screen + Phones\n");
-
 }
 
 static void display_playing_scenario_select_menu(void)
@@ -750,10 +774,11 @@ static void display_preset_menu(void)
 	g_print("----------------------------------------------------\n");
 	g_print("1. create media streamer \n");
 	g_print("2. set up current preset \n");
-	g_print("4. prepare \n");
-	g_print("5. unprepare \n");
-	g_print("6. play \n");
-	g_print("7. pause \n");
+	g_print("3. prepare \n");
+	g_print("4. unprepare \n");
+	g_print("5. play \n");
+	g_print("6. pause \n");
+	g_print("7. seek \n");
 	g_print("8. stop \n");
 	g_print("9. destroy media streamer \n\n");
 	g_print("b. back \n");
@@ -832,6 +857,9 @@ static void display_menu(void)
 		switch (g_sub_menu_state) {
 			case SUBMENU_STATE_GETTING_IP:
 				display_getting_ip_menu();
+				break;
+			case SUBMENU_STATE_GETTING_SEEK_POS:
+				display_getting_seek_position_menu();
 				break;
 			case SUBMENU_STATE_GETTING_VIDEOFILE_URI:
 				display_getting_uri_menu();
@@ -916,7 +944,7 @@ void run_playing_preset(void)
 {
 	create_formats();
 
-	if (g_scenario_mode == SCENARIO_MODE_FILE_VIDEO_AUDIO) {
+	if (g_scenario_mode == SCENARIO_MODE_FILE_PLAY_VIDEO_AUDIO) {
 		_create_file_playing();
 	} else if (g_scenario_mode == SCENARIO_MODE_FILE_SUBTITLE_VIDEO_AUDIO) {
 		_create_file_sub_playing();
@@ -1011,7 +1039,7 @@ void _interpret_playing_scenario_menu(char *cmd)
 
 	if (len == 1) {
 		if (!strncmp(cmd, "1", len)) {
-			g_scenario_mode = SCENARIO_MODE_FILE_VIDEO_AUDIO;
+			g_scenario_mode = SCENARIO_MODE_FILE_PLAY_VIDEO_AUDIO;
 			g_sub_menu_state = SUBMENU_STATE_GETTING_VIDEOFILE_URI;
 			return;
 		} else if (!strncmp(cmd, "2", len)) {
@@ -1083,6 +1111,21 @@ void _interpret_getting_ip_menu(char *cmd)
 	}
 
 	g_sub_menu_state = SUBMENU_STATE_SCENARIO;
+}
+
+void _interpret_getting_seek_position_menu(char *cmd)
+{
+	if (cmd > DEFAULT_SEEK_POS) {
+		g_time = strtol(cmd, NULL, 10) * MSEC_MULTIPLIER;
+		g_print("== Seek position set to [%d] second\n", g_time);
+	} else {
+		g_time = DEFAULT_SEEK_POS;
+		g_print("Invalid seek pos. Default seek position will be used [%d]\n", DEFAULT_SEEK_POS);
+		return;
+	}
+	_seek();
+
+	g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
 }
 
 void _interpret_getting_sub_uri_menu(char *cmd)
@@ -1176,14 +1219,16 @@ void _interpret_preset_menu(char *cmd)
 			} else {
 				g_sub_menu_state = SUBMENU_STATE_AUTOPLUG;
 			}
-		} else if (!strncmp(cmd, "4", len)) {
+		} else if (!strncmp(cmd, "3", len)) {
 			_prepare();
-		} else if (!strncmp(cmd, "5", len)) {
+		} else if (!strncmp(cmd, "4", len)) {
 			_unprepare();
-		} else if (!strncmp(cmd, "6", len)) {
+		} else if (!strncmp(cmd, "5", len)) {
 			_play();
-		} else if (!strncmp(cmd, "7", len)) {
+		} else if (!strncmp(cmd, "6", len)) {
 			_pause();
+		} else if (!strncmp(cmd, "7", len)) {
+			g_sub_menu_state = SUBMENU_STATE_GETTING_SEEK_POS;
 		} else if (!strncmp(cmd, "8", len)) {
 			_stop();
 		} else if (!strncmp(cmd, "9", len)) {
@@ -1233,6 +1278,9 @@ static void interpret_cmd(char *cmd)
 		switch (g_sub_menu_state) {
 			case SUBMENU_STATE_GETTING_IP:
 				_interpret_getting_ip_menu(cmd);
+				break;
+			case SUBMENU_STATE_GETTING_SEEK_POS:
+				_interpret_getting_seek_position_menu(cmd);
 				break;
 			case SUBMENU_STATE_GETTING_VIDEOFILE_URI:
 				_interpret_getting_uri_menu(cmd);

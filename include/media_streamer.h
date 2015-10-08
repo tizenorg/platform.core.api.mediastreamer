@@ -446,7 +446,7 @@ typedef void (*media_streamer_sink_eos_cb)(media_streamer_node_h node,
 /**
  * @brief Called when the seek operation is completed.
  * @since_tizen 3.0
- * @param [in] user_data     The user data passed from the callback registration function
+ * @param[in] user_data     The user data passed from the callback registration function
  * @see media_streamer_set_play_position()
  */
 typedef void (*media_streamer_position_changed_cb)(void *user_data);
@@ -793,6 +793,7 @@ int media_streamer_set_play_position(media_streamer_h streamer,
                                      bool accurate,
                                      media_streamer_position_changed_cb callback,
                                      void *user_data);
+
 /**
  * @brief Gets the current position in milliseconds.
  * @since_tizen 3.0

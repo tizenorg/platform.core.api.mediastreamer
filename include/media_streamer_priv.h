@@ -71,11 +71,13 @@ typedef struct {
 
 	GstBus *bus;
 	guint bus_watcher;
+	gboolean is_seeking;
 
 	media_streamer_state_e state;
 
 	media_streamer_callback_s error_cb;
 	media_streamer_callback_s state_changed_cb;
+	media_streamer_callback_s seek_done_cb;
 } media_streamer_s;
 
 /**
@@ -104,6 +106,13 @@ typedef struct {
 } media_streamer_node_s;
 
 /* Private functions definition */
+
+/**
+ * @brief Seeks Media streamer element to the pointed position.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_streamer_seek(media_streamer_s *ms_streamer, int time, bool flag);
 
 /**
  * @brief Destroys media streamer structure.

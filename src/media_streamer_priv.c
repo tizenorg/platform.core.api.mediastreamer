@@ -141,6 +141,30 @@ static void __node_remove_cb(gpointer key,
 }
 #endif
 
+int __ms_streamer_seek(media_streamer_s *ms_streamer, int g_time, bool flag)
+{
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	GstSeekFlags seek_flag;
+
+	if (flag) {
+		seek_flag = GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE;
+	} else {
+		seek_flag = GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT;
+	}
+
+	if (!__ms_gst_seek(ms_streamer->pipeline, (gint64)g_time*GST_MSECOND, seek_flag)) {
+		ms_error("Error while seeking media streamer to [%d]\n", g_time);
+		return MEDIA_STREAMER_ERROR_SEEK_FAILED;
+	} else {
+		ms_streamer->is_seeking = TRUE;
+	}
+
+	ms_info("Media streamer pipeline seeked successfully.");
+
+	return MEDIA_STREAMER_ERROR_NONE;
+}
+
 void __ms_streamer_destroy(media_streamer_s *ms_streamer)
 {
 	if (__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_NONE) != MEDIA_STREAMER_ERROR_NONE) {

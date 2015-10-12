@@ -50,14 +50,17 @@ void __ms_generate_dots(GstElement *bin, gchar *name_tag);
  * @since_tizen 3.0
  */
 GstElement *__ms_bin_find_element_by_klass(GstElement *sink_bin,
-                                           const gchar *klass_name, const gchar *bin_name);
+                                           GstElement *previous_elem,
+                                           const gchar *klass_name,
+                                           const gchar *bin_name);
 
 /**
  * @brief Creates GstElement by klass name.
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_name);
+GstElement *__ms_create_element_by_registry(GstPad *src_pad,
+                                            const gchar *klass_name);
 
 /**
  * @brief Links two Gstelements and returns the last one.
@@ -139,6 +142,20 @@ gboolean __ms_element_set_property(GstElement *src_element,
 gboolean __ms_element_unlink(GstElement *src_element);
 
 /**
+ * @brief Remove GstElement from bin.
+ *
+ * @since_tizen 3.0
+ */
+gboolean __ms_bin_remove_element(GstElement *element);
+
+/**
+ * @brief Add GstElement into bin if not added before and refs it.
+ *
+ * @since_tizen 3.0
+ */
+gboolean __ms_bin_add_element(GstElement *bin, GstElement *element, gboolean do_ref);
+
+/**
  * @brief Callback function to filter factories while decodebin is searching them.
  *
  * @since_tizen 3.0
@@ -178,7 +195,6 @@ void __decodebin_newpad_client_cb(GstElement *decodebin, GstPad *pad, gpointer u
 GstElement *__ms_combine_next_element(GstElement *previous_element,
                                       const gchar *next_elem_klass_name,
                                       const gchar *next_elem_bin_name,
-                                      const gchar *element_type,
                                       gchar *default_element);
 
 /**
@@ -207,7 +223,7 @@ int __ms_element_set_state(GstElement *gst_element, GstState gst_state);
  *
  * @since_tizen 3.0
  */
-int __ms_iterate_pads(GstElement *gst_element, GstPadDirection pad_type, char ***pad_name_array, int *pads_count);
+int __ms_element_pad_names(GstElement *gst_element, GstPadDirection pad_type, char ***pad_name_array, int *pads_count);
 
 /**
  * @brief Gets mediaformat from the GstElement's pad by pad name.

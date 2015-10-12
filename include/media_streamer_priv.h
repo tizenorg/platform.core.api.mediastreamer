@@ -97,10 +97,14 @@ typedef int (*ms_node_set_param)(
  */
 typedef struct {
 	GstElement *gst_element;
-	char *name;
 	media_streamer_s *parent_streamer;
+
+	char *name;
 	media_streamer_node_type_e type;
 	int subtype;
+
+	gboolean linked_by_user;
+
 	ms_node_set_param set_param;
 	void *callbacks_structure;
 } media_streamer_node_s;
@@ -119,7 +123,7 @@ int __ms_streamer_seek(media_streamer_s *ms_streamer, int time, bool flag);
  *
  * @since_tizen 3.0
  */
-void __ms_streamer_destroy(media_streamer_s *ms_streamer);
+int __ms_streamer_destroy(media_streamer_s *ms_streamer);
 
 /**
  * @brief Creates media streamer structure.

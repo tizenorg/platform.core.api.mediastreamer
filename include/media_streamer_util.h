@@ -97,7 +97,6 @@ typedef struct __media_streamer_ini {
 
 } media_streamer_ini_t;
 
-#define COMPARED_NUMBER			5
 
 /*Test elements*/
 #define DEFAULT_VIDEO_TEST_SOURCE           "videotestsrc"
@@ -123,6 +122,7 @@ typedef struct __media_streamer_ini {
 
 /* udp streaming */
 #define DEFAULT_UDP_SOURCE                  "udpsrc"
+#define DEFAULT_FILE_SOURCE                 "filesrc"
 #define DEFAULT_HTTP_SOURCE                 "souphttpsrc"
 #define DEFAULT_UDP_SINK                    "udpsink"
 #define DEFAULT_RTP_BIN                     "rtpbin"
@@ -139,14 +139,16 @@ typedef struct __media_streamer_ini {
 #define DEFAULT_AUDIO_RTPPAY                "rtpL16pay"
 #define DEFAULT_AUDIO_RTPDEPAY              "rtpL16depay"
 
+#define DEFAULT_AUDIO "S16LE"
 #define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,width=1280,height=720"
-#define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=44100,format=S16LE"
+#define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=44100,format="DEFAULT_AUDIO
 #define MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT "video/x-h263,stream-format=byte-stream,profile=high"
 
 #define MS_ELEMENT_IS_OUTPUT(el) g_strrstr(el, "out")
 #define MS_ELEMENT_IS_INPUT(el) g_strrstr(el, "in")
 #define MS_ELEMENT_IS_AUDIO(el) g_strrstr(el, "audio")
 #define MS_ELEMENT_IS_VIDEO(el) g_strrstr(el, "video")
+#define MS_ELEMENT_IS_RTP(el) g_strrstr(el, "rtp")
 #define MS_ELEMENT_IS_TEXT(el) g_strrstr(el, "text")
 #define MS_ELEMENT_IS_ENCODER(el) g_strrstr(el, "encoder")
 #define MS_ELEMENT_IS_DECODER(el) g_strrstr(el, "decoder")
@@ -203,11 +205,12 @@ rtpdepay = rtpL16depay \n\
 "
 
 /**
- * @brief Load media streamer settings from ini file.
+ * @brief Loads media streamer settings from ini file.
+ *        The default values will be used if error has occurred.
  *
  * @since_tizen 3.0
  */
-int __ms_load_ini_settings(media_streamer_ini_t *ini);
+void __ms_load_ini_settings(media_streamer_ini_t *ini);
 
 /**
  * @brief Load settings from ini file into dictionary object.

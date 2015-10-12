@@ -92,7 +92,7 @@ gboolean __ms_destroy_ini_dictionary(dictionary *dict)
 	return TRUE;
 }
 
-int __ms_load_ini_settings(media_streamer_ini_t *ini)
+void __ms_load_ini_settings(media_streamer_ini_t *ini)
 {
 	dictionary *dict = NULL;
 
@@ -109,22 +109,20 @@ int __ms_load_ini_settings(media_streamer_ini_t *ini)
 		}
 
 		ini->use_decodebin = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
-	}
-
-	else { /* if dict is not available just fill the structure with default value */
+	} else {
+		/* if dict is not available just fill the structure with default values */
 		ms_debug("failed to load ini. using hardcoded default");
 
 		/* general settings*/
 		ini->generate_dot = DEFAULT_GENERATE_DOT;
+		ini->use_decodebin = DEFAULT_USE_DECODEBIN;
 	}
 
 	__ms_destroy_ini_dictionary(dict);
 
 	/* general */
-	ms_debug("generate_dot : %d\n", ini->generate_dot);
-	ms_debug("Use_decodebin : %d\n", ini->use_decodebin);
-
-	return MEDIA_STREAMER_ERROR_NONE;
+	ms_debug("Media Streamer param [generate_dot] : %d\n", ini->generate_dot);
+	ms_debug("Media Streamer param [use_decodebin] : %d\n", ini->use_decodebin);
 }
 
 static void __ms_check_ini_status(void)
@@ -188,7 +186,7 @@ const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime)
 		case MEDIA_FORMAT_H264_SP:
 			return "h264";
 		case MEDIA_FORMAT_PCM:
-			return "S16BE";
+			return DEFAULT_AUDIO;
 		default:
 			ms_error("Invalid or Unsupported media format [%d].", mime);
 			return NULL;
@@ -227,7 +225,7 @@ media_format_mimetype_e __ms_convert_string_format_to_mime(const char *format_ty
 		return MEDIA_FORMAT_H263;
 	} else if (g_strrstr(format_type, "h264")) {
 		return MEDIA_FORMAT_H264_SP;
-	} else if (g_strrstr(format_type, "S16BE")) {
+	} else if (g_strrstr(format_type, DEFAULT_AUDIO)) {
 		return MEDIA_FORMAT_PCM;
 	} else {
 		ms_error("Invalid or Unsupported media format [%s].", format_type);

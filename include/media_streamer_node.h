@@ -53,30 +53,37 @@ int __ms_sink_node_create(media_streamer_node_s *node);
  *
  * @since_tizen 3.0
  */
-void __ms_node_destroy(void *data);
+void __ms_node_destroy(media_streamer_node_s *node);
 
 /**
  * @brief Inserts media streamer node into nodes table.
  *
  * @since_tizen 3.0
  */
-void __ms_node_insert_into_table(GHashTable *nodes_table,
+int __ms_node_insert_into_table(GHashTable *nodes_table,
                                  media_streamer_node_s *ms_node);
 
 /**
- * @brief Remove media streamer node from nodes table.
+ * @brief Removes media streamer node from nodes table.
  *
  * @since_tizen 3.0
  */
-int __ms_node_remove_from_table(GHashTable *nodes_table,
-                                media_streamer_node_s *ms_node);
+void __ms_node_remove_from_table(void *data);
 
 /**
- * @brief Auto link nodes if needed.
+ * @brief Prepares Media Streamer pipeline and autoplug nodes if needed.
  *
  * @since_tizen 3.0
  */
-int __ms_autoplug_prepare(media_streamer_s *ms_streamer);
+int __ms_pipeline_prepare(media_streamer_s *ms_streamer);
+
+/**
+ * @brief Unprepares Media Streamer pipeline and unlink nodes
+ *        which user did't link before.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_pipeline_unprepare(media_streamer_s *ms_streamer);
 
 /**
  * @brief Reads node parameters from user's bundle object.

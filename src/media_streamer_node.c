@@ -90,7 +90,7 @@ static int __ms_rtp_node_set_property(media_streamer_node_s *ms_node,
 				__ms_element_set_property(rtcp_elem, param, param_value);
 			}
 		} else {
-			ms_error("Error: Unsupported parameter [%s] for rtp node.");
+			ms_error("Error: Unsupported parameter [%s] for rtp node.", param);
 		}
 
 		g_strfreev(tokens);
@@ -136,6 +136,7 @@ int __ms_node_create(media_streamer_node_s *node,
 {
 	ms_retvm_if(node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
+	int ret = MEDIA_STREAMER_ERROR_NONE;
 	dictionary *dict = NULL;
 	char *plugin_name = NULL;
 	media_format_mimetype_e mime;
@@ -218,15 +219,17 @@ int __ms_node_create(media_streamer_node_s *node,
 			break;
 	}
 
-	ms_retvm_if(node->gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error creating GstElement");
-
-	node->name = gst_element_get_name(node->gst_element);
-
 	MS_SAFE_FREE(plugin_name);
 	MS_SAFE_FREE(format_prefix);
 	__ms_destroy_ini_dictionary(dict);
 
-	return MEDIA_STREAMER_ERROR_NONE;
+	if (node->gst_element == NULL) {
+		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	} else {
+		node->name = gst_element_get_name(node->gst_element);
+	}
+
+	return ret;
 }
 
 /* This signal callback is called when appsrc needs data, we add an idle handler
@@ -263,6 +266,7 @@ int __ms_src_node_create(media_streamer_node_s *node)
 {
 	ms_retvm_if(node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
+	int ret = MEDIA_STREAMER_ERROR_NONE;
 	dictionary *dict = NULL;
 	char *plugin_name = NULL;
 
@@ -272,7 +276,7 @@ int __ms_src_node_create(media_streamer_node_s *node)
 
 	switch (node->subtype) {
 		case MEDIA_STREAMER_NODE_SRC_TYPE_FILE:
-			node->gst_element = __ms_element_create("filesrc", NULL);
+			node->gst_element = __ms_element_create(DEFAULT_FILE_SOURCE, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_SRC_TYPE_RTSP:
 			node->gst_element = __ms_element_create(DEFAULT_UDP_SOURCE, NULL);
@@ -309,13 +313,16 @@ int __ms_src_node_create(media_streamer_node_s *node)
 			break;
 	}
 
-	ms_retvm_if(node->gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error creating GstElement");
-	node->name = gst_element_get_name(node->gst_element);
-
 	MS_SAFE_FREE(plugin_name);
 	__ms_destroy_ini_dictionary(dict);
 
-	return MEDIA_STREAMER_ERROR_NONE;
+	if (node->gst_element == NULL) {
+		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	} else {
+		node->name = gst_element_get_name(node->gst_element);
+	}
+
+	return ret;
 }
 
 /* The appsink has received a buffer */
@@ -358,6 +365,7 @@ int __ms_sink_node_create(media_streamer_node_s *node)
 {
 	ms_retvm_if(node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
+	int ret = MEDIA_STREAMER_ERROR_NONE;
 	dictionary *dict = NULL;
 	char *plugin_name = NULL;
 
@@ -397,55 +405,62 @@ int __ms_sink_node_create(media_streamer_node_s *node)
 			break;
 	}
 
-	ms_retvm_if(node->gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error creating GstElement");
-	node->name = gst_element_get_name(node->gst_element);
-
 	MS_SAFE_FREE(plugin_name);
 	__ms_destroy_ini_dictionary(dict);
 
-	return MEDIA_STREAMER_ERROR_NONE;
+	if (node->gst_element == NULL) {
+		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	} else {
+		node->name = gst_element_get_name(node->gst_element);
+	}
+
+	return ret;
 }
 
-void __ms_node_destroy(void *data)
+void __ms_node_destroy(media_streamer_node_s *node)
 {
 	char *node_name = NULL;
-	media_streamer_node_s *node = (media_streamer_node_s *)data;
-	ms_retm_if(node == NULL, "Empty value while deleting element from table");
-
-	__ms_element_unlink(node->gst_element);
 
 	node_name = g_strdup(node->name);
 	MS_SAFE_UNREF(node->gst_element);
 	MS_SAFE_FREE(node->name);
 	MS_SAFE_FREE(node->callbacks_structure);
+	MS_SAFE_FREE(node);
 
-	ms_info("Node [%s] destroyed", node_name);
+	ms_info("Node [%s] has been destroyed", node_name);
 	MS_SAFE_FREE(node_name);
 }
 
-void __ms_node_insert_into_table(GHashTable *nodes_table,
+int __ms_node_insert_into_table(GHashTable *nodes_table,
                                  media_streamer_node_s *ms_node)
 {
 	if (g_hash_table_contains(nodes_table, ms_node->name)) {
-		ms_debug("Current Node [%s] already added", ms_node->name);
-		return;
+		ms_debug("Current Node [%s] already added into Media Streamer", ms_node->name);
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
-	g_hash_table_insert(nodes_table, (gpointer)ms_node->name, (gpointer)ms_node);
+	if (!g_hash_table_insert(nodes_table, (gpointer)ms_node->name, (gpointer)ms_node)) {
+		ms_debug("Error: Failed to add node [%s] into Media Streamer", ms_node->name);
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+
 	ms_info("Node [%s] added into streamer, node type/subtype [%d/%d]",
 	        ms_node->name, ms_node->type, ms_node->subtype);
+	return MEDIA_STREAMER_ERROR_NONE;
 }
 
-int __ms_node_remove_from_table(GHashTable *nodes_table,
-                                media_streamer_node_s *ms_node)
+void __ms_node_remove_from_table(void *data)
 {
-	ms_retvm_if(nodes_table == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Handle is NULL");
-	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Handle is NULL");
+	media_streamer_node_s *ms_node = (media_streamer_node_s *)data;
+	ms_retm_if(ms_node == NULL, "Handle is NULL");
 
-	gboolean g_ret = g_hash_table_remove(nodes_table, ms_node->name);
-	ms_retvm_if(g_ret != TRUE, MEDIA_STREAMER_ERROR_INVALID_OPERATION,
-	            "Error while removing element from table");
-
-	return MEDIA_STREAMER_ERROR_NONE;
+	if (__ms_element_unlink(ms_node->gst_element)) {
+		ms_node->linked_by_user = FALSE;
+		ms_node->parent_streamer = NULL;
+		__ms_bin_remove_element(ms_node->gst_element);
+		ms_info("Node [%s] removed from Media Streamer", ms_node->name);
+	} else {
+		ms_error("Error: Node [%s] remove failed", ms_node->name);
+	}
 }
 
 static gboolean __ms_src_need_typefind(GstElement *src)
@@ -469,7 +484,7 @@ static gboolean __ms_src_need_typefind(GstElement *src)
 	return ret;
 }
 
-int __ms_autoplug_prepare(media_streamer_s *ms_streamer)
+int __ms_pipeline_prepare(media_streamer_s *ms_streamer)
 {
 	GstElement *unlinked_element = NULL;
 	GstPad *unlinked_pad = NULL;
@@ -488,10 +503,10 @@ int __ms_autoplug_prepare(media_streamer_s *ms_streamer)
 
 	while (unlinked_pad) {
 		unlinked_element = gst_pad_get_parent_element(unlinked_pad);
-		ms_debug("Autoplug: found unlinked element [%s]\n", GST_ELEMENT_NAME(unlinked_element));
+		ms_debug("Autoplug: found unlinked element [%s]", GST_ELEMENT_NAME(unlinked_element));
 
 		parent = (GstElement *)gst_element_get_parent(GST_OBJECT_CAST(unlinked_element));
-		ms_info("Received new pad '%s' from [%s]\n", GST_PAD_NAME(unlinked_pad), GST_ELEMENT_NAME(unlinked_element));
+		ms_info("Received new pad '%s' from [%s]", GST_PAD_NAME(unlinked_pad), GST_ELEMENT_NAME(unlinked_element));
 
 		/* If element in src bin is filesrc */
 		if (__ms_src_need_typefind(unlinked_element)) {
@@ -500,7 +515,8 @@ int __ms_autoplug_prepare(media_streamer_s *ms_streamer)
 
 			gst_element_sync_state_with_parent(found_element);
 
-			if (__ms_bin_find_element_by_klass(ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container")) {
+			if (__ms_bin_find_element_by_klass(ms_streamer->topology_bin, found_element,
+                                               MEDIA_STREAMER_BIN_KLASS, "rtp_container")) {
 				g_signal_connect(found_element, "pad-added", G_CALLBACK(__decodebin_newpad_streamer_cb), ms_streamer);
 			} else {
 				g_signal_connect(found_element, "pad-added", G_CALLBACK(__decodebin_newpad_cb), ms_streamer);
@@ -528,15 +544,15 @@ int __ms_autoplug_prepare(media_streamer_s *ms_streamer)
 			new_pad_type = gst_structure_get_name(new_pad_struct);
 
 			if (MS_ELEMENT_IS_VIDEO(new_pad_type)) {
-				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "video_encoder", "encoder", DEFAULT_VIDEO_ENCODER);
-				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL, NULL);
-				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL, NULL);
+				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "video_encoder", NULL);
+				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
+				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
 			}
 
 			if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
-				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "audio_encoder", "encoder", DEFAULT_AUDIO_PARSER);
-				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL, NULL);
-				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL, NULL);
+				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "audio_encoder", NULL);
+				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
+				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
 			}
 			__ms_generate_dots(parent, GST_ELEMENT_NAME(found_element));
 		}
@@ -544,6 +560,69 @@ int __ms_autoplug_prepare(media_streamer_s *ms_streamer)
 	}
 
 	return MEDIA_STREAMER_ERROR_NONE;
+}
+
+static gboolean __ms_bin_remove_elements(media_streamer_s *ms_streamer, GstElement *bin)
+{
+	GValue element = G_VALUE_INIT;
+	GstIterator *bin_iterator = gst_bin_iterate_elements(GST_BIN(bin));
+
+	gboolean ret = TRUE; /* If Bin doesn't have any elements function returns TRUE */
+	GstElement *found_element = NULL;
+	GstIteratorResult it_res = gst_iterator_next(bin_iterator, &element);
+	while (GST_ITERATOR_OK == it_res) {
+		found_element = (GstElement *) g_value_get_object(&element);
+
+		/* Get node of this element if it appears as node*/
+		media_streamer_node_s *found_node = (media_streamer_node_s *)g_hash_table_lookup(
+				ms_streamer->nodes_table, GST_ELEMENT_NAME(found_element));
+		if (found_node) {
+			if (!found_node->linked_by_user) {
+				ret = ret && __ms_element_unlink(found_element);
+			} else {
+				ms_info("Unprepare skipped user-linked node [%s]", found_node->name);
+			}
+			__ms_generate_dots(ms_streamer->pipeline, GST_ELEMENT_NAME(found_element));
+		} else {
+			ret = ret && __ms_bin_remove_element(found_element);
+		}
+
+		g_value_reset(&element);
+
+		it_res = gst_iterator_next(bin_iterator, &element);
+		if (GST_ITERATOR_RESYNC == it_res) {
+			gst_iterator_resync(bin_iterator);
+			it_res = gst_iterator_next(bin_iterator, &element);
+		}
+	}
+	g_value_unset(&element);
+	gst_iterator_free(bin_iterator);
+
+	return ret;
+}
+
+int __ms_pipeline_unprepare(media_streamer_s *ms_streamer)
+{
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+
+#define MS_BIN_UNPREPARE(bin) \
+	if (!__ms_bin_remove_elements(ms_streamer, bin)) {\
+		ms_debug("Got a few errors during unprepare [%s] bin.", GST_ELEMENT_NAME(bin));\
+		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;\
+	}
+
+	MS_BIN_UNPREPARE(ms_streamer->src_bin);
+	MS_BIN_UNPREPARE(ms_streamer->topology_bin);
+	MS_BIN_UNPREPARE(ms_streamer->sink_video_bin);
+	MS_BIN_UNPREPARE(ms_streamer->sink_audio_bin);
+
+	__ms_bin_remove_element(ms_streamer->sink_video_bin);
+
+	__ms_bin_remove_element(ms_streamer->sink_audio_bin);
+
+#undef MS_BIN_UNPREPARE
+	return ret;
 }
 
 static void __params_foreach_cb(const char *key,
@@ -562,7 +641,7 @@ static void __params_foreach_cb(const char *key,
 
 	if (!bundle_keyval_type_is_array((bundle_keyval_t *)kv)) {
 		bundle_keyval_get_basic_val((bundle_keyval_t *)kv, &basic_val, &basic_size);
-		ms_info("Read param value[%s] with size [%d].", (gchar *)basic_val, basic_size);
+		ms_info("Read param value[%s] with size [%lu].", (gchar *)basic_val, (unsigned long)basic_size);
 
 		if (ms_node->set_param != NULL) {
 			ret = ms_node->set_param((struct media_streamer_node_s *)ms_node, (char *)key, (char *)basic_val);
@@ -575,7 +654,7 @@ static void __params_foreach_cb(const char *key,
 	}
 
 	ms_retm_if(ret != MEDIA_STREAMER_ERROR_NONE,
-	           "Error while adding param [%s,%s] to the node [%s]",
+	           "Error while adding param [%s,%d] to the node [%s]",
 	           key, type, ms_node->name);
 }
 

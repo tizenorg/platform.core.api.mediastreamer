@@ -24,12 +24,12 @@
 #include <media_streamer.h>
 
 typedef enum {
-	MENU_STATE_UNKNOWN = 0,
-	MENU_STATE_MAIN_MENU,
-	MENU_STATE_BROADCAST_MENU,
-	MENU_STATE_VOIP_MENU,
-	MENU_STATE_PLAYING_MENU,
-	MENU_STATE_PRESET_MENU
+    MENU_STATE_UNKNOWN = 0,
+    MENU_STATE_MAIN_MENU,
+    MENU_STATE_BROADCAST_MENU,
+    MENU_STATE_VOIP_MENU,
+    MENU_STATE_PLAYING_MENU,
+    MENU_STATE_PRESET_MENU
 } menu_state_e;
 
 typedef enum {
@@ -67,6 +67,7 @@ typedef enum {
 	SCENARIO_MODE_VIDEOTEST_SCREEN,
 	SCENARIO_MODE_AUDIOTEST_PHONE,
 	SCENARIO_MODE_TEST_VIDEO_AUDIO,
+	SCENARIO_MODE_FILE_STREAM_VIDEO_AUDIO,
 	SCENARIO_MODE_FILE_PLAY_VIDEO_AUDIO,
 	SCENARIO_MODE_FILE_SUBTITLE_VIDEO_AUDIO,
 	SCENARIO_MODE_HTTP_VIDEO_AUDIO,
@@ -91,6 +92,7 @@ typedef enum {
 static media_streamer_h g_media_streamer;
 static media_streamer_h g_media_streamer_2;
 static media_streamer_h current_media_streamer = &g_media_streamer;
+
 GMainLoop *g_loop;
 
 gchar *g_broadcast_address = NULL;
@@ -373,6 +375,15 @@ static void _create_file_sub_playing()
 	media_streamer_node_add(current_media_streamer, audio_sink);
 }
 
+static void _create_file_streaming()
+{
+	g_print("\n _create_file_playing \n");
+	media_streamer_node_h file_src = NULL;
+	media_streamer_node_create_src( MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &file_src);
+	media_streamer_node_set_param(file_src,MEDIA_STREAMER_PARAM_URI, g_uri);
+	media_streamer_node_add(current_media_streamer, file_src);
+}
+
 static void _create_http_playing()
 {
 	media_streamer_node_h http_src = NULL;
@@ -517,14 +528,20 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER, NULL, vfmt_encoded, &video_dec);
 		media_streamer_node_add(current_media_streamer, video_dec);
 
+		/*********************** videoconvertor *********************************** */
+		media_streamer_node_h video_conv = NULL;
+		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER, NULL, vfmt_encoded, &video_conv);
+		media_streamer_node_add(current_media_streamer, video_conv);
+
 		/*********************** videosink *********************************** */
 		media_streamer_node_h video_sink = NULL;
 		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
 		media_streamer_node_add(current_media_streamer, video_sink);
 
 		/*====================Linking Video Client=========================== */
-		/* media_streamer_node_link(video_depay, "src", video_dec, "sink"); */
-		/* media_streamer_node_link(video_dec, "src", video_sink, "sink"); */
+		 media_streamer_node_link(video_depay, "src", video_dec, "sink");
+		 media_streamer_node_link(video_dec, "src", video_conv, "sink");
+		 media_streamer_node_link(video_conv, "src", video_sink, "sink");
 
 		g_print("== success client video part \n");
 	}
@@ -536,16 +553,25 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY, NULL, NULL, &audio_depay);
 		media_streamer_node_add(current_media_streamer, audio_depay);
 
+		/*********************** audiodecoder *********************************** */
+		media_streamer_node_h audio_dec = NULL;
+		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_DECODER, NULL, NULL, &audio_dec);
+		media_streamer_node_add(current_media_streamer, audio_dec);
+
+		/*********************** audioconverter *********************************** */
+		media_streamer_node_h audio_conv = NULL;
+		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER, NULL, NULL, &audio_conv);
+		media_streamer_node_add(current_media_streamer, audio_conv);
+
 		/*********************** audiosink *********************************** */
 		media_streamer_node_h audio_sink = NULL;
 		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO, &audio_sink);
 		media_streamer_node_add(current_media_streamer, audio_sink);
 
 		/*====================Linking Audio Client=========================== */
-		/*media_streamer_node_link(audio_depay, "src", audio_converter, "sink");*/
-		/*media_streamer_node_link(audio_converter, "src", audio_res, "sink");*/
-		/*media_streamer_node_link(audio_res, "src", audio_sink, "sink");*/
-		/*media_streamer_node_link(rtp_bin, "audio_out", audio_depay,"sink"); */
+		media_streamer_node_link(audio_depay, "src", audio_dec, "sink");
+		media_streamer_node_link(audio_dec, "src", audio_conv, "sink");
+		media_streamer_node_link(audio_conv, "src", audio_sink, "sink");
 		/*====================================================================== */
 
 		g_print("== success client audio part \n");
@@ -712,27 +738,35 @@ void quit()
 static void display_getting_ip_menu(void)
 {
 	g_print("\n");
+	g_print("====================================================\n");
 	g_print("Please input IP address for broadcasting\n");
 	g_print("By default will be used [%s]\n", DEFAULT_IP_ADDR);
+	g_print("----------------------------------------------------\n");
 }
 
 static void display_getting_uri_menu(void)
 {
 	g_print("\n");
+	g_print("====================================================\n");
 	g_print("Please input video URI for playing\n");
+	g_print("----------------------------------------------------\n");
 }
 
 static void display_getting_sub_uri_menu(void)
 {
 	g_print("\n");
+	g_print("====================================================\n");
 	g_print("Please input Subtitle path for playing\n");
+	g_print("----------------------------------------------------\n");
 }
 
 static void display_getting_seek_position_menu(void)
 {
 	g_print("\n");
+	g_print("====================================================\n");
 	g_print("Please enter desired position\n");
 	g_print("By default will be seeked to [%d]\n", DEFAULT_SEEK_POS);
+	g_print("----------------------------------------------------\n");
 }
 
 static void display_autoplug_select_menu(void)
@@ -756,6 +790,8 @@ static void display_scenario_select_menu(void)
 	g_print("4. Video test -> Screen\n");
 	g_print("5. Audio test -> Phones\n");
 	g_print("6. Video test + Audio test -> Screen + Phones\n");
+	g_print("7. File -> Screen + Phones\n");
+
 }
 
 static void display_playing_scenario_select_menu(void)
@@ -1074,31 +1110,51 @@ void _interpret_scenario_menu(char *cmd)
 			g_scenario_mode = SCENARIO_MODE_CAMERA_SCREEN;
 			g_video_is_on = TRUE;
 			g_audio_is_on = FALSE;
+			g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
+			run_preset();
 		} else if (!strncmp(cmd, "2", len)) {
 			g_scenario_mode = SCENARIO_MODE_MICROPHONE_PHONE;
 			g_video_is_on = FALSE;
 			g_audio_is_on = TRUE;
+			g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
+			run_preset();
 		} else if (!strncmp(cmd, "3", len)) {
 			g_scenario_mode = SCENARIO_MODE_FULL_VIDEO_AUDIO;
 			g_video_is_on = TRUE;
 			g_audio_is_on = TRUE;
+			g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
+			run_preset();
 		} else if (!strncmp(cmd, "4", len)) {
 			g_scenario_mode = SCENARIO_MODE_VIDEOTEST_SCREEN;
 			g_video_is_on = TRUE;
 			g_audio_is_on = FALSE;
+			g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
+			run_preset();
 		} else if (!strncmp(cmd, "5", len)) {
 			g_scenario_mode = SCENARIO_MODE_AUDIOTEST_PHONE;
 			g_video_is_on = FALSE;
 			g_audio_is_on = TRUE;
+			g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
+			run_preset();
 		} else if (!strncmp(cmd, "6", len)) {
 			g_scenario_mode = SCENARIO_MODE_TEST_VIDEO_AUDIO;
 			g_video_is_on = TRUE;
 			g_audio_is_on = TRUE;
+			g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
+			run_preset();
+		} else if (!strncmp(cmd, "7", len)) {
+			g_scenario_mode = SCENARIO_MODE_FILE_STREAM_VIDEO_AUDIO;
+			g_video_is_on = TRUE;
+			g_audio_is_on = TRUE;
+			if (g_menu_preset == PRESET_RTP_STREAMER) {
+				g_sub_menu_state = SUBMENU_STATE_GETTING_VIDEOFILE_URI;
+			} else if (g_menu_preset == PRESET_RTP_CLIENT) {
+				create_formats();
+				media_streamer_node_h rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
+				g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
+			}
 		}
 	}
-
-	run_preset();
-	g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
 }
 
 void _interpret_getting_ip_menu(char *cmd)
@@ -1178,8 +1234,15 @@ void _interpret_getting_uri_menu(char *cmd)
 			g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
 		}
 	} else {
+		if (g_scenario_mode == SCENARIO_MODE_FILE_STREAM_VIDEO_AUDIO) {
+			media_streamer_node_h rtp_bin = NULL;
+			create_formats();
+			_create_file_streaming();
+			_create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
+		} else {
+			run_preset();
+		}
 		g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
-		run_preset();
 	}
 }
 

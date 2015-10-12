@@ -111,7 +111,7 @@ int __ms_load_ini_settings(media_streamer_ini_t *ini)
 		ini->use_decodebin = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
 	}
 
-	 else { /* if dict is not available just fill the structure with default value */
+	else { /* if dict is not available just fill the structure with default value */
 		ms_debug("failed to load ini. using hardcoded default");
 
 		/* general settings*/

@@ -108,7 +108,7 @@ typedef struct __media_streamer_ini {
 /* setting default values if each value is not specified in .ini file */
 /* general */
 #define DEFAULT_GENERATE_DOT                FALSE
-#define DEFAULT_USE_DECODEBIN				FALSE
+#define DEFAULT_USE_DECODEBIN               FALSE
 #define DEFAULT_AUDIO_SOURCE                "alsasrc"
 #define DEFAULT_CAMERA_SOURCE               "v4l2src"
 #define DEFAULT_VIDEO_SOURCE                "ximagesrc"
@@ -140,7 +140,7 @@ typedef struct __media_streamer_ini {
 #define DEFAULT_AUDIO_RTPDEPAY              "rtpL16depay"
 
 #define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,width=1280,height=720"
-#define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=44100,format=S16BE"
+#define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=44100,format=S16LE"
 #define MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT "video/x-h263,stream-format=byte-stream,profile=high"
 
 #define MS_ELEMENT_IS_OUTPUT(el) g_strrstr(el, "out")
@@ -152,8 +152,7 @@ typedef struct __media_streamer_ini {
 #define MS_ELEMENT_IS_DECODER(el) g_strrstr(el, "decoder")
 
 #define MEDIA_STREAMER_DEFAULT_DOT_DIR "/tmp"
-#define MEDIA_STREAMER_DEFAULT_INI \
-"\
+#define MEDIA_STREAMER_DEFAULT_INI "\
 [general] \n\
 ; generating dot file representing pipeline state \n\
 generate dot = no \n\

@@ -153,27 +153,24 @@ int __ms_node_create(media_streamer_node_s *node,
 	switch (node->type) {
 		case MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER:
 			format_prefix = g_strdup_printf("%s:encoder", __ms_convert_mime_to_string(mime));
-			plugin_name = __ms_ini_get_string(dict,
-			                                  format_prefix, DEFAULT_VIDEO_ENCODER);
+			plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_ENCODER);
 			node->gst_element = __ms_video_encoder_element_create(dict, mime);
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER:
 			dec_use = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
 			if (dec_use) {
 				node->gst_element = __ms_element_create("decodebin", NULL);
-				g_signal_connect(node->gst_element, "pad-added", G_CALLBACK(__decodebin_newpad_client_cb), (gpointer )node);
+				g_signal_connect(node->gst_element, "pad-added", G_CALLBACK(__decodebin_newpad_client_cb), (gpointer)node);
 				g_signal_connect(node->gst_element, "autoplug-select", G_CALLBACK(__ms_decodebin_autoplug_select), NULL);
 			} else {
 				format_prefix = g_strdup_printf("%s:decoder", __ms_convert_mime_to_string(mime));
-				plugin_name = __ms_ini_get_string(dict,
-					                              format_prefix, DEFAULT_VIDEO_DECODER);
+				plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_DECODER);
 				node->gst_element = __ms_video_decoder_element_create(dict, mime);
 			}
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_PARSER:
 			format_prefix = g_strdup_printf("%s:parser", __ms_convert_mime_to_string(mime));
-			plugin_name = __ms_ini_get_string(dict,
-			                                  format_prefix, DEFAULT_VIDEO_PARSER);
+			plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_PARSER);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_FILTER:
@@ -181,24 +178,20 @@ int __ms_node_create(media_streamer_node_s *node,
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY:
 			format_prefix = g_strdup_printf("%s:rtppay", __ms_convert_mime_to_string(mime));
-			plugin_name = __ms_ini_get_string(dict,
-			                                  format_prefix, DEFAULT_VIDEO_RTPPAY);
+			plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_RTPPAY);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY:
-			plugin_name = __ms_ini_get_string(dict,
-			                                  "audio-raw:rtppay", DEFAULT_AUDIO_RTPPAY);
+			plugin_name = __ms_ini_get_string(dict, "audio-raw:rtppay", DEFAULT_AUDIO_RTPPAY);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY:
 			format_prefix = g_strdup_printf("%s:rtpdepay", __ms_convert_mime_to_string(mime));
-			plugin_name = __ms_ini_get_string(dict,
-			                                  format_prefix, DEFAULT_VIDEO_RTPDEPAY);
+			plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_RTPDEPAY);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY:
-			plugin_name = __ms_ini_get_string(dict,
-			                                  "audio-raw:rtpdepay", DEFAULT_AUDIO_RTPDEPAY);
+			plugin_name = __ms_ini_get_string(dict, "audio-raw:rtpdepay", DEFAULT_AUDIO_RTPDEPAY);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_TYPE_RTP:
@@ -246,7 +239,7 @@ static void __ms_src_start_feed_cb(GstElement *pipeline, guint size, gpointer da
 	if (ms_src->callbacks_structure != NULL) {
 		media_streamer_callback_s *src_callback = (media_streamer_callback_s *)ms_src->callbacks_structure;
 		media_streamer_custom_buffer_status_cb buffer_status_cb =
-				(media_streamer_custom_buffer_status_cb) src_callback->callback;
+		    (media_streamer_custom_buffer_status_cb) src_callback->callback;
 		buffer_status_cb((media_streamer_node_h)ms_src, MEDIA_STREAMER_CUSTOM_BUFFER_UNDERRUN, src_callback->user_data);
 	}
 }
@@ -261,7 +254,7 @@ static void __ms_src_stop_feed_cb(GstElement *pipeline, gpointer data)
 	if (ms_src->callbacks_structure != NULL) {
 		media_streamer_callback_s *src_callback = (media_streamer_callback_s *)ms_src->callbacks_structure;
 		media_streamer_custom_buffer_status_cb buffer_status_cb =
-				(media_streamer_custom_buffer_status_cb) src_callback->callback;
+		    (media_streamer_custom_buffer_status_cb) src_callback->callback;
 		buffer_status_cb((media_streamer_node_h)ms_src, MEDIA_STREAMER_CUSTOM_BUFFER_OVERFLOW, src_callback->user_data);
 	}
 }
@@ -288,19 +281,16 @@ int __ms_src_node_create(media_streamer_node_s *node)
 			node->gst_element = __ms_element_create(DEFAULT_HTTP_SOURCE, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA:
-			plugin_name = __ms_ini_get_string(dict,
-			                                  "sources:camera_source", DEFAULT_CAMERA_SOURCE);
+			plugin_name = __ms_ini_get_string(dict, "sources:camera_source", DEFAULT_CAMERA_SOURCE);
 			node->gst_element = __ms_camera_element_create(plugin_name);
 
 			break;
 		case MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_CAPTURE:
-			plugin_name = __ms_ini_get_string(dict,
-			                                  "sources:audio_source", DEFAULT_AUDIO_SOURCE);
+			plugin_name = __ms_ini_get_string(dict, "sources:audio_source", DEFAULT_AUDIO_SOURCE);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_CAPTURE:
-			plugin_name = __ms_ini_get_string(dict,
-			                                  "sources:video_source", DEFAULT_VIDEO_SOURCE);
+			plugin_name = __ms_ini_get_string(dict, "sources:video_source", DEFAULT_VIDEO_SOURCE);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_TEST:
@@ -336,9 +326,9 @@ static void __ms_sink_new_buffer_cb(GstElement *sink, gpointer *data)
 
 	if (ms_sink->callbacks_structure != NULL) {
 		media_streamer_sink_callbacks_s *sink_callbacks =
-				(media_streamer_sink_callbacks_s *)ms_sink->callbacks_structure;
+		    (media_streamer_sink_callbacks_s *)ms_sink->callbacks_structure;
 		media_streamer_sink_data_ready_cb data_ready_cb =
-				(media_streamer_sink_data_ready_cb) sink_callbacks->data_ready_cb.callback;
+		    (media_streamer_sink_data_ready_cb) sink_callbacks->data_ready_cb.callback;
 
 		if (data_ready_cb) {
 			data_ready_cb((media_streamer_node_h)ms_sink, sink_callbacks->data_ready_cb.user_data);
@@ -354,9 +344,9 @@ static void sink_eos(GstElement *sink, gpointer *data)
 
 	if (ms_sink->callbacks_structure != NULL) {
 		media_streamer_sink_callbacks_s *sink_callbacks =
-				(media_streamer_sink_callbacks_s *)ms_sink->callbacks_structure;
+		    (media_streamer_sink_callbacks_s *)ms_sink->callbacks_structure;
 		media_streamer_sink_eos_cb eos_cb =
-				(media_streamer_sink_eos_cb) sink_callbacks->eos_cb.callback;
+		    (media_streamer_sink_eos_cb) sink_callbacks->eos_cb.callback;
 
 		if (eos_cb) {
 			eos_cb((media_streamer_node_h)ms_sink, sink_callbacks->eos_cb.user_data);
@@ -386,13 +376,11 @@ int __ms_sink_node_create(media_streamer_node_s *node)
 			ms_error("Error: not implemented yet");
 			break;
 		case MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO:
-			plugin_name = __ms_ini_get_string(dict,
-			                                  "sinks:audio_sink", DEFAULT_AUDIO_SINK);
+			plugin_name = __ms_ini_get_string(dict, "sinks:audio_sink", DEFAULT_AUDIO_SINK);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN:
-			plugin_name = __ms_ini_get_string(dict,
-			                                  "sinks:video_sink", DEFAULT_VIDEO_SINK);
+			plugin_name = __ms_ini_get_string(dict, "sinks:video_sink", DEFAULT_VIDEO_SINK);
 			node->gst_element = __ms_element_create(plugin_name, NULL);
 			break;
 		case MEDIA_STREAMER_NODE_SINK_TYPE_FAKE:
@@ -498,8 +486,7 @@ int __ms_autoplug_prepare(media_streamer_s *ms_streamer)
 	/* Find unlinked element in src_bin */
 	unlinked_pad = gst_bin_find_unlinked_pad(GST_BIN(ms_streamer->src_bin), GST_PAD_SRC);
 
-	while (unlinked_pad)
-	{
+	while (unlinked_pad) {
 		unlinked_element = gst_pad_get_parent_element(unlinked_pad);
 		ms_debug("Autoplug: found unlinked element [%s]\n", GST_ELEMENT_NAME(unlinked_element));
 
@@ -507,17 +494,16 @@ int __ms_autoplug_prepare(media_streamer_s *ms_streamer)
 		ms_info("Received new pad '%s' from [%s]\n", GST_PAD_NAME(unlinked_pad), GST_ELEMENT_NAME(unlinked_element));
 
 		/* If element in src bin is filesrc */
-		if (__ms_src_need_typefind(unlinked_element))
-		{
+		if (__ms_src_need_typefind(unlinked_element)) {
 			found_element = __ms_element_create("decodebin", NULL);
 			gst_bin_add_many((GstBin *)ms_streamer->topology_bin, found_element, NULL);
 
 			gst_element_sync_state_with_parent(found_element);
 
-			if(__ms_bin_find_element_by_klass(ms_streamer->topology_bin,MEDIA_STREAMER_BIN_KLASS, "rtp_container")) {
-				g_signal_connect(found_element, "pad-added", G_CALLBACK (__decodebin_newpad_streamer_cb), ms_streamer);
+			if (__ms_bin_find_element_by_klass(ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container")) {
+				g_signal_connect(found_element, "pad-added", G_CALLBACK(__decodebin_newpad_streamer_cb), ms_streamer);
 			} else {
-				g_signal_connect(found_element, "pad-added", G_CALLBACK (__decodebin_newpad_cb), ms_streamer);
+				g_signal_connect(found_element, "pad-added", G_CALLBACK(__decodebin_newpad_cb), ms_streamer);
 			}
 			g_signal_connect(found_element, "autoplug-select", G_CALLBACK(__ms_decodebin_autoplug_select), NULL);
 
@@ -541,13 +527,13 @@ int __ms_autoplug_prepare(media_streamer_s *ms_streamer)
 			new_pad_struct = gst_caps_get_structure(new_pad_caps, 0);
 			new_pad_type = gst_structure_get_name(new_pad_struct);
 
-			if(MS_ELEMENT_IS_VIDEO(new_pad_type)) {
+			if (MS_ELEMENT_IS_VIDEO(new_pad_type)) {
 				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "video_encoder", "encoder", DEFAULT_VIDEO_ENCODER);
 				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL, NULL);
 				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL, NULL);
 			}
 
-			if(MS_ELEMENT_IS_AUDIO(new_pad_type)) {
+			if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
 				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "audio_encoder", "encoder", DEFAULT_AUDIO_PARSER);
 				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL, NULL);
 				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL, NULL);
@@ -610,17 +596,17 @@ static void __ms_node_get_param_value(GParamSpec *param, GValue value, char **st
 		pint = G_PARAM_SPEC_INT(param);
 		string_val = g_strdup_printf("%d", g_value_get_int(&value));
 		ms_info("Got int value: [%s], range: %d - %d", string_val,
-				pint->minimum, pint->maximum);
+		        pint->minimum, pint->maximum);
 	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_CAPTURE_WIDTH)) {
 		pint = G_PARAM_SPEC_INT(param);
 		string_val = g_strdup_printf("%d", g_value_get_int(&value));
 		ms_info("Got int value: [%s], range: %d - %d", string_val,
-				pint->minimum, pint->maximum);
+		        pint->minimum, pint->maximum);
 	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_CAPTURE_HEIGHT)) {
 		pint = G_PARAM_SPEC_INT(param);
 		string_val = g_strdup_printf("%d", g_value_get_int(&value));
 		ms_info("Got int value: [%s], range: %d - %d", string_val,
-				pint->minimum, pint->maximum);
+		        pint->minimum, pint->maximum);
 	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_IS_LIVE_STREAM)) {
 		string_val = g_strdup_printf("%s", g_value_get_boolean(&value) ? "true" : "false");
 		ms_info("Got boolean value: [%s]", string_val);
@@ -637,27 +623,27 @@ static void __ms_node_get_param_value(GParamSpec *param, GValue value, char **st
 		pint = G_PARAM_SPEC_INT(param);
 		string_val = g_strdup_printf("%d", g_value_get_int(&value));
 		ms_info("Got int value: [%s], range: %d - %d", string_val,
-                pint->minimum, pint->maximum);
+		        pint->minimum, pint->maximum);
 	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_VIDEO_IN_PORT)) {
 		pint = G_PARAM_SPEC_INT(param);
 		string_val = g_strdup_printf("%d", g_value_get_int(&value));
 		ms_info("Got int value: [%s], range: %d - %d", string_val,
-				pint->minimum, pint->maximum);
+		        pint->minimum, pint->maximum);
 	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_AUDIO_IN_PORT)) {
 		pint = G_PARAM_SPEC_INT(param);
 		string_val = g_strdup_printf("%d", g_value_get_int(&value));
 		ms_info("Got int value: [%s], range: %d - %d", string_val,
-				pint->minimum, pint->maximum);
+		        pint->minimum, pint->maximum);
 	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_VIDEO_OUT_PORT)) {
 		pint = G_PARAM_SPEC_INT(param);
 		string_val = g_strdup_printf("%d", g_value_get_int(&value));
 		ms_info("Got int value: [%s], range: %d - %d", string_val,
-				pint->minimum, pint->maximum);
+		        pint->minimum, pint->maximum);
 	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_AUDIO_OUT_PORT)) {
 		pint = G_PARAM_SPEC_INT(param);
 		string_val = g_strdup_printf("%d", g_value_get_int(&value));
 		ms_info("Got int value: [%s], range: %d - %d", string_val,
-				pint->minimum, pint->maximum);
+		        pint->minimum, pint->maximum);
 	} else if (!g_strcmp0(param->name, MEDIA_STREAMER_PARAM_IP_ADDRESS)) {
 		string_val = g_strdup_printf("%s", g_value_get_string(&value));
 		ms_info("Got string value: [%s]", g_value_get_string(&value));
@@ -692,25 +678,24 @@ void __ms_node_check_param_name(GstElement *element, gboolean name_is_known,
 {
 	char *set_param_name = NULL;
 	char *orig_param_name = NULL;
-	int it_param=0;
+	int it_param = 0;
 
 	GParamSpec *param;
 
-	for(it_param = 0; it_param < PROPERTY_COUNT; it_param++)
-	{
+	for (it_param = 0; it_param < PROPERTY_COUNT; it_param++) {
 		set_param_name = param_table[it_param][0];
 		orig_param_name = param_table[it_param][1];
 		param = g_object_class_find_property(G_OBJECT_GET_CLASS(element), orig_param_name);
 
 		if (name_is_known) {
-			if(!g_strcmp0(param_name, set_param_name)) {
+			if (!g_strcmp0(param_name, set_param_name)) {
 				if (param) {
 					*init_param_name = orig_param_name;
 					break;
 				}
 			}
 		} else {
-			if(!g_strcmp0(param_name, orig_param_name)) {
+			if (!g_strcmp0(param_name, orig_param_name)) {
 				if (param) {
 					*init_param_name = set_param_name;
 					break;
@@ -729,7 +714,7 @@ int __ms_node_write_params_into_bundle(media_streamer_node_s *node,
 	char *param_init_name = NULL;
 
 	property_specs = g_object_class_list_properties(G_OBJECT_GET_CLASS(node->gst_element),
-                                                    &num_properties);
+	                                                &num_properties);
 
 	if (num_properties <= 0) {
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
@@ -776,8 +761,7 @@ int __ms_node_write_param_into_value(media_streamer_node_s *node, const char *pa
 
 	__ms_node_check_param_name(node->gst_element, TRUE, param_name, &param_init_name);
 
-	if (param_init_name)
-	{
+	if (param_init_name) {
 		param = g_object_class_find_property(G_OBJECT_GET_CLASS(node->gst_element), param_init_name);
 
 		ms_info("Getting parameter of the Node [%s]", node->name);

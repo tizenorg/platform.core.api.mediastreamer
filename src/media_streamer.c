@@ -30,7 +30,7 @@
 */
 
 int media_streamer_node_create_src(media_streamer_node_src_type_e type,
-                              media_streamer_node_h *src)
+                                   media_streamer_node_h *src)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
@@ -57,7 +57,7 @@ int media_streamer_node_create_src(media_streamer_node_src_type_e type,
 }
 
 int media_streamer_node_create_sink(media_streamer_node_sink_type_e type,
-                               media_streamer_node_h *sink)
+                                    media_streamer_node_h *sink)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
@@ -554,21 +554,21 @@ int media_streamer_get_play_position(media_streamer_h streamer, int *time)
 }
 
 int media_streamer_node_push_packet(media_streamer_node_h src,
-                               media_packet_h packet)
+                                    media_packet_h packet)
 {
 	media_streamer_node_s *ms_node = (media_streamer_node_s *)src;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	ms_retvm_if(ms_node->type != MEDIA_STREAMER_NODE_TYPE_SRC,
-			MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Node type must be Src type for pushing packets.");
+	            MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Node type must be Src type for pushing packets.");
 	ms_retvm_if(ms_node->subtype != MEDIA_STREAMER_NODE_SRC_TYPE_CUSTOM,
-			MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Source Node must be a custom type for pushing packets.");
+	            MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Source Node must be a custom type for pushing packets.");
 
 	return __ms_element_push_packet(ms_node->gst_element, packet);
 }
 
 int media_streamer_node_pull_packet(media_streamer_node_h sink,
-                               media_packet_h *packet)
+                                    media_packet_h *packet)
 {
 	media_streamer_node_s *ms_node = (media_streamer_node_s *)sink;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -576,9 +576,9 @@ int media_streamer_node_pull_packet(media_streamer_node_h sink,
 
 	ms_retvm_if(ms_node->gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(ms_node->type != MEDIA_STREAMER_NODE_TYPE_SINK,
-			MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Node type must be Sink type for pulling packets.");
+	            MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Node type must be Sink type for pulling packets.");
 	ms_retvm_if(ms_node->subtype != MEDIA_STREAMER_NODE_SINK_TYPE_CUSTOM,
-			MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Sink Node must be a custom type for pulling packets.");
+	            MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Sink Node must be a custom type for pulling packets.");
 
 	return __ms_element_pull_packet(ms_node->gst_element, packet);
 }
@@ -707,7 +707,7 @@ int media_streamer_node_get_params(media_streamer_node_h node,
 }
 
 int media_streamer_node_set_param(media_streamer_node_h node,
-                                 const char *param_name, const char *param_value)
+                                  const char *param_name, const char *param_value)
 {
 	media_streamer_node_s *ms_node = (media_streamer_node_s *)node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -729,7 +729,7 @@ int media_streamer_node_get_param(media_streamer_node_h node,
 
 	char *ms_param = NULL;
 
-	if (__ms_node_write_param_into_value(ms_node, param_name,&ms_param) != MEDIA_STREAMER_ERROR_NONE) {
+	if (__ms_node_write_param_into_value(ms_node, param_name, &ms_param) != MEDIA_STREAMER_ERROR_NONE) {
 		ms_info("Node [%s] does not have param [%s]", ms_node->name, param_name);
 
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;

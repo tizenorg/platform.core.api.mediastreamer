@@ -22,8 +22,8 @@
  * @since_tizen 3.0
  */
 int __ms_node_set_property(media_streamer_node_s *ms_node,
-                                  const gchar *param_key,
-                                  const gchar *param_value);
+                           const gchar *param_key,
+                           const gchar *param_value);
 
 /**
  * @brief Creates media streamer node using input and output format.

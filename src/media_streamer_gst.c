@@ -42,8 +42,8 @@ static int __ms_add_no_target_ghostpad(GstElement *gst_bin,
 	gchar *bin_name = gst_element_get_name(gst_bin);
 	GstPad *ghost_pad = gst_ghost_pad_new_no_target(ghost_pad_name, pad_direction);
 	if (gst_element_add_pad(GST_ELEMENT(gst_bin), ghost_pad)) {
-	gst_pad_set_active(ghost_pad, TRUE);
-	ms_info("Added [%s] empty ghostpad into [%s]", ghost_pad_name, bin_name);
+		gst_pad_set_active(ghost_pad, TRUE);
+		ms_info("Added [%s] empty ghostpad into [%s]", ghost_pad_name, bin_name);
 	} else {
 		ms_info("Error: Failed to add empty [%s] ghostpad into [%s]", ghost_pad_name, bin_name);
 		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
@@ -82,7 +82,7 @@ static int __ms_add_ghostpad(GstElement *gst_element,
 		ret = MEDIA_STREAMER_ERROR_NONE;
 	} else {
 		ms_error("Error: element [%s] does not have valid [%s] pad for adding into [%s] bin",
-				element_name, pad_name, bin_name);
+		         element_name, pad_name, bin_name);
 		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
@@ -134,8 +134,7 @@ gboolean __ms_element_set_property(GstElement *element, const char *key, const g
 
 	__ms_node_check_param_name(element, TRUE, key, &init_name);
 
-	if (init_name)
-	{
+	if (init_name) {
 		GObject *obj = __ms_get_property_owner(element, init_name, &value);
 
 		if (obj == NULL) {
@@ -424,7 +423,7 @@ int __ms_get_rank_increase(const char *factory_name)
 int __ms_factory_rank_compare(GstPluginFeature *first_feature, GstPluginFeature *second_feature)
 {
 	const gchar *name;
-	int first_feature_rank_inc=0, second_feature_rank_inc = 0;
+	int first_feature_rank_inc = 0, second_feature_rank_inc = 0;
 
 	name = gst_plugin_feature_get_plugin_name(first_feature);
 	first_feature_rank_inc = __ms_get_rank_increase(name);
@@ -433,7 +432,7 @@ int __ms_factory_rank_compare(GstPluginFeature *first_feature, GstPluginFeature 
 	second_feature_rank_inc = __ms_get_rank_increase(name);
 
 	return (gst_plugin_feature_get_rank(second_feature) + second_feature_rank_inc) -
-                (gst_plugin_feature_get_rank(first_feature) + first_feature_rank_inc );
+	       (gst_plugin_feature_get_rank(first_feature) + first_feature_rank_inc);
 }
 
 gboolean __ms_feature_filter(GstPluginFeature *feature, gpointer data)
@@ -453,15 +452,14 @@ GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_
 	GstCaps *new_pad_caps = gst_pad_query_caps(src_pad, NULL);
 
 	factories = gst_registry_feature_filter(gst_registry_get(),
-                                           (GstPluginFeatureFilter)__ms_feature_filter, FALSE, NULL);
+	                                        (GstPluginFeatureFilter)__ms_feature_filter, FALSE, NULL);
 	factories = g_list_sort(factories, (GCompareFunc)__ms_factory_rank_compare);
 
-	for(; factories != NULL ; factories = factories->next) {
+	for (; factories != NULL ; factories = factories->next) {
 		GstElementFactory *factory = GST_ELEMENT_FACTORY(factories->data);
 
-		if (g_strrstr(gst_element_factory_get_klass(GST_ELEMENT_FACTORY(factory)), klass_name))
-		{
-			for(pads = gst_element_factory_get_static_pad_templates(factory); pads != NULL; pads = pads->next) {
+		if (g_strrstr(gst_element_factory_get_klass(GST_ELEMENT_FACTORY(factory)), klass_name)) {
+			for (pads = gst_element_factory_get_static_pad_templates(factory); pads != NULL; pads = pads->next) {
 
 				GstCaps *intersect_caps = NULL;
 				GstCaps *static_caps = NULL;
@@ -480,6 +478,7 @@ GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_
 				intersect_caps = gst_caps_intersect_full(new_pad_caps, static_caps, GST_CAPS_INTERSECT_FIRST);
 
 				if ((!gst_caps_is_any(static_caps)) && (!gst_caps_is_empty(intersect_caps))) {
+
 					if (!next_element) {
 						next_element = __ms_element_create(GST_OBJECT_NAME(factory), NULL);
 					}
@@ -494,9 +493,9 @@ GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_
 	return next_element;
 }
 
-GstElement * __ms_link_with_new_element(GstElement *previous_element,
-                                        GstElement *new_element,
-                                        const gchar *next_elem_bin_name)
+GstElement *__ms_link_with_new_element(GstElement *previous_element,
+                                       GstElement *new_element,
+                                       const gchar *next_elem_bin_name)
 {
 	GstCaps *new_pad_caps = NULL;
 	GstStructure *new_pad_struct = NULL;
@@ -518,16 +517,16 @@ GstElement * __ms_link_with_new_element(GstElement *previous_element,
 			new_pad_type = gst_structure_get_name(new_pad_struct);
 
 			if (!gst_pad_is_linked(sink_pad)) {
-				if(!strncmp(new_pad_type,GST_PAD_NAME(sink_pad), COMPARED_NUMBER)) {
+				if (!strncmp(new_pad_type, GST_PAD_NAME(sink_pad), COMPARED_NUMBER)) {
 					if (gst_element_link_pads_filtered(previous_element, "src", new_element,
-                                                       GST_PAD_NAME(sink_pad), NULL)) {
+					                                   GST_PAD_NAME(sink_pad), NULL)) {
 						ms_info("Succeeded to link [%s] -> [%s]\n",
-                                GST_ELEMENT_NAME(previous_element),
-                                GST_ELEMENT_NAME(new_element));
+						        GST_ELEMENT_NAME(previous_element),
+						        GST_ELEMENT_NAME(new_element));
 					} else {
 						ms_error("Failed to link [%s] -> [%s]\n",
-                                 GST_ELEMENT_NAME(previous_element),
-                                 GST_ELEMENT_NAME(new_element));
+						         GST_ELEMENT_NAME(previous_element),
+						         GST_ELEMENT_NAME(new_element));
 					}
 				}
 			}
@@ -544,12 +543,12 @@ GstElement * __ms_link_with_new_element(GstElement *previous_element,
 
 		if (ret) {
 			ms_info("Succeeded to link [%s] -> [%s]\n",
-                    GST_ELEMENT_NAME(previous_element),
-                    GST_ELEMENT_NAME(new_element));
+			        GST_ELEMENT_NAME(previous_element),
+			        GST_ELEMENT_NAME(new_element));
 		} else {
 			ms_error("Failed to link [%s] and [%s] \n",
-                     GST_ELEMENT_NAME(previous_element),
-                     GST_ELEMENT_NAME(new_element));
+			         GST_ELEMENT_NAME(previous_element),
+			         GST_ELEMENT_NAME(new_element));
 
 			/*Remove created element*/
 			if (gst_bin_remove(GST_BIN(GST_ELEMENT_PARENT(new_element)), new_element)) {
@@ -572,7 +571,7 @@ GstElement *__ms_combine_next_element(GstElement *previous_element,
 	GstElement *found_element = NULL;
 	GstElement *parent_element = NULL;
 
-	if(!previous_element) {
+	if (!previous_element) {
 		return NULL;
 	}
 
@@ -593,12 +592,14 @@ GstElement *__ms_combine_next_element(GstElement *previous_element,
 			ms_error("Bin [%s] was not found", next_elem_bin_name);
 			return NULL;
 
-		/* Create element by element name*/
-		} else if(!found_element && !next_elem_klass_name && default_element) {
+			/* Create element by element name*/
+		} else if (!found_element && !next_elem_klass_name && default_element) {
 			found_element = __ms_element_create(default_element, NULL);
 
-		/* Create element by predefined format element type*/
-		} else if(!found_element && MS_ELEMENT_IS_ENCODER(next_elem_bin_name)) {
+			/* Create element by predefined format element type*/
+		} else if (!found_element
+				&& next_elem_bin_name
+				&& MS_ELEMENT_IS_ENCODER(next_elem_bin_name)) {
 
 			dictionary *dict = NULL;
 
@@ -612,7 +613,7 @@ GstElement *__ms_combine_next_element(GstElement *previous_element,
 
 			__ms_destroy_ini_dictionary(dict);
 
-		/* Create element by caps of the previous element */
+			/* Create element by caps of the previous element */
 		} else if (!found_element) {
 			GstPad *src_pad = gst_element_get_static_pad(previous_element, "src");
 			found_element = __ms_create_element_by_registry(src_pad, next_elem_klass_name);
@@ -623,21 +624,21 @@ GstElement *__ms_combine_next_element(GstElement *previous_element,
 		if (found_element) {
 			if (gst_bin_add(GST_BIN(parent_element), found_element)) {
 				ms_debug("Element [%s] added into [%s] bin",
-						 GST_ELEMENT_NAME(found_element),
-						 GST_ELEMENT_NAME(parent_element));
+				         GST_ELEMENT_NAME(found_element),
+				         GST_ELEMENT_NAME(parent_element));
 
 				gst_element_sync_state_with_parent(found_element);
 				previous_element = __ms_link_with_new_element(previous_element, found_element, NULL);
 				__ms_generate_dots(parent_element, GST_ELEMENT_NAME(found_element));
 			} else {
 				ms_error("Element [%s] was not added into [%s] bin",
-						 GST_ELEMENT_NAME(found_element),
-						 GST_ELEMENT_NAME(parent_element));
+				         GST_ELEMENT_NAME(found_element),
+				         GST_ELEMENT_NAME(parent_element));
 				MS_SAFE_UNREF(found_element);
 				found_element = NULL;
 			}
 		} else {
-			ms_error("Could not find compatible element to link [%s]",GST_ELEMENT_NAME(previous_element));
+			ms_error("Could not find compatible element to link [%s]", GST_ELEMENT_NAME(previous_element));
 		}
 	}
 
@@ -646,7 +647,7 @@ GstElement *__ms_combine_next_element(GstElement *previous_element,
 	return found_element;
 }
 
- gint __ms_decodebin_autoplug_select(GstElement *bin,
+gint __ms_decodebin_autoplug_select(GstElement *bin,
                                     GstPad *pad,
                                     GstCaps *caps,
                                     GstElementFactory *factory,
@@ -654,9 +655,9 @@ GstElement *__ms_combine_next_element(GstElement *previous_element,
 {
 	/* NOTE : GstAutoplugSelectResult is defined in gstplay-enum.h but not exposed */
 	typedef enum {
-		GST_AUTOPLUG_SELECT_TRY,
-		GST_AUTOPLUG_SELECT_EXPOSE,
-		GST_AUTOPLUG_SELECT_SKIP
+	    GST_AUTOPLUG_SELECT_TRY,
+	    GST_AUTOPLUG_SELECT_EXPOSE,
+	    GST_AUTOPLUG_SELECT_SKIP
 	} GstAutoplugSelectResult;
 
 	gchar *factory_name = NULL;
@@ -703,8 +704,7 @@ void __decodebin_newpad_streamer_cb(GstElement *decodebin, GstPad *new_pad, gpoi
 	new_pad_struct = gst_caps_get_structure(new_pad_caps, 0);
 	new_pad_type = gst_structure_get_name(new_pad_struct);
 
-	if (g_str_has_prefix(new_pad_type, "video"))
-	{
+	if (g_str_has_prefix(new_pad_type, "video")) {
 		found_element = __ms_combine_next_element(decodebin, NULL, NULL, NULL, DEFAULT_QUEUE);
 		found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "video_encoder", "encoder", DEFAULT_VIDEO_ENCODER);
 		found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL, NULL);
@@ -769,14 +769,14 @@ void __decodebin_newpad_cb(GstElement *decodebin, GstPad *new_pad, gpointer user
 		/*Add created sink bin*/
 		if (gst_bin_add(GST_BIN(ms_streamer->pipeline), sink_bin)) {
 			ms_debug("Bin [%s] added into [%s] bin",
-					 GST_ELEMENT_NAME(sink_bin),
-					 GST_ELEMENT_NAME(ms_streamer->pipeline));
+			         GST_ELEMENT_NAME(sink_bin),
+			         GST_ELEMENT_NAME(ms_streamer->pipeline));
 
 			gst_element_sync_state_with_parent(sink_bin);
 		} else {
 			ms_error("Bin [%s] was not added into [%s] bin",
-					 GST_ELEMENT_NAME(sink_bin),
-					 GST_ELEMENT_NAME(ms_streamer->pipeline));
+			         GST_ELEMENT_NAME(sink_bin),
+			         GST_ELEMENT_NAME(ms_streamer->pipeline));
 		}
 
 		queue_element = __ms_element_create(DEFAULT_QUEUE, NULL);
@@ -784,23 +784,23 @@ void __decodebin_newpad_cb(GstElement *decodebin, GstPad *new_pad, gpointer user
 		/*Add created queue element*/
 		if (gst_bin_add(GST_BIN(sink_bin), queue_element)) {
 			ms_debug("Element [%s] added into [%s] bin",
-					 GST_ELEMENT_NAME(queue_element),
-					 GST_ELEMENT_NAME(sink_bin));
+			         GST_ELEMENT_NAME(queue_element),
+			         GST_ELEMENT_NAME(sink_bin));
 
 			gst_element_sync_state_with_parent(queue_element);
 			found_element = __ms_link_with_new_element(found_element, queue_element, NULL);
 			__ms_generate_dots(ms_streamer->pipeline, GST_ELEMENT_NAME(found_element));
 		} else {
 			ms_error("Element [%s] was not added into [%s] bin",
-					 GST_ELEMENT_NAME(queue_element),
-					 GST_ELEMENT_NAME(sink_bin));
+			         GST_ELEMENT_NAME(queue_element),
+			         GST_ELEMENT_NAME(sink_bin));
 		}
 	}
 
 	/* Getting Sink */
 	found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_SINK_KLASS, NULL, NULL, NULL);
 
-	if(!found_element) {
+	if (!found_element) {
 		ms_error("Could not link to sink element \n");
 	}
 
@@ -841,8 +841,7 @@ void __decodebin_newpad_client_cb(GstElement *decodebin, GstPad *new_pad, gpoint
 
 		found_element = __ms_combine_next_element(decodebin, NULL, NULL, NULL, DEFAULT_TEXT_OVERLAY);
 		found_element = __ms_combine_next_element(found_element, NULL, NULL, NULL, DEFAULT_VIDEO_CONVERT);
-	}
-	else {
+	} else {
 		ms_error("Pad type of the element is invalid");
 		return;
 	}
@@ -850,7 +849,7 @@ void __decodebin_newpad_client_cb(GstElement *decodebin, GstPad *new_pad, gpoint
 	/* Getting Sink */
 	found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_SINK_KLASS, NULL, NULL, NULL);
 
-	if(!found_element) {
+	if (!found_element) {
 		ms_error("Could not link to sink element \n");
 	}
 	gst_caps_unref(new_pad_caps);
@@ -870,18 +869,18 @@ static gboolean __ms_sink_bin_prepare(media_streamer_node_s *ms_node,
 
 	/* Getting Depayloader */
 	found_element = __ms_bin_find_element_by_klass(sink_bin, MEDIA_STREAMER_DEPAYLOADER_KLASS,
-                                                   MEDIA_STREAMER_NODE_TYPE_NONE);
+	                                               MEDIA_STREAMER_NODE_TYPE_NONE);
 
 	if (!found_element) {
 		found_element = __ms_create_element_by_registry(source_pad, MEDIA_STREAMER_DEPAYLOADER_KLASS);
 		if (gst_bin_add(GST_BIN(sink_bin), found_element)) {
 			ms_debug("Succeeded to add element [%s] into bin [%s]",
-                     GST_ELEMENT_NAME(found_element),
-                     GST_ELEMENT_NAME(sink_bin));
+			         GST_ELEMENT_NAME(found_element),
+			         GST_ELEMENT_NAME(sink_bin));
 		} else {
 			ms_error("Failed to add element [%s] into bin [%s]",
-                     GST_ELEMENT_NAME(found_element),
-                     GST_ELEMENT_NAME(sink_bin));
+			         GST_ELEMENT_NAME(found_element),
+			         GST_ELEMENT_NAME(sink_bin));
 		}
 	}
 
@@ -899,7 +898,7 @@ static gboolean __ms_sink_bin_prepare(media_streamer_node_s *ms_node,
 			found_element = __ms_element_create("decodebin", NULL);
 			gst_bin_add_many((GstBin *)sink_bin, found_element, NULL);
 			gst_element_sync_state_with_parent(found_element);
-			g_signal_connect(found_element, "pad-added", G_CALLBACK(__decodebin_newpad_client_cb), (gpointer )ms_node);
+			g_signal_connect(found_element, "pad-added", G_CALLBACK(__decodebin_newpad_client_cb), (gpointer)ms_node);
 			g_signal_connect(found_element, "autoplug-select", G_CALLBACK(__ms_decodebin_autoplug_select), NULL);
 			previous_element = __ms_link_with_new_element(previous_element, found_element, NULL);
 			__ms_element_set_state(found_element, GST_STATE_PLAYING);
@@ -911,13 +910,13 @@ static gboolean __ms_sink_bin_prepare(media_streamer_node_s *ms_node,
 			new_pad_type = gst_structure_get_name(new_pad_struct);
 
 			/* Getting elements if Decodebin is not used */
-			if(MS_ELEMENT_IS_VIDEO(new_pad_type)) {
+			if (MS_ELEMENT_IS_VIDEO(new_pad_type)) {
 				previous_element = __ms_combine_next_element(previous_element, MEDIA_STREAMER_PARSER_KLASS, NULL, NULL, NULL);
 				previous_element = __ms_combine_next_element(previous_element, MEDIA_STREAMER_DECODER_KLASS, NULL, NULL, NULL);
 				previous_element = __ms_combine_next_element(previous_element, NULL, NULL, NULL, DEFAULT_QUEUE);
 				previous_element = __ms_combine_next_element(previous_element, NULL, NULL, NULL, DEFAULT_VIDEO_CONVERT);
 			}
-			if(MS_ELEMENT_IS_AUDIO(new_pad_type)) {
+			if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
 				previous_element = __ms_combine_next_element(previous_element, NULL, NULL, NULL, DEFAULT_AUDIO_CONVERT);
 			}
 
@@ -940,7 +939,7 @@ static gboolean __ms_sink_bin_prepare(media_streamer_node_s *ms_node,
 		if (!decodebin_usage) {
 
 			/* Find sink element and link with it, if it was not linked yet */
-			previous_element = __ms_combine_next_element(previous_element, MEDIA_STREAMER_SINK_KLASS, NULL,NULL, NULL);
+			previous_element = __ms_combine_next_element(previous_element, MEDIA_STREAMER_SINK_KLASS, NULL, NULL, NULL);
 			if (!gst_pad_is_linked(src_pad)) {
 				previous_element = __ms_link_with_new_element(previous_element, found_element, NULL);
 			}
@@ -1002,7 +1001,7 @@ static void __ms_rtpbin_pad_added_cb(GstElement *src, GstPad *new_pad, gpointer 
 					add_ret = gst_bin_add(GST_BIN(ms_node->parent_streamer->pipeline), sink_bin);
 				}
 
-				if(add_ret) {
+				if (add_ret) {
 					gst_element_sync_state_with_parent(sink_bin);
 
 					if (gst_element_link_pads(ms_node->gst_element, source_pad_name, sink_bin, "sink")) {
@@ -1040,7 +1039,7 @@ int __ms_element_set_state(GstElement *gst_element, GstState gst_state)
 	ret_state = gst_element_set_state(gst_element, gst_state);
 	if (ret_state == GST_STATE_CHANGE_FAILURE) {
 		ms_error("Failed to set element [%s] into %s state",
-                 element_name, gst_element_state_get_name(gst_state));
+		         element_name, gst_element_state_get_name(gst_state));
 		MS_SAFE_GFREE(element_name);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -1231,7 +1230,7 @@ GstElement *__ms_rtp_element_create(media_streamer_node_s *ms_node)
 	ms_retvm_if(!rtp_container || !rtp_elem, (GstElement *)NULL,
 	            "Error: creating elements for rtp container");
 
-	if(!gst_bin_add(GST_BIN(rtp_container), rtp_elem)) {
+	if (!gst_bin_add(GST_BIN(rtp_container), rtp_elem)) {
 		MS_SAFE_UNREF(rtp_container);
 		MS_SAFE_UNREF(rtp_elem);
 		return NULL;
@@ -1427,7 +1426,7 @@ __ms_parse_gst_error(media_streamer_s *ms_streamer, GstMessage *message, GError 
 	}
 
 	/* post error to application */
-	if(ms_streamer->error_cb.callback) {
+	if (ms_streamer->error_cb.callback) {
 		media_streamer_error_cb error_cb = (media_streamer_error_cb)ms_streamer->error_cb.callback;
 		error_cb((media_streamer_h)ms_streamer, ret_error, ms_streamer->error_cb.user_data);
 	}
@@ -1474,7 +1473,7 @@ static gboolean __ms_bus_cb(GstBus *bus, GstMessage *message, gpointer userdata)
 						                                        gst_element_state_get_name(state_new));
 						ms_info("GST_MESSAGE_STATE_CHANGED: [%s] %s",
 						        gst_object_get_name(GST_MESSAGE_SRC(message)),
-								state_transition_name);
+						        state_transition_name);
 						__ms_generate_dots(ms_streamer->pipeline, state_transition_name);
 
 						MS_SAFE_GFREE(state_transition_name);
@@ -1625,7 +1624,7 @@ static media_format_h __ms_create_fmt_from_caps(GstCaps *caps)
 
 	fmt_ret  = media_format_create(&fmt);
 	ms_retvm_if(fmt_ret != MEDIA_FORMAT_ERROR_NONE, NULL,
-			"Error: while creating media format object, err[%d]!", fmt_ret);
+	            "Error: while creating media format object, err[%d]!", fmt_ret);
 
 	pad_struct = gst_caps_get_structure(caps, 0);
 	const gchar *pad_type = gst_structure_get_name(pad_struct);
@@ -1671,9 +1670,9 @@ int __ms_iterate_pads(GstElement *gst_element, GstPadDirection pad_type, char **
 	char **pad_names = NULL;
 	GstIterator *pad_iterator = NULL;
 
-	if(pad_type == GST_PAD_SRC) {
+	if (pad_type == GST_PAD_SRC) {
 		pad_iterator = gst_element_iterate_src_pads(gst_element);
-	} else if(pad_type == GST_PAD_SINK) {
+	} else if (pad_type == GST_PAD_SINK) {
 		pad_iterator = gst_element_iterate_sink_pads(gst_element);
 	} else {
 		pad_iterator = gst_element_iterate_pads(gst_element);
@@ -1683,8 +1682,8 @@ int __ms_iterate_pads(GstElement *gst_element, GstPadDirection pad_type, char **
 	while (GST_ITERATOR_OK == gst_iterator_next(pad_iterator, &elem)) {
 		pad = (GstPad *)g_value_get_object(&elem);
 
-		pad_names = (char **)realloc(pad_names, sizeof(char *) * (pad_number + 1));
-		if(!pad_names){
+		pad_names = (char **)realloc(pad_names, sizeof(char *)*(pad_number + 1));
+		if (!pad_names) {
 			ms_error("Error allocation memory");
 			ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 			pad_number = 0;
@@ -1760,7 +1759,7 @@ int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, medi
 			__ms_get_rtp_elements(node, &rtp_elem, &rtcp_elem, "video", "in", FALSE);
 
 			rtp_caps_str = g_strdup_printf("application/x-rtp,media=video,clock-rate=90000,encoding-name=%s",
-					__ms_convert_mime_to_rtp_format(mime));
+			                               __ms_convert_mime_to_rtp_format(mime));
 			caps = gst_caps_from_string(rtp_caps_str);
 			ms_retvm_if(caps == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Fail creating caps from fmt.");
 
@@ -1769,7 +1768,7 @@ int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, medi
 			__ms_get_rtp_elements(node, &rtp_elem, &rtcp_elem, "audio", "in", FALSE);
 
 			rtp_caps_str = g_strdup_printf("application/x-rtp,media=audio,clock-rate=%d,encoding-name=%s,channels=%d,payload=96",
-					audio_samplerate, __ms_convert_mime_to_rtp_format(mime), audio_channels);
+			                               audio_samplerate, __ms_convert_mime_to_rtp_format(mime), audio_channels);
 			caps = gst_caps_from_string(rtp_caps_str);
 			ms_retvm_if(caps == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Fail creating caps from fmt.");
 
@@ -1827,7 +1826,7 @@ int __ms_element_push_packet(GstElement *src_element, media_packet_h packet)
 
 	media_packet_get_buffer_data_ptr(packet, (void **)&buffer_data);
 
-	if(buffer_data != NULL) {
+	if (buffer_data != NULL) {
 		GstMapInfo buff_info = GST_MAP_INFO_INIT;
 		guint64 pts = 0;
 		guint64 duration = 0;
@@ -1835,16 +1834,16 @@ int __ms_element_push_packet(GstElement *src_element, media_packet_h packet)
 
 		media_packet_get_buffer_size(packet, &size);
 
-		buffer = gst_buffer_new_and_alloc (size);
+		buffer = gst_buffer_new_and_alloc(size);
 		if (!buffer) {
 			ms_error("Failed to allocate memory for push buffer");
 			return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 		}
 
-		if (gst_buffer_map (buffer, &buff_info, GST_MAP_READWRITE)) {
-			memcpy (buff_info.data, buffer_data, size);
+		if (gst_buffer_map(buffer, &buff_info, GST_MAP_READWRITE)) {
+			memcpy(buff_info.data, buffer_data, size);
 			buff_info.size = size;
-			gst_buffer_unmap (buffer, &buff_info);
+			gst_buffer_unmap(buffer, &buff_info);
 		}
 
 		media_packet_get_pts(packet, &pts);
@@ -1857,7 +1856,7 @@ int __ms_element_push_packet(GstElement *src_element, media_packet_h packet)
 		gst_buffer_unref(buffer);
 
 	} else {
-		 g_signal_emit_by_name(G_OBJECT(src_element), "end-of-stream", &gst_ret, NULL);
+		g_signal_emit_by_name(G_OBJECT(src_element), "end-of-stream", &gst_ret, NULL);
 	}
 
 	if (gst_ret != GST_FLOW_OK) {

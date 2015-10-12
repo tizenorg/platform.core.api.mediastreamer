@@ -64,9 +64,9 @@ GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_
  *
  * @since_tizen 3.0
  */
-GstElement * __ms_link_with_new_element(GstElement *previous_element,
-                                        GstElement *new_element,
-                                        const gchar *next_elem_bin_name);
+GstElement *__ms_link_with_new_element(GstElement *previous_element,
+                                       GstElement *new_element,
+                                       const gchar *next_elem_bin_name);
 
 /**
  * @brief Creates GstElement by plugin name.
@@ -150,7 +150,7 @@ gint __ms_decodebin_autoplug_select(GstElement *bin,
                                     gpointer data);
 
 /**
- * @brief Callback function to link decodebin for file playing.
+ * @brief Callback function to link decodebin with the sink element at the streamer part.
  *
  * @since_tizen 3.0
  */
@@ -175,11 +175,11 @@ void __decodebin_newpad_client_cb(GstElement *decodebin, GstPad *pad, gpointer u
  *
  * @since_tizen 3.0
  */
-GstElement * __ms_combine_next_element(GstElement *previous_element,
-                                       const gchar *next_elem_klass_name,
-                                       const gchar *next_elem_bin_name,
-                                       const gchar *element_type,
-                                       gchar *default_element);
+GstElement *__ms_combine_next_element(GstElement *previous_element,
+                                      const gchar *next_elem_klass_name,
+                                      const gchar *next_elem_bin_name,
+                                      const gchar *element_type,
+                                      gchar *default_element);
 
 /**
  * @brief Creates pipeline, bus and src/sink/topology bins.
@@ -222,6 +222,13 @@ media_format_h __ms_element_get_pad_fmt(GstElement *gst_element, const char *pad
  * @since_tizen 3.0
  */
 int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, media_format_h fmt);
+
+/**
+ * @brief Seeks GstElement to according time value.
+ *
+ * @since_tizen 3.0
+ */
+gboolean __ms_gst_seek(GstElement *element, gint64 g_time, GstSeekFlags seek_flag);
 
 /**
  * @brief Push the media packet buffer to the source element.

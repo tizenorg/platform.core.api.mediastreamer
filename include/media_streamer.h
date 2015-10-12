@@ -848,7 +848,7 @@ int media_streamer_get_state(media_streamer_h streamer,
  * @see media_streamer_node_destroy()
  */
 int media_streamer_node_create_src(media_streamer_node_src_type_e type,
-                              media_streamer_node_h *src);
+                                   media_streamer_node_h *src);
 
 /**
  * @brief Pushes packet into custom source node.
@@ -868,7 +868,7 @@ int media_streamer_node_create_src(media_streamer_node_src_type_e type,
  * @see #media_packet_h
  */
 int media_streamer_node_push_packet(media_streamer_node_h src,
-                               media_packet_h packet);
+                                    media_packet_h packet);
 
 /**
  * @brief Creates media streamer sink node.
@@ -890,7 +890,7 @@ int media_streamer_node_push_packet(media_streamer_node_h src,
  * @see media_streamer_node_destroy()
  */
 int media_streamer_node_create_sink(media_streamer_node_sink_type_e type,
-                               media_streamer_node_h *sink);
+                                    media_streamer_node_h *sink);
 
 /**
  * @brief Pulls packet from custom sink node.
@@ -910,7 +910,7 @@ int media_streamer_node_create_sink(media_streamer_node_sink_type_e type,
  * @see media_streamer_node_create_sink()
  */
 int media_streamer_node_pull_packet(media_streamer_node_h sink,
-                               media_packet_h *packet);
+                                    media_packet_h *packet);
 
 /**
  * @brief Creates media streamer node except MEDIA_STREAMER_NODE_TYPE_SRC and MEDIA_STREAMER_NODE_TYPE_SINK.
@@ -1046,8 +1046,8 @@ int media_streamer_node_link(media_streamer_node_h src_node,
  * @see #media_format_h
  */
 int media_streamer_node_set_pad_format(media_streamer_node_h node,
-                                   const char *pad_name,
-                                   media_format_h fmt);
+                                       const char *pad_name,
+                                       media_format_h fmt);
 
 /**
  * @brief Gets media format for pad of media streamer node.
@@ -1066,8 +1066,8 @@ int media_streamer_node_set_pad_format(media_streamer_node_h node,
  * @see #media_format_h
  */
 int media_streamer_node_get_pad_format(media_streamer_node_h node,
-                                   const char *pad_name,
-                                   media_format_h *fmt);
+                                       const char *pad_name,
+                                       media_format_h *fmt);
 
 /**
  * @brief Gets name of node pads.
@@ -1092,10 +1092,10 @@ int media_streamer_node_get_pad_format(media_streamer_node_h node,
  * @see media_streamer_node_create_sink()
  */
 int media_streamer_node_get_pad_name(media_streamer_node_h node,
-                                       char ***src_pad_name,
-                                       int *src_pad_num,
-                                       char ***sink_pad_name,
-                                       int *sink_pad_num);
+                                     char ***src_pad_name,
+                                     int *src_pad_num,
+                                     char ***sink_pad_name,
+                                     int *sink_pad_num);
 
 
 /**
@@ -1165,7 +1165,7 @@ int media_streamer_node_get_params(media_streamer_node_h node,
  * @see media_streamer_node_get_param()
  */
 int media_streamer_node_set_param(media_streamer_node_h node,
-                                 const char *param_name, const char *param_value);
+                                  const char *param_name, const char *param_value);
 
 
 /**

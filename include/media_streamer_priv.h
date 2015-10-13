@@ -85,10 +85,7 @@ typedef struct {
  *
  * @since_tizen 3.0
  */
-typedef int (*ms_node_set_param)(
-    struct media_streamer_node_s *node,
-    const char *param_key,
-    const char *param_value);
+typedef int (*ms_node_set_param)(struct media_streamer_node_s *node, const char *param_key, const char *param_value);
 
 /**
  * @brief Media Streamer node type handle.
@@ -145,7 +142,7 @@ int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e stat
  * @since_tizen 3.0
  */
 void __ms_node_check_param_name(GstElement *element, gboolean name_is_known,
-                                const char *param_name, char **init_param_name);
+					const char *param_name, char **init_param_name);
 
 #ifdef __cplusplus
 }

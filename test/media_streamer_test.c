@@ -24,12 +24,12 @@
 #include <media_streamer.h>
 
 typedef enum {
-    MENU_STATE_UNKNOWN = 0,
-    MENU_STATE_MAIN_MENU,
-    MENU_STATE_BROADCAST_MENU,
-    MENU_STATE_VOIP_MENU,
-    MENU_STATE_PLAYING_MENU,
-    MENU_STATE_PRESET_MENU
+	MENU_STATE_UNKNOWN = 0,
+	MENU_STATE_MAIN_MENU,
+	MENU_STATE_BROADCAST_MENU,
+	MENU_STATE_VOIP_MENU,
+	MENU_STATE_PLAYING_MENU,
+	MENU_STATE_PRESET_MENU
 } menu_state_e;
 
 typedef enum {
@@ -115,8 +115,8 @@ media_format_h vfmt_encoded = NULL;
 media_format_h afmt_raw = NULL;
 
 static void streamer_error_cb(media_streamer_h streamer,
-                              media_streamer_error_e error,
-                              void *user_data)
+							  media_streamer_error_e error,
+							  void *user_data)
 {
 	g_print("Media Streamer posted error [%d] \n", error);
 }
@@ -131,9 +131,8 @@ static void _create(media_streamer_h *streamer)
 	g_print("== create \n");
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
-	if (*streamer != NULL) {
+	if (*streamer != NULL)
 		return;
-	}
 
 	ret = media_streamer_create(streamer);
 
@@ -171,7 +170,7 @@ static void _unprepare(void)
 	g_print("== success unprepare \n");
 }
 
-static void _play()
+static void _play(void)
 {
 	g_print("== play \n");
 	int ret = MEDIA_STREAMER_ERROR_NONE;
@@ -184,7 +183,7 @@ static void _play()
 	g_print("== success play \n");
 }
 
-static void _pause()
+static void _pause(void)
 {
 	g_print("== pause \n");
 	int ret = MEDIA_STREAMER_ERROR_NONE;
@@ -197,13 +196,13 @@ static void _pause()
 	g_print("== success pause \n");
 }
 
-static void _seek()
+static void _seek(void)
 {
 	g_print("== seek \n");
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
 	ret = media_streamer_set_play_position(current_media_streamer, g_time, TRUE,
-                                           streamer_seek_cb, current_media_streamer);
+								streamer_seek_cb, current_media_streamer);
 
 	if (ret != MEDIA_STREAMER_ERROR_NONE) {
 		g_print("Fail to seek media streamer");
@@ -212,7 +211,7 @@ static void _seek()
 	g_print("== success seek \n");
 }
 
-static void _stop()
+static void _stop(void)
 {
 	g_print("== stop \n");
 	int ret = MEDIA_STREAMER_ERROR_NONE;
@@ -241,11 +240,11 @@ static void _destroy(media_streamer_h streamer)
 		return;
 	}
 
-	if (current_media_streamer == g_media_streamer) {
+	if (current_media_streamer == g_media_streamer)
 		g_media_streamer = NULL;
-	} else {
+	else
 		g_media_streamer_2 = NULL;
-	}
+
 	current_media_streamer = NULL;
 
 	g_print("== success destroy \n");
@@ -253,15 +252,14 @@ static void _destroy(media_streamer_h streamer)
 
 static void create_formats(void)
 {
-	if (!vfmt_raw || !vfmt_encoded || !afmt_raw) {
+	if (!vfmt_raw || !vfmt_encoded || !afmt_raw)
 		g_print("Formats already created!");
-	}
 
 	/* Define video raw format */
 	media_format_create(&vfmt_raw);
-	if (media_format_set_video_mime(vfmt_raw, MEDIA_FORMAT_YV12) != MEDIA_FORMAT_ERROR_NONE) {
+	if (media_format_set_video_mime(vfmt_raw, MEDIA_FORMAT_YV12) != MEDIA_FORMAT_ERROR_NONE)
 		g_print("media_format_set_video_mime failed!");
-	}
+
 	media_format_set_video_width(vfmt_raw, 800);
 	media_format_set_video_height(vfmt_raw, 600);
 	media_format_set_video_avg_bps(vfmt_raw, 10000);
@@ -269,9 +267,9 @@ static void create_formats(void)
 
 	/* Define encoded video format */
 	media_format_create(&vfmt_encoded);
-	if (media_format_set_video_mime(vfmt_encoded, MEDIA_FORMAT_H263) != MEDIA_FORMAT_ERROR_NONE) {
+	if (media_format_set_video_mime(vfmt_encoded, MEDIA_FORMAT_H263) != MEDIA_FORMAT_ERROR_NONE)
 		g_print("media_format_set_video_mime failed!");
-	}
+
 	media_format_set_video_width(vfmt_encoded, 800);
 	media_format_set_video_height(vfmt_encoded, 600);
 	media_format_set_video_avg_bps(vfmt_encoded, 10000);
@@ -279,19 +277,16 @@ static void create_formats(void)
 
 	/* Define audio raw format */
 	media_format_create(&afmt_raw);
-	if (media_format_set_audio_mime(afmt_raw, MEDIA_FORMAT_PCM) != MEDIA_FORMAT_ERROR_NONE) {
+	if (media_format_set_audio_mime(afmt_raw, MEDIA_FORMAT_PCM) != MEDIA_FORMAT_ERROR_NONE)
 		g_print("media_format_set_audio_mime failed!");
-	}
+
 	media_format_set_audio_channel(afmt_raw, 1);
 	media_format_set_audio_samplerate(afmt_raw, 44100);
 	media_format_set_audio_bit(afmt_raw, 16);
 }
 
-static void set_rtp_params(media_streamer_node_h rtp_node,
-                           const char *ip,
-                           int video_port,
-                           int audio_port,
-                           gboolean port_reverse)
+static void set_rtp_params(media_streamer_node_h rtp_node, const char *ip,
+			int video_port, int audio_port, gboolean port_reverse)
 {
 	bundle *params = bundle_create();
 
@@ -299,12 +294,10 @@ static void set_rtp_params(media_streamer_node_h rtp_node,
 		gchar *audio_src_port = g_strdup_printf("%d", port_reverse ? (audio_port + 5) : audio_port);
 		gchar *audio_sink_port = g_strdup_printf("%d", port_reverse ? audio_port : (audio_port + 5));
 
-		if (g_menu_preset & PRESET_RTP_STREAMER) {
+		if (g_menu_preset & PRESET_RTP_STREAMER)
 			bundle_add_str(params, MEDIA_STREAMER_PARAM_AUDIO_OUT_PORT, audio_sink_port);
-		}
-		if (g_menu_preset & PRESET_RTP_CLIENT) {
+		if (g_menu_preset & PRESET_RTP_CLIENT)
 			bundle_add_str(params, MEDIA_STREAMER_PARAM_AUDIO_IN_PORT, audio_src_port);
-		}
 
 		g_free(audio_src_port);
 		g_free(audio_sink_port);
@@ -314,12 +307,10 @@ static void set_rtp_params(media_streamer_node_h rtp_node,
 		char *video_src_port = g_strdup_printf("%d", port_reverse ? (video_port + 5) : video_port);
 		char *video_sink_port = g_strdup_printf("%d", port_reverse ? video_port : (video_port + 5));
 
-		if (g_menu_preset & PRESET_RTP_STREAMER) {
+		if (g_menu_preset & PRESET_RTP_STREAMER)
 			bundle_add_str(params, MEDIA_STREAMER_PARAM_VIDEO_OUT_PORT, video_sink_port);
-		}
-		if (g_menu_preset & PRESET_RTP_CLIENT) {
+		if (g_menu_preset & PRESET_RTP_CLIENT)
 			bundle_add_str(params, MEDIA_STREAMER_PARAM_VIDEO_IN_PORT, video_src_port);
-		}
 
 		g_free(video_src_port);
 		g_free(video_sink_port);
@@ -379,8 +370,8 @@ static void _create_file_streaming()
 {
 	g_print("\n _create_file_playing \n");
 	media_streamer_node_h file_src = NULL;
-	media_streamer_node_create_src( MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &file_src);
-	media_streamer_node_set_param(file_src,MEDIA_STREAMER_PARAM_URI, g_uri);
+	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &file_src);
+	media_streamer_node_set_param(file_src, MEDIA_STREAMER_PARAM_URI, g_uri);
 	media_streamer_node_add(current_media_streamer, file_src);
 }
 
@@ -414,7 +405,7 @@ static void _create_rtp_streamer(media_streamer_node_h rtp_bin)
 		    g_scenario_mode == SCENARIO_MODE_FULL_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA, &video_src);
 		} else if (g_scenario_mode == SCENARIO_MODE_VIDEOTEST_SCREEN ||
-		           g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
+				   g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_TEST, &video_src);
 		}
 
@@ -447,7 +438,7 @@ static void _create_rtp_streamer(media_streamer_node_h rtp_bin)
 		    g_scenario_mode == SCENARIO_MODE_FULL_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_CAPTURE, &audio_src);
 		} else if (g_scenario_mode == SCENARIO_MODE_AUDIOTEST_PHONE ||
-		           g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
+				   g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_TEST, &audio_src);
 		}
 
@@ -485,7 +476,7 @@ static void _create_rtp_streamer_autoplug(media_streamer_node_h rtp_bin)
 		    g_scenario_mode == SCENARIO_MODE_FULL_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA, &video_src);
 		} else if (g_scenario_mode == SCENARIO_MODE_VIDEOTEST_SCREEN ||
-		           g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
+				   g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_TEST, &video_src);
 		}
 
@@ -502,7 +493,7 @@ static void _create_rtp_streamer_autoplug(media_streamer_node_h rtp_bin)
 		    g_scenario_mode == SCENARIO_MODE_FULL_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_CAPTURE, &audio_src);
 		} else if (g_scenario_mode == SCENARIO_MODE_AUDIOTEST_PHONE ||
-		           g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
+				   g_scenario_mode == SCENARIO_MODE_TEST_VIDEO_AUDIO) {
 			media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_TEST, &audio_src);
 		}
 
@@ -604,8 +595,7 @@ static void _create_rtp_client_autoplug(media_streamer_node_h rtp_bin)
 }
 
 static media_streamer_node_h _create_rtp(int video_port,
-                                         int audio_port,
-                                         gboolean second_client)
+					int audio_port, gboolean second_client)
 {
 	g_print("== create rtp node for current preset \n");
 
@@ -619,8 +609,7 @@ static media_streamer_node_h _create_rtp(int video_port,
 
 /* Application source callback */
 static void buffer_status_cb(media_streamer_node_h node,
-                             media_streamer_custom_buffer_status_e status,
-                             void *user_data)
+					media_streamer_custom_buffer_status_e status, void *user_data)
 {
 
 	static int count = 0;
@@ -774,7 +763,7 @@ static void display_autoplug_select_menu(void)
 	g_print("\n");
 	g_print("Please select Media Streamer pluging mode\n");
 	g_print("By default will be used [%s] mode\n",
-	        g_autoplug_mode == TRUE ? "autoplug" : "manual");
+			g_autoplug_mode == TRUE ? "autoplug" : "manual");
 	g_print("1. Manual mode \n");
 	g_print("2. Autoplug mode \n");
 }
@@ -880,51 +869,51 @@ static void display_menu(void)
 {
 	if (g_sub_menu_state == SUBMENU_STATE_UNKNOWN) {
 		switch (g_menu_state) {
-			case MENU_STATE_MAIN_MENU:
-				display_main_menu();
-				break;
-			case MENU_STATE_BROADCAST_MENU:
-				display_broadcast_menu();
-				break;
-			case MENU_STATE_VOIP_MENU:
-				display_voip_menu();
-				break;
-			case MENU_STATE_PLAYING_MENU:
-				display_preset_menu();
-				break;
-			case MENU_STATE_PRESET_MENU:
-				display_preset_menu();
-				break;
-			default:
-				g_print("*** Unknown status.\n");
-				break;
+		case MENU_STATE_MAIN_MENU:
+			display_main_menu();
+			break;
+		case MENU_STATE_BROADCAST_MENU:
+			display_broadcast_menu();
+			break;
+		case MENU_STATE_VOIP_MENU:
+			display_voip_menu();
+			break;
+		case MENU_STATE_PLAYING_MENU:
+			display_preset_menu();
+			break;
+		case MENU_STATE_PRESET_MENU:
+			display_preset_menu();
+			break;
+		default:
+			g_print("*** Unknown status.\n");
+			break;
 		}
 	} else {
 		switch (g_sub_menu_state) {
-			case SUBMENU_STATE_GETTING_IP:
-				display_getting_ip_menu();
-				break;
-			case SUBMENU_STATE_GETTING_SEEK_POS:
-				display_getting_seek_position_menu();
-				break;
-			case SUBMENU_STATE_GETTING_VIDEOFILE_URI:
-				display_getting_uri_menu();
-				break;
-			case SUBMENU_STATE_GETTING_SUBFILE_URI:
-				display_getting_sub_uri_menu();
-				break;
-			case SUBMENU_STATE_AUTOPLUG:
-				display_autoplug_select_menu();
-				break;
-			case SUBMENU_STATE_SCENARIO:
-				display_scenario_select_menu();
-				break;
-			case SUBMENU_STATE_PLAYING_SCENARIO:
-				display_playing_scenario_select_menu();
-				break;
-			default:
-				g_print("*** Unknown Submenu state.\n");
-				break;
+		case SUBMENU_STATE_GETTING_IP:
+			display_getting_ip_menu();
+			break;
+		case SUBMENU_STATE_GETTING_SEEK_POS:
+			display_getting_seek_position_menu();
+			break;
+		case SUBMENU_STATE_GETTING_VIDEOFILE_URI:
+			display_getting_uri_menu();
+			break;
+		case SUBMENU_STATE_GETTING_SUBFILE_URI:
+			display_getting_sub_uri_menu();
+			break;
+		case SUBMENU_STATE_AUTOPLUG:
+			display_autoplug_select_menu();
+			break;
+		case SUBMENU_STATE_SCENARIO:
+			display_scenario_select_menu();
+			break;
+		case SUBMENU_STATE_PLAYING_SCENARIO:
+			display_playing_scenario_select_menu();
+			break;
+		default:
+			g_print("*** Unknown Submenu state.\n");
+			break;
 		}
 	}
 }
@@ -935,51 +924,51 @@ static void run_preset(void)
 	create_formats();
 
 	switch (g_menu_preset) {
-		case PRESET_RTP_STREAMER:
-			rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
-			if (g_autoplug_mode) {
-				_create_rtp_streamer_autoplug(rtp_bin);
-			} else {
-				_create_rtp_streamer(rtp_bin);
-			}
-			break;
-		case PRESET_RTP_CLIENT:
-			rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
-			if (g_autoplug_mode) {
-				_create_rtp_client_autoplug(rtp_bin);
-			} else {
-				_create_rtp_client(rtp_bin);
-			}
-			break;
-		case PRESET_VOIP:
-			rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
+	case PRESET_RTP_STREAMER:
+		rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
+		if (g_autoplug_mode)
+			_create_rtp_streamer_autoplug(rtp_bin);
+		else
 			_create_rtp_streamer(rtp_bin);
+
+		break;
+	case PRESET_RTP_CLIENT:
+		rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
+		if (g_autoplug_mode)
+			_create_rtp_client_autoplug(rtp_bin);
+		else
 			_create_rtp_client(rtp_bin);
-			break;
-		case PRESET_VOIP_2:
-			rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
-			_create_rtp_streamer(rtp_bin);
-			_create_rtp_client(rtp_bin);
-			break;
-		case PRESET_DOUBLE_VOIP_SERVER:
-			rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
-			_create_rtp_streamer(rtp_bin);
-			break;
-		case PRESET_DOUBLE_VOIP_SERVER_2:
-			rtp_bin = _create_rtp(VIDEO_PORT + 10, AUDIO_PORT + 10, TRUE);
-			_create_rtp_streamer(rtp_bin);
-			break;
-		case PRESET_DOUBLE_VOIP_CLIENT:
-			rtp_bin = _create_rtp(VIDEO_PORT + 10, AUDIO_PORT + 10, FALSE);
-			_create_rtp_client(rtp_bin);
-			break;
-		case PRESET_DOUBLE_VOIP_CLIENT_2:
-			rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
-			_create_rtp_client(rtp_bin);
-			break;
-		default:
-			g_print("Invalid menu preset was selected!");
-			break;
+
+		break;
+	case PRESET_VOIP:
+		rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
+		_create_rtp_streamer(rtp_bin);
+		_create_rtp_client(rtp_bin);
+		break;
+	case PRESET_VOIP_2:
+		rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
+		_create_rtp_streamer(rtp_bin);
+		_create_rtp_client(rtp_bin);
+		break;
+	case PRESET_DOUBLE_VOIP_SERVER:
+		rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
+		_create_rtp_streamer(rtp_bin);
+		break;
+	case PRESET_DOUBLE_VOIP_SERVER_2:
+		rtp_bin = _create_rtp(VIDEO_PORT + 10, AUDIO_PORT + 10, TRUE);
+		_create_rtp_streamer(rtp_bin);
+		break;
+	case PRESET_DOUBLE_VOIP_CLIENT:
+		rtp_bin = _create_rtp(VIDEO_PORT + 10, AUDIO_PORT + 10, FALSE);
+		_create_rtp_client(rtp_bin);
+		break;
+	case PRESET_DOUBLE_VOIP_CLIENT_2:
+		rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
+		_create_rtp_client(rtp_bin);
+		break;
+	default:
+		g_print("Invalid menu preset was selected!");
+		break;
 	}
 }
 
@@ -987,17 +976,17 @@ void run_playing_preset(void)
 {
 	create_formats();
 
-	if (g_scenario_mode == SCENARIO_MODE_FILE_PLAY_VIDEO_AUDIO) {
+	if (g_scenario_mode == SCENARIO_MODE_FILE_PLAY_VIDEO_AUDIO)
 		_create_file_playing();
-	} else if (g_scenario_mode == SCENARIO_MODE_FILE_SUBTITLE_VIDEO_AUDIO) {
+	else if (g_scenario_mode == SCENARIO_MODE_FILE_SUBTITLE_VIDEO_AUDIO)
 		_create_file_sub_playing();
-	} else if (g_scenario_mode == SCENARIO_MODE_HTTP_VIDEO_AUDIO) {
+	else if (g_scenario_mode == SCENARIO_MODE_HTTP_VIDEO_AUDIO)
 		_create_http_playing();
-	} else if ((g_scenario_mode == SCENARIO_MODE_APPSRC_APPSINK)) {
+	else if ((g_scenario_mode == SCENARIO_MODE_APPSRC_APPSINK))
 		_create_app_test();
-	} else {
+	else
 		g_print("Invalid playing menu preset was selected!");
-	}
+
 }
 
 void _interpret_main_menu(char *cmd)
@@ -1005,15 +994,15 @@ void _interpret_main_menu(char *cmd)
 	int len = strlen(cmd);
 
 	if (len == 1) {
-		if (!strncmp(cmd, "1", len)) {
+		if (!strncmp(cmd, "1", len))
 			g_menu_state = MENU_STATE_BROADCAST_MENU;
-		} else if (!strncmp(cmd, "2", len)) {
+		else if (!strncmp(cmd, "2", len))
 			g_menu_state = MENU_STATE_VOIP_MENU;
-		} else if (!strncmp(cmd, "3", len)) {
+		else if (!strncmp(cmd, "3", len))
 			g_menu_state = MENU_STATE_PLAYING_MENU;
-		} else if (!strncmp(cmd, "q", len)) {
+		else if (!strncmp(cmd, "q", len))
 			quit();
-		}
+
 	} else {
 		g_print("wrong command\n");
 	}
@@ -1161,9 +1150,9 @@ void _interpret_getting_ip_menu(char *cmd)
 {
 	int min_len = strlen("0.0.0.0");
 	int cmd_len = strlen(cmd);
-	if (g_broadcast_address != NULL) {
+	if (g_broadcast_address != NULL)
 		g_free(g_broadcast_address);
-	}
+
 
 	if (cmd_len > min_len) {
 		g_broadcast_address = g_strdup(cmd);
@@ -1194,9 +1183,9 @@ void _interpret_getting_seek_position_menu(char *cmd)
 void _interpret_getting_sub_uri_menu(char *cmd)
 {
 	if (cmd) {
-		if (g_sub_uri != NULL) {
+		if (g_sub_uri != NULL)
 			g_free(g_sub_uri);
-		}
+
 		g_sub_uri = g_strdup(cmd);
 		g_print("== URI set to [%s]\n", g_sub_uri);
 	} else {
@@ -1216,9 +1205,9 @@ void _interpret_getting_sub_uri_menu(char *cmd)
 void _interpret_getting_uri_menu(char *cmd)
 {
 	if (cmd) {
-		if (g_uri != NULL) {
+		if (g_uri != NULL)
 			g_free(g_uri);
-		}
+
 		g_uri = g_strdup(cmd);
 		g_print("== URI set to [%s]\n", g_uri);
 	} else {
@@ -1249,23 +1238,22 @@ void _interpret_getting_uri_menu(char *cmd)
 void _interpret_autoplug_menu(char *cmd)
 {
 	if (strlen(cmd) == 1) {
-		if (cmd[0] == '2') {
+		if (cmd[0] == '2')
 			g_autoplug_mode = true;
-		} else {
+		else
 			g_autoplug_mode = false;
-		}
+
 	} else {
 		g_print("Invalid input. Default autoplug mode will be used\n");
 	}
 
 	g_print("Selected pluging mode is [%s]\n",
-	        g_autoplug_mode == TRUE ? "autoplug" : "manual");
+				g_autoplug_mode == TRUE ? "autoplug" : "manual");
 
-	if (g_menu_preset & PRESET_RTP_STREAMER) {
+	if (g_menu_preset & PRESET_RTP_STREAMER)
 		g_sub_menu_state = SUBMENU_STATE_GETTING_IP;
-	} else {
+	else
 		g_sub_menu_state = SUBMENU_STATE_SCENARIO;
-	}
 }
 
 void _interpret_preset_menu(char *cmd)
@@ -1287,11 +1275,11 @@ void _interpret_preset_menu(char *cmd)
 
 		} else if (!strncmp(cmd, "2", len)) {
 			/* call the run_preset function after autoplug mode was selected; */
-			if (g_menu_state == MENU_STATE_PLAYING_MENU) {
+			if (g_menu_state == MENU_STATE_PLAYING_MENU)
 				g_sub_menu_state = SUBMENU_STATE_PLAYING_SCENARIO;
-			} else {
+			else
 				g_sub_menu_state = SUBMENU_STATE_AUTOPLUG;
-			}
+
 		} else if (!strncmp(cmd, "3", len)) {
 			_prepare();
 		} else if (!strncmp(cmd, "4", len)) {
@@ -1327,52 +1315,52 @@ static void interpret_cmd(char *cmd)
 {
 	if (g_sub_menu_state == SUBMENU_STATE_UNKNOWN) {
 		switch (g_menu_state) {
-			case MENU_STATE_MAIN_MENU:
-				_interpret_main_menu(cmd);
-				break;
-			case MENU_STATE_BROADCAST_MENU:
-				_interpret_broadcast_menu(cmd);
-				break;
-			case MENU_STATE_VOIP_MENU:
-				_interpret_voip_menu(cmd);
-				break;
-			case MENU_STATE_PLAYING_MENU:
-				_interpret_preset_menu(cmd);
-				break;
-			case MENU_STATE_PRESET_MENU:
-				_interpret_preset_menu(cmd);
-				break;
-			default:
-				g_print("Invalid command\n");
-				return;
-				break;
+		case MENU_STATE_MAIN_MENU:
+			_interpret_main_menu(cmd);
+			break;
+		case MENU_STATE_BROADCAST_MENU:
+			_interpret_broadcast_menu(cmd);
+			break;
+		case MENU_STATE_VOIP_MENU:
+			_interpret_voip_menu(cmd);
+			break;
+		case MENU_STATE_PLAYING_MENU:
+			_interpret_preset_menu(cmd);
+			break;
+		case MENU_STATE_PRESET_MENU:
+			_interpret_preset_menu(cmd);
+			break;
+		default:
+			g_print("Invalid command\n");
+			return;
+			break;
 		}
 	} else {
 		switch (g_sub_menu_state) {
-			case SUBMENU_STATE_GETTING_IP:
-				_interpret_getting_ip_menu(cmd);
-				break;
-			case SUBMENU_STATE_GETTING_SEEK_POS:
-				_interpret_getting_seek_position_menu(cmd);
-				break;
-			case SUBMENU_STATE_GETTING_VIDEOFILE_URI:
-				_interpret_getting_uri_menu(cmd);
-				break;
-			case SUBMENU_STATE_GETTING_SUBFILE_URI:
-				_interpret_getting_sub_uri_menu(cmd);
-				break;
-			case SUBMENU_STATE_AUTOPLUG:
-				_interpret_autoplug_menu(cmd);
-				break;
-			case SUBMENU_STATE_SCENARIO:
-				_interpret_scenario_menu(cmd);
-				break;
-			case SUBMENU_STATE_PLAYING_SCENARIO:
-				_interpret_playing_scenario_menu(cmd);
-				break;
-			default:
-				g_print("*** Unknown Submenu state.\n");
-				break;
+		case SUBMENU_STATE_GETTING_IP:
+			_interpret_getting_ip_menu(cmd);
+			break;
+		case SUBMENU_STATE_GETTING_SEEK_POS:
+			_interpret_getting_seek_position_menu(cmd);
+			break;
+		case SUBMENU_STATE_GETTING_VIDEOFILE_URI:
+			_interpret_getting_uri_menu(cmd);
+			break;
+		case SUBMENU_STATE_GETTING_SUBFILE_URI:
+			_interpret_getting_sub_uri_menu(cmd);
+			break;
+		case SUBMENU_STATE_AUTOPLUG:
+			_interpret_autoplug_menu(cmd);
+			break;
+		case SUBMENU_STATE_SCENARIO:
+			_interpret_scenario_menu(cmd);
+			break;
+		case SUBMENU_STATE_PLAYING_SCENARIO:
+			_interpret_playing_scenario_menu(cmd);
+			break;
+		default:
+			g_print("*** Unknown Submenu state.\n");
+			break;
 		}
 	}
 

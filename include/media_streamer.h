@@ -374,8 +374,7 @@ typedef enum {
  * @see media_streamer_unset_error_cb()
  */
 typedef void (*media_streamer_error_cb)(media_streamer_h streamer,
-                                        media_streamer_error_e error,
-                                        void *user_data);
+					media_streamer_error_e error, void *user_data);
 
 /**
  * @brief Called when media streamer state is changed.
@@ -391,9 +390,7 @@ typedef void (*media_streamer_error_cb)(media_streamer_h streamer,
  * @see media_streamer_unset_state_change_cb()
  */
 typedef void (*media_streamer_state_changed_cb)(media_streamer_h streamer,
-                                                media_streamer_state_e previous_state,
-                                                media_streamer_state_e current_state,
-                                                void *user_data);
+					media_streamer_state_e previous_state, media_streamer_state_e current_state, void *user_data);
 
 /**
  * @brief Called when the custom source needs more data or has enough data.
@@ -408,8 +405,7 @@ typedef void (*media_streamer_state_changed_cb)(media_streamer_h streamer,
  * @see media_streamer_node_set_param()
  */
 typedef void (*media_streamer_custom_buffer_status_cb)(media_streamer_node_h node,
-                                                       media_streamer_custom_buffer_status_e status,
-                                                       void *user_data);
+					media_streamer_custom_buffer_status_e status, void *user_data);
 
 /**
  * @brief Called when new data is available from custom sink.
@@ -424,8 +420,7 @@ typedef void (*media_streamer_custom_buffer_status_cb)(media_streamer_node_h nod
  * @see media_streamer_sink_set_data_ready_cb()
  * @see media_streamer_sink_unset_data_ready_cb()
  */
-typedef void (*media_streamer_sink_data_ready_cb)(media_streamer_node_h node,
-                                                  void *user_data);
+typedef void (*media_streamer_sink_data_ready_cb)(media_streamer_node_h node, void *user_data);
 
 /**
  * @brief  Called when the end-of-stream has been reached.
@@ -440,8 +435,7 @@ typedef void (*media_streamer_sink_data_ready_cb)(media_streamer_node_h node,
  * @see media_streamer_sink_set_eos_cb()
  * @see media_streamer_sink_unset_eos_cb()
  */
-typedef void (*media_streamer_sink_eos_cb)(media_streamer_node_h node,
-                                           void *user_data);
+typedef void (*media_streamer_sink_eos_cb)(media_streamer_node_h node, void *user_data);
 
 /**
  * @brief Called when the seek operation is completed.
@@ -475,9 +469,7 @@ typedef void (*media_streamer_position_changed_cb)(void *user_data);
  * @see media_streamer_unset_error_cb()
  * @see media_streamer_error_cb()
  */
-int media_streamer_set_error_cb(media_streamer_h streamer,
-                                media_streamer_error_cb callback,
-                                void *user_data);
+int media_streamer_set_error_cb(media_streamer_h streamer, media_streamer_error_cb callback, void *user_data);
 
 /**
  * @brief Unregisters the error callback function.
@@ -510,9 +502,7 @@ int media_streamer_unset_error_cb(media_streamer_h streamer);
  * @see media_streamer_unset_state_change_cb()
  * @see media_streamer_state_change_cb()
  */
-int media_streamer_set_state_change_cb(media_streamer_h streamer,
-                                       media_streamer_state_changed_cb callback,
-                                       void *user_data);
+int media_streamer_set_state_change_cb(media_streamer_h streamer, media_streamer_state_changed_cb callback, void *user_data);
 
 /**
  * @brief Unregisters the state changed callback function.
@@ -548,9 +538,7 @@ int media_streamer_unset_state_change_cb(media_streamer_h streamer);
  * @see media_streamer_src_unset_buffer_status_cb()
  * @see media_streamer_custom_buffer_status_cb()
  */
-int media_streamer_src_set_buffer_status_cb(media_streamer_node_h source,
-                                            media_streamer_custom_buffer_status_cb callback,
-                                            void *user_data);
+int media_streamer_src_set_buffer_status_cb(media_streamer_node_h source, media_streamer_custom_buffer_status_cb callback, void *user_data);
 
 /**
  * @brief Unregisters the src buffer status callback function.
@@ -585,9 +573,7 @@ int media_streamer_src_unset_buffer_status_cb(media_streamer_node_h source);
  * @see media_streamer_sink_unset_data_ready_cb()
  * @see media_streamer_sink_data_ready_cb()
  */
-int media_streamer_sink_set_data_ready_cb(media_streamer_node_h sink,
-                                          media_streamer_sink_data_ready_cb callback,
-                                          void *user_data);
+int media_streamer_sink_set_data_ready_cb(media_streamer_node_h sink, media_streamer_sink_data_ready_cb callback, void *user_data);
 
 /**
  * @brief Unregisters the sink data ready callback function.
@@ -621,9 +607,7 @@ int media_streamer_sink_unset_data_ready_cb(media_streamer_node_h sink);
  * @see media_streamer_sink_unset_eos_cb()
  * @see media_streamer_sink_eos_cb()
  */
-int media_streamer_sink_set_eos_cb(media_streamer_node_h sink,
-                                   media_streamer_sink_eos_cb callback,
-                                   void *user_data);
+int media_streamer_sink_set_eos_cb(media_streamer_node_h sink, media_streamer_sink_eos_cb callback, void *user_data);
 
 /**
  * @brief Unregisters the sink end-of-stream callback function.
@@ -788,11 +772,8 @@ int media_streamer_destroy(media_streamer_h streamer);
  * @post It invokes media_streamer_set_play_position() when seek operation completes, if you set a callback.
  * @see media_streamer_get_play_position()
  */
-int media_streamer_set_play_position(media_streamer_h streamer,
-                                     int time,
-                                     bool accurate,
-                                     media_streamer_position_changed_cb callback,
-                                     void *user_data);
+int media_streamer_set_play_position(media_streamer_h streamer, int time,
+					bool accurate, media_streamer_position_changed_cb callback, void *user_data);
 
 /**
  * @brief Gets the current position in milliseconds.
@@ -823,8 +804,7 @@ int media_streamer_get_play_position(media_streamer_h streamer, int *time);
  * @pre Create a media streamer handle by calling media_streamer_create() function
  * @see #media_streamer_state_e
  */
-int media_streamer_get_state(media_streamer_h streamer,
-                             media_streamer_state_e *state);
+int media_streamer_get_state(media_streamer_h streamer, media_streamer_state_e *state);
 
 /**
  * @brief Creates media streamer source node.
@@ -847,8 +827,7 @@ int media_streamer_get_state(media_streamer_h streamer,
  * @see #media_streamer_node_src_type_e
  * @see media_streamer_node_destroy()
  */
-int media_streamer_node_create_src(media_streamer_node_src_type_e type,
-                                   media_streamer_node_h *src);
+int media_streamer_node_create_src(media_streamer_node_src_type_e type, media_streamer_node_h *src);
 
 /**
  * @brief Pushes packet into custom source node.
@@ -867,8 +846,7 @@ int media_streamer_node_create_src(media_streamer_node_src_type_e type,
  * @pre	The media streamer state must be set to #MEDIA_STREAMER_STATE_IDLE at least.
  * @see #media_packet_h
  */
-int media_streamer_node_push_packet(media_streamer_node_h src,
-                                    media_packet_h packet);
+int media_streamer_node_push_packet(media_streamer_node_h src, media_packet_h packet);
 
 /**
  * @brief Creates media streamer sink node.
@@ -889,8 +867,7 @@ int media_streamer_node_push_packet(media_streamer_node_h src,
  * @see #media_streamer_node_sink_type_e
  * @see media_streamer_node_destroy()
  */
-int media_streamer_node_create_sink(media_streamer_node_sink_type_e type,
-                                    media_streamer_node_h *sink);
+int media_streamer_node_create_sink(media_streamer_node_sink_type_e type, media_streamer_node_h *sink);
 
 /**
  * @brief Pulls packet from custom sink node.
@@ -909,8 +886,7 @@ int media_streamer_node_create_sink(media_streamer_node_sink_type_e type,
  * @see #media_packet_h
  * @see media_streamer_node_create_sink()
  */
-int media_streamer_node_pull_packet(media_streamer_node_h sink,
-                                    media_packet_h *packet);
+int media_streamer_node_pull_packet(media_streamer_node_h sink, media_packet_h *packet);
 
 /**
  * @brief Creates media streamer node except MEDIA_STREAMER_NODE_TYPE_SRC and MEDIA_STREAMER_NODE_TYPE_SINK.
@@ -933,10 +909,8 @@ int media_streamer_node_pull_packet(media_streamer_node_h sink,
  * @see #media_format_h
  * @see media_streamer_node_destroy()
  */
-int media_streamer_node_create(media_streamer_node_type_e type,
-                               media_format_h in_fmt,
-                               media_format_h out_fmt,
-                               media_streamer_node_h *node);
+int media_streamer_node_create(media_streamer_node_type_e type, media_format_h in_fmt,
+					media_format_h out_fmt, media_streamer_node_h *node);
 
 /**
  * @brief Adds node to media streamer.
@@ -956,8 +930,7 @@ int media_streamer_node_create(media_streamer_node_type_e type,
  * @see media_streamer_node_create_src()
  * @see media_streamer_node_create_sink()
  */
-int media_streamer_node_add(media_streamer_h streamer,
-                            media_streamer_node_h node);
+int media_streamer_node_add(media_streamer_h streamer, media_streamer_node_h node);
 
 /**
  * @brief Destroys media streamer node.
@@ -994,8 +967,7 @@ int media_streamer_node_destroy(media_streamer_node_h node);
  * @pre Add node to streamer by calling media_streamer_node_add() function
  * @see media_streamer_node_add()
  */
-int media_streamer_node_remove(media_streamer_h streamer,
-                               media_streamer_node_h node);
+int media_streamer_node_remove(media_streamer_h streamer, media_streamer_node_h node);
 
 /**
  * @brief Links two media streamer nodes.
@@ -1024,10 +996,8 @@ int media_streamer_node_remove(media_streamer_h streamer,
  * @see media_streamer_node_create()
  * @see media_streamer_node_add()
  */
-int media_streamer_node_link(media_streamer_node_h src_node,
-                             const char *src_pad_name,
-                             media_streamer_node_h dest_node,
-                             const char *sink_pad_name);
+int media_streamer_node_link(media_streamer_node_h src_node, const char *src_pad_name,
+					media_streamer_node_h dest_node, const char *sink_pad_name);
 
 /**
  * @brief Sets media format for pad of media streamer node.
@@ -1045,9 +1015,7 @@ int media_streamer_node_link(media_streamer_node_h src_node,
  * @pre Get pad name by calling media_streamer_node_get_pad_name() function
  * @see #media_format_h
  */
-int media_streamer_node_set_pad_format(media_streamer_node_h node,
-                                       const char *pad_name,
-                                       media_format_h fmt);
+int media_streamer_node_set_pad_format(media_streamer_node_h node, const char *pad_name, media_format_h fmt);
 
 /**
  * @brief Gets media format for pad of media streamer node.
@@ -1065,9 +1033,7 @@ int media_streamer_node_set_pad_format(media_streamer_node_h node,
  * @pre Get pad name by calling media_streamer_node_get_pad_name() function
  * @see #media_format_h
  */
-int media_streamer_node_get_pad_format(media_streamer_node_h node,
-                                       const char *pad_name,
-                                       media_format_h *fmt);
+int media_streamer_node_get_pad_format(media_streamer_node_h node, const char *pad_name, media_format_h *fmt);
 
 /**
  * @brief Gets name of node pads.
@@ -1091,11 +1057,8 @@ int media_streamer_node_get_pad_format(media_streamer_node_h node,
  * @see media_streamer_node_create_src()
  * @see media_streamer_node_create_sink()
  */
-int media_streamer_node_get_pad_name(media_streamer_node_h node,
-                                     char ***src_pad_name,
-                                     int *src_pad_num,
-                                     char ***sink_pad_name,
-                                     int *sink_pad_num);
+int media_streamer_node_get_pad_name(media_streamer_node_h node, char ***src_pad_name,
+					int *src_pad_num, char ***sink_pad_name, int *sink_pad_num);
 
 
 /**
@@ -1117,8 +1080,7 @@ int media_streamer_node_get_pad_name(media_streamer_node_h node,
  * @see media_streamer_node_create_sink()
  * @see media_streamer_node_get_params()
  */
-int media_streamer_node_set_params(media_streamer_node_h node,
-                                   bundle *param_list);
+int media_streamer_node_set_params(media_streamer_node_h node, bundle *param_list);
 /**
  * @brief Gets node parameter list.
  * @since_tizen 3.0
@@ -1140,8 +1102,7 @@ int media_streamer_node_set_params(media_streamer_node_h node,
  * @see media_streamer_node_set_params()
  * @see media_streamer_node_set_param()
  */
-int media_streamer_node_get_params(media_streamer_node_h node,
-                                   bundle **param_list);
+int media_streamer_node_get_params(media_streamer_node_h node, bundle **param_list);
 
 /**
  * @brief Sets single parameter of node.
@@ -1165,7 +1126,7 @@ int media_streamer_node_get_params(media_streamer_node_h node,
  * @see media_streamer_node_get_param()
  */
 int media_streamer_node_set_param(media_streamer_node_h node,
-                                  const char *param_name, const char *param_value);
+					const char *param_name, const char *param_value);
 
 
 /**
@@ -1190,7 +1151,7 @@ int media_streamer_node_set_param(media_streamer_node_h node,
  * @see media_streamer_node_set_param()
  */
 int media_streamer_node_get_param(media_streamer_node_h node,
-                                  const char *param_name, char **param_value);
+					const char *param_name, char **param_value);
 
 /**
  * @}

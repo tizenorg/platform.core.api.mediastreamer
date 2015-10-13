@@ -21,18 +21,14 @@
  *
  * @since_tizen 3.0
  */
-int __ms_node_set_property(media_streamer_node_s *ms_node,
-                           const gchar *param_key,
-                           const gchar *param_value);
+int __ms_node_set_property(media_streamer_node_s *ms_node, const gchar *param_key, const gchar *param_value);
 
 /**
  * @brief Creates media streamer node using input and output format.
  *
  * @since_tizen 3.0
  */
-int __ms_node_create(media_streamer_node_s *node,
-                     media_format_h in_fmt,
-                     media_format_h out_fmt);
+int __ms_node_create(media_streamer_node_s *node, media_format_h in_fmt, media_format_h out_fmt);
 
 /**
  * @brief Creates media streamer source node.
@@ -60,8 +56,7 @@ void __ms_node_destroy(media_streamer_node_s *node);
  *
  * @since_tizen 3.0
  */
-int __ms_node_insert_into_table(GHashTable *nodes_table,
-                                 media_streamer_node_s *ms_node);
+int __ms_node_insert_into_table(GHashTable *nodes_table, media_streamer_node_s *ms_node);
 
 /**
  * @brief Removes media streamer node from nodes table.
@@ -90,21 +85,18 @@ int __ms_pipeline_unprepare(media_streamer_s *ms_streamer);
  *
  * @since_tizen 3.0
  */
-int __ms_node_read_params_from_bundle(media_streamer_node_s *node,
-                                      bundle *param_list);
+int __ms_node_read_params_from_bundle(media_streamer_node_s *node, bundle *param_list);
 
 /**
  * @brief Writes GstElement properties into user's bundle object.
  *
  * @since_tizen 3.0
  */
-int __ms_node_write_params_into_bundle(media_streamer_node_s *node,
-                                       bundle *param_list);
+int __ms_node_write_params_into_bundle(media_streamer_node_s *node, bundle *param_list);
 
 /**
  * @brief Writes GstElement property into user's value.
  *
  * @since_tizen 3.0
  */
-int __ms_node_write_param_into_value(media_streamer_node_s *node,
-                                     const char *param_name, char **param_value);
+int __ms_node_write_param_into_value(media_streamer_node_s *node, const char *param_name, char **param_value);

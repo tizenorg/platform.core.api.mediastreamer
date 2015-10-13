@@ -49,18 +49,15 @@ void __ms_generate_dots(GstElement *bin, gchar *name_tag);
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_bin_find_element_by_klass(GstElement *sink_bin,
-                                           GstElement *previous_elem,
-                                           const gchar *klass_name,
-                                           const gchar *bin_name);
+GstElement *__ms_bin_find_element_by_klass(GstElement *sink_bin, GstElement *previous_elem,
+					const gchar *klass_name, const gchar *bin_name);
 
 /**
  * @brief Creates GstElement by klass name.
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_create_element_by_registry(GstPad *src_pad,
-                                            const gchar *klass_name);
+GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_name);
 
 /**
  * @brief Links two Gstelements and returns the last one.
@@ -68,8 +65,7 @@ GstElement *__ms_create_element_by_registry(GstPad *src_pad,
  * @since_tizen 3.0
  */
 GstElement *__ms_link_with_new_element(GstElement *previous_element,
-                                       GstElement *new_element,
-                                       const gchar *next_elem_bin_name);
+					GstElement *new_element, const gchar *next_elem_bin_name);
 
 /**
  * @brief Creates GstElement by plugin name.
@@ -118,12 +114,8 @@ GstElement *__ms_rtp_element_create(media_streamer_node_s *ms_node);
  *
  * @since_tizen 3.0
  */
-gboolean __ms_get_rtp_elements(media_streamer_node_s *ms_node,
-                               GstElement **rtp_elem,
-                               GstElement **rtcp_elem,
-                               const gchar *elem_name,
-                               const gchar *direction,
-                               gboolean auto_create);
+gboolean __ms_get_rtp_elements(media_streamer_node_s *ms_node, GstElement **rtp_elem,
+					GstElement **rtcp_elem, const gchar *elem_name, const gchar *direction, gboolean auto_create);
 
 /**
  * @brief Converts key-value property into needed GType
@@ -131,8 +123,7 @@ gboolean __ms_get_rtp_elements(media_streamer_node_s *ms_node,
  *
  * @since_tizen 3.0
  */
-gboolean __ms_element_set_property(GstElement *src_element,
-                                   const char *key, const gchar *param_value);
+gboolean __ms_element_set_property(GstElement *src_element, const char *key, const gchar *param_value);
 
 /**
  * @brief Unlink all pads into GstElement.
@@ -160,11 +151,7 @@ gboolean __ms_bin_add_element(GstElement *bin, GstElement *element, gboolean do_
  *
  * @since_tizen 3.0
  */
-gint __ms_decodebin_autoplug_select(GstElement *bin,
-                                    GstPad *pad,
-                                    GstCaps *caps,
-                                    GstElementFactory *factory,
-                                    gpointer data);
+gint __ms_decodebin_autoplug_select(GstElement *bin, GstPad *pad, GstCaps *caps, GstElementFactory *factory, gpointer data);
 
 /**
  * @brief Callback function to link decodebin with the sink element at the streamer part.
@@ -192,10 +179,7 @@ void __decodebin_newpad_client_cb(GstElement *decodebin, GstPad *pad, gpointer u
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_combine_next_element(GstElement *previous_element,
-                                      const gchar *next_elem_klass_name,
-                                      const gchar *next_elem_bin_name,
-                                      gchar *default_element);
+GstElement *__ms_combine_next_element(GstElement *previous_element, const gchar *next_elem_klass_name, const gchar *next_elem_bin_name, gchar *default_element);
 
 /**
  * @brief Creates pipeline, bus and src/sink/topology bins.

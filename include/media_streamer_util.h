@@ -44,42 +44,42 @@ extern "C" {
 
 #define ms_debug(fmt, arg...) do { \
 		LOGD(FONT_COLOR_RESET""fmt"", ##arg);     \
-	} while(0)
+	} while (0)
 
 #define ms_info(fmt, arg...) do { \
 		LOGI(FONT_COLOR_GREEN""fmt"", ##arg);     \
-	} while(0)
+	} while (0)
 
 #define ms_error(fmt, arg...) do { \
 		LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
-	} while(0)
+	} while (0)
 
 #define ms_debug_fenter() do { \
 		LOGD(FONT_COLOR_YELLOW"<Enter>");     \
-	} while(0)
+	} while (0)
 
 #define ms_debug_fleave() do { \
 		LOGD(FONT_COLOR_PURPLE"<Leave>");     \
-	} while(0)
+	} while (0)
 
 #define ms_retm_if(expr, fmt, arg...) do { \
-		if(expr) { \
+		if (expr) { \
 			LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
 			return; \
 		} \
-	} while(0)
+	} while (0)
 
 #define ms_retvm_if(expr, val, fmt, arg...) do { \
-		if(expr) { \
+		if (expr) { \
 			LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
 			return(val); \
 		} \
-	} while(0)
+	} while (0)
 
-#define MS_SAFE_FREE(src)           {if(src) {free(src); src = NULL;}}
-#define MS_SAFE_GFREE(src)          {if(src) {g_free(src); src = NULL;}}
-#define MS_SAFE_UNREF(src)          {if(src) {gst_object_unref(GST_OBJECT(src)); src = NULL;}}
-#define MS_TABLE_SAFE_UNREF(src)    {if(src) {g_hash_table_unref(src); src = NULL;}}
+#define MS_SAFE_FREE(src)           {if (src) { free(src); src = NULL; } }
+#define MS_SAFE_GFREE(src)          {if (src) { g_free(src); src = NULL; } }
+#define MS_SAFE_UNREF(src)          {if (src) { gst_object_unref(GST_OBJECT(src)); src = NULL; } }
+#define MS_TABLE_SAFE_UNREF(src)    {if (src) { g_hash_table_unref(src); src = NULL; } }
 
 /* Ini Utils */
 #define MEDIA_STREAMER_INI_DEFAULT_PATH	"/usr/etc/media_streamer.ini"
@@ -231,8 +231,7 @@ gboolean __ms_destroy_ini_dictionary(dictionary *dict);
  *
  * @since_tizen 3.0
  */
-gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path,
-                           char *default_str);
+gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path, char *default_str);
 
 /**
  * @brief Converts Media Format mime type into Caps media format string.

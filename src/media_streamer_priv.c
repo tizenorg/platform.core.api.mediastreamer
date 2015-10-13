@@ -19,7 +19,7 @@
 #include "media_streamer_node.h"
 #include "media_streamer_gst.h"
 
-int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e state)
+int __ms_state_change(media_streamer_s * ms_streamer, media_streamer_state_e state)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
@@ -29,37 +29,35 @@ int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e stat
 	ms_retvm_if(previous_state == state, MEDIA_STREAMER_ERROR_NONE, "Media streamer already in this state");
 
 	switch (state) {
-		case MEDIA_STREAMER_STATE_NONE:
-			/*
-			 * Media streamer must be in IDLE state
-			 * Unlink and destroy all bins and elements.
-			 */
-			if (previous_state != MEDIA_STREAMER_STATE_IDLE) {
-				__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE);
-			}
-			break;
-		case MEDIA_STREAMER_STATE_IDLE:
-			/*
-			 * Unlink all gst_elements, set pipeline into state NULL
-			 */
-			if (previous_state != MEDIA_STREAMER_STATE_NONE) {
-				ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_NULL);
-			}
-			break;
-		case MEDIA_STREAMER_STATE_READY:
-			ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_READY);
-			break;
-		case MEDIA_STREAMER_STATE_PLAYING:
-			ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PLAYING);
-			break;
-		case MEDIA_STREAMER_STATE_PAUSED:
-			ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PAUSED);
-			break;
-		case MEDIA_STREAMER_STATE_SEEKING:
-		default: {
-				ms_info("Error: invalid state [%d]", state);
-				return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
-			}
+	case MEDIA_STREAMER_STATE_NONE:
+		/*
+		 * Media streamer must be in IDLE state
+		 * Unlink and destroy all bins and elements.
+		 */
+		if (previous_state != MEDIA_STREAMER_STATE_IDLE)
+			__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE);
+		break;
+	case MEDIA_STREAMER_STATE_IDLE:
+		/*
+		 * Unlink all gst_elements, set pipeline into state NULL
+		 */
+		if (previous_state != MEDIA_STREAMER_STATE_NONE)
+			ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_NULL);
+		break;
+	case MEDIA_STREAMER_STATE_READY:
+		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_READY);
+		break;
+	case MEDIA_STREAMER_STATE_PLAYING:
+		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PLAYING);
+		break;
+	case MEDIA_STREAMER_STATE_PAUSED:
+		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PAUSED);
+		break;
+	case MEDIA_STREAMER_STATE_SEEKING:
+	default:{
+			ms_info("Error: invalid state [%d]", state);
+			return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+		}
 	}
 
 	if (ret != MEDIA_STREAMER_ERROR_NONE) {
@@ -72,30 +70,28 @@ int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e stat
 	return ret;
 }
 
-int __ms_create(media_streamer_s *ms_streamer)
+int __ms_create(media_streamer_s * ms_streamer)
 {
 	__ms_load_ini_settings(&ms_streamer->ini);
 
 	ms_streamer->nodes_table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, __ms_node_remove_from_table);
-	ms_retvm_if(ms_streamer->nodes_table == NULL,
-	            MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error creating hash table");
+	ms_retvm_if(ms_streamer->nodes_table == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error creating hash table");
 
 	return __ms_pipeline_create(ms_streamer);
 }
 
-int __ms_streamer_seek(media_streamer_s *ms_streamer, int g_time, bool flag)
+int __ms_streamer_seek(media_streamer_s * ms_streamer, int g_time, bool flag)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	GstSeekFlags seek_flag;
 
-	if (flag) {
+	if (flag)
 		seek_flag = GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE;
-	} else {
+	else
 		seek_flag = GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT;
-	}
 
-	if (!__ms_gst_seek(ms_streamer->pipeline, (gint64)g_time*GST_MSECOND, seek_flag)) {
+	if (!__ms_gst_seek(ms_streamer->pipeline, (gint64) g_time * GST_MSECOND, seek_flag)) {
 		ms_error("Error while seeking media streamer to [%d]\n", g_time);
 		return MEDIA_STREAMER_ERROR_SEEK_FAILED;
 	} else {
@@ -107,7 +103,7 @@ int __ms_streamer_seek(media_streamer_s *ms_streamer, int g_time, bool flag)
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
-int __ms_streamer_destroy(media_streamer_s *ms_streamer)
+int __ms_streamer_destroy(media_streamer_s * ms_streamer)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
@@ -126,6 +122,6 @@ int __ms_streamer_destroy(media_streamer_s *ms_streamer)
 	g_mutex_clear(&ms_streamer->mutex_lock);
 	MS_SAFE_FREE(ms_streamer);
 
-	/*	gst_deinit(); */
+	/*  gst_deinit(); */
 	return ret;
 }

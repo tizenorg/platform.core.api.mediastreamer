@@ -471,8 +471,12 @@ int media_streamer_stop(media_streamer_h streamer)
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_PAUSED);
-	/* TODO: do seek to 0 position. */
+	ret = __ms_streamer_seek(streamer, 0, FALSE);
+
+	if (ret != MEDIA_STREAMER_ERROR_NONE)
+		ms_error("Error while putting media streamer to zero playing position");
+	else
+		ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_PAUSED);
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 
@@ -517,7 +521,16 @@ int media_streamer_get_play_position(media_streamer_h streamer, int *time)
 	media_streamer_s *ms_streamer = (media_streamer_s *) streamer;
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
-	return MEDIA_STREAMER_ERROR_NONE;
+	ms_retvm_if(ms_streamer->state < MEDIA_STREAMER_STATE_READY || ms_streamer->state > MEDIA_STREAMER_STATE_PAUSED, MEDIA_STREAMER_ERROR_INVALID_STATE, "The media streamer state is not in the appropriate state");
+
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+	g_mutex_lock(&ms_streamer->mutex_lock);
+
+	ret = __ms_get_position(streamer, time);
+
+	g_mutex_unlock(&ms_streamer->mutex_lock);
+
+	return ret;
 }
 
 int media_streamer_node_push_packet(media_streamer_node_h src, media_packet_h packet)

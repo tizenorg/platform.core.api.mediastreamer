@@ -109,6 +109,13 @@ typedef struct {
 /* Private functions definition */
 
 /**
+ * @brief Gets the play position of Media streamer element.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_get_position(media_streamer_s *ms_streamer, int *time);
+
+/**
  * @brief Seeks Media streamer element to the pointed position.
  *
  * @since_tizen 3.0

@@ -81,7 +81,6 @@ typedef enum {
 #define DEFAULT_SEEK_POS   0
 #define MSEC_MULTIPLIER   1000
 
-
 #define VIDEO_PORT 5000
 #define AUDIO_PORT 6000
 
@@ -124,6 +123,13 @@ static void streamer_error_cb(media_streamer_h streamer,
 static void streamer_seek_cb(void *user_data)
 {
 	g_print("Media Streamer seeked to required position \n");
+
+	int current_time = 0;
+
+	media_streamer_get_play_position(current_media_streamer, &current_time);
+
+	g_print("Current play position [%02d:%02d:%03d] \n", current_time/(1000*60),
+				(current_time/1000)%60, current_time%1000);
 }
 
 static void _create(media_streamer_h *streamer)
@@ -530,9 +536,9 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_add(current_media_streamer, video_sink);
 
 		/*====================Linking Video Client=========================== */
-		 media_streamer_node_link(video_depay, "src", video_dec, "sink");
-		 media_streamer_node_link(video_dec, "src", video_conv, "sink");
-		 media_streamer_node_link(video_conv, "src", video_sink, "sink");
+		media_streamer_node_link(video_depay, "src", video_dec, "sink");
+		media_streamer_node_link(video_dec, "src", video_conv, "sink");
+		media_streamer_node_link(video_conv, "src", video_sink, "sink");
 
 		g_print("== success client video part \n");
 	}
@@ -614,7 +620,7 @@ static void buffer_status_cb(media_streamer_node_h node,
 
 	static int count = 0;
 
-	/* Try send only 10 packets*/
+	/* Try send only 10 packets */
 	if (status == MEDIA_STREAMER_CUSTOM_BUFFER_UNDERRUN && count < 10) {
 		g_print("Buffer status cb got underflow\n");
 
@@ -791,7 +797,7 @@ static void display_playing_scenario_select_menu(void)
 	g_print("----------------------------------------------------\n");
 	g_print("\n");
 	g_print("Please select Playing Scenario mode\n");
-	g_print("By default will be used [%d] mode\n",	g_scenario_mode);
+	g_print("By default will be used [%d] mode\n", g_scenario_mode);
 	g_print("1. VideoFile playing \n");
 	g_print("2. VideoFile + SubtitleFile playing \n");
 	g_print("3. HTTP Source playing \n");
@@ -1089,7 +1095,6 @@ void _interpret_playing_scenario_menu(char *cmd)
 	g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
 }
 
-
 void _interpret_scenario_menu(char *cmd)
 {
 	int len = strlen(cmd);
@@ -1139,7 +1144,7 @@ void _interpret_scenario_menu(char *cmd)
 				g_sub_menu_state = SUBMENU_STATE_GETTING_VIDEOFILE_URI;
 			} else if (g_menu_preset == PRESET_RTP_CLIENT) {
 				create_formats();
-				media_streamer_node_h rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
+				_create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
 				g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
 			}
 		}
@@ -1224,7 +1229,6 @@ void _interpret_getting_uri_menu(char *cmd)
 		}
 	} else {
 		if (g_scenario_mode == SCENARIO_MODE_FILE_STREAM_VIDEO_AUDIO) {
-			media_streamer_node_h rtp_bin = NULL;
 			create_formats();
 			_create_file_streaming();
 			_create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);

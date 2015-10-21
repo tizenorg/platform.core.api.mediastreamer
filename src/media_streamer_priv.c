@@ -80,7 +80,24 @@ int __ms_create(media_streamer_s * ms_streamer)
 	return __ms_pipeline_create(ms_streamer);
 }
 
-int __ms_streamer_seek(media_streamer_s * ms_streamer, int g_time, bool flag)
+int __ms_get_position(media_streamer_s *ms_streamer, int *time)
+{
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	gint64 current = -1;
+
+	if (!gst_element_query_position(ms_streamer->pipeline, GST_FORMAT_TIME, &current)) {
+		ms_error("Could not query current position.");
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	} else {
+		*time = (int)(((GstClockTime)(current)) / GST_MSECOND);
+		ms_info("Media streamer queried position at [%d] msec successfully.", *time);
+	}
+
+	return MEDIA_STREAMER_ERROR_NONE;
+}
+
+int __ms_streamer_seek(media_streamer_s *ms_streamer, int g_time, bool flag)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
@@ -98,7 +115,7 @@ int __ms_streamer_seek(media_streamer_s * ms_streamer, int g_time, bool flag)
 		ms_streamer->is_seeking = TRUE;
 	}
 
-	ms_info("Media streamer pipeline seeked successfully.");
+	ms_info("Media streamer pipeline seeked successfully to [%d] position", g_time);
 
 	return MEDIA_STREAMER_ERROR_NONE;
 }

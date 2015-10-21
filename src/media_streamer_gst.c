@@ -369,23 +369,37 @@ GstElement *__ms_bin_find_element_by_klass(GstElement * sink_bin, GstElement * p
 			while (GST_ITERATOR_OK == gst_iterator_next(sink_pad_iterator, &sink_pad_value)) {
 				GstPad *sink_pad = (GstPad *) g_value_get_object(&sink_pad_value);
 
-				/* Check if sink pad of found element is unlinked */
+				/* If sink pad of found element is unlinked, */
+				/* next mediastreamer element is found unlinked element. */
 				if (!gst_pad_is_linked(sink_pad)) {
 					unlinked_sink_pad_found = TRUE;
 					linked_sink_element = NULL;
 				} else {
 
-					/* Check if src pad of previous element is linked to sink pad of found element */
-					src_pad_iterator = gst_element_iterate_src_pads(previous_elem);
-					while (GST_ITERATOR_OK == gst_iterator_next(src_pad_iterator, &src_pad_value)) {
-						GstPad *src_pad = (GstPad *) g_value_get_object(&src_pad_value);
-						if (src_pad == gst_pad_get_peer(sink_pad))
-							linked_sink_element = found_element;
+					if (previous_elem) {
 
-						g_value_reset(&src_pad_value);
+						/* If previous element is set, */
+						/* check if src pad of previous element is linked to sink pad of found element */
+						src_pad_iterator = gst_element_iterate_src_pads(previous_elem);
+						while (GST_ITERATOR_OK == gst_iterator_next(src_pad_iterator, &src_pad_value)) {
+							GstPad *src_pad = (GstPad *) g_value_get_object(&src_pad_value);
+
+							/* If pads are linked to each other, */
+							/* Next mediastreamer element will be found linked element */
+							GstPad *peer_pad = gst_pad_get_peer(sink_pad);
+							if (src_pad == peer_pad)
+								linked_sink_element = found_element;
+							MS_SAFE_UNREF(peer_pad);
+							g_value_reset(&src_pad_value);
+						}
+						g_value_unset(&src_pad_value);
+						gst_iterator_free(src_pad_iterator);
+					} else {
+
+						/* Previous element is not set. */
+						/* Next mediastreamer element will be found linked element */
+						linked_sink_element = found_element;
 					}
-					g_value_unset(&src_pad_value);
-					gst_iterator_free(src_pad_iterator);
 				}
 				g_value_reset(&sink_pad_value);
 			}
@@ -393,7 +407,6 @@ GstElement *__ms_bin_find_element_by_klass(GstElement * sink_bin, GstElement * p
 			g_value_unset(&sink_pad_value);
 			gst_iterator_free(sink_pad_iterator);
 
-			/* Check if found element has unlinked sink pad, then return the found element */
 			if (unlinked_sink_pad_found) {
 				if (bin_name == NULL || g_strrstr(GST_ELEMENT_NAME(found_element), bin_name)) {
 					found = TRUE;
@@ -405,8 +418,8 @@ GstElement *__ms_bin_find_element_by_klass(GstElement * sink_bin, GstElement * p
 		g_value_reset(&element_value);
 	}
 
-	/* If found element is of the needed class but has been linked previously by user,
-	   we return this found element for further connection */
+	/* If found element is of the needed plugin class but has been linked previously by user, */
+	/* we return this found element for further connection */
 	if (linked_sink_element && (bin_name == NULL || g_strrstr(GST_ELEMENT_NAME(linked_sink_element), bin_name))) {
 		found_element = linked_sink_element;
 		found = TRUE;
@@ -560,7 +573,7 @@ GstElement *__ms_combine_next_element(GstElement * previous_element, const gchar
 
 	parent_element = (GstElement *) gst_element_get_parent(previous_element);
 
-	/*Look for node created by user */
+	/* Look for node created by user */
 	if (next_elem_klass_name)
 		found_element = __ms_bin_find_element_by_klass(parent_element, previous_element, next_elem_klass_name, next_elem_bin_name);
 
@@ -593,7 +606,7 @@ GstElement *__ms_combine_next_element(GstElement * previous_element, const gchar
 			MS_SAFE_UNREF(src_pad);
 		}
 
-		/*Add created element */
+		/* Add created element */
 		if (found_element) {
 			if (__ms_bin_add_element(parent_element, found_element, FALSE)) {
 				gst_element_sync_state_with_parent(found_element);

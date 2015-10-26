@@ -68,6 +68,7 @@ typedef struct {
 
 	GHashTable *nodes_table;
 	GMutex mutex_lock;
+	GList *autoplug_sig_list;
 
 	GstBus *bus;
 	guint bus_watcher;
@@ -101,6 +102,8 @@ typedef struct {
 	int subtype;
 
 	gboolean linked_by_user;
+
+	GList *sig_list;
 
 	ms_node_set_param set_param;
 	void *callbacks_structure;

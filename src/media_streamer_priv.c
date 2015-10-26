@@ -134,11 +134,12 @@ int __ms_streamer_destroy(media_streamer_s * ms_streamer)
 
 	MS_SAFE_UNREF(ms_streamer->bus);
 	MS_SAFE_UNREF(ms_streamer->pipeline);
+	MS_SAFE_UNREF(ms_streamer->sink_video_bin);
+	MS_SAFE_UNREF(ms_streamer->sink_audio_bin);
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 	g_mutex_clear(&ms_streamer->mutex_lock);
 	MS_SAFE_FREE(ms_streamer);
 
-	/*  gst_deinit(); */
 	return ret;
 }

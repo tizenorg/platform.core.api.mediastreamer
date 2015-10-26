@@ -78,12 +78,16 @@ static int __ms_rtp_node_set_property(media_streamer_node_s * ms_node, const cha
 			if (rtp_elem && rtcp_elem) {
 				__ms_element_set_property(rtp_elem, param, param_value);
 				__ms_element_set_property(rtcp_elem, param, param_value);
+				MS_SAFE_UNREF(rtp_elem);
+				MS_SAFE_UNREF(rtcp_elem);
 			}
 
 			__ms_get_rtp_elements(ms_node, &rtp_elem, &rtcp_elem, "video", "out", FALSE);
 			if (rtp_elem && rtcp_elem) {
 				__ms_element_set_property(rtp_elem, param, param_value);
 				__ms_element_set_property(rtcp_elem, param, param_value);
+				MS_SAFE_UNREF(rtp_elem);
+				MS_SAFE_UNREF(rtcp_elem);
 			}
 		} else {
 			ms_error("Error: Unsupported parameter [%s] for rtp node.", param);
@@ -116,6 +120,8 @@ static int __ms_rtp_node_set_property(media_streamer_node_s * ms_node, const cha
 		}
 
 		g_strfreev(tokens);
+		MS_SAFE_UNREF(rtp_elem);
+		MS_SAFE_UNREF(rtcp_elem);
 		return MEDIA_STREAMER_ERROR_NONE;
 	} else {
 		ms_error("Invalid rtp parameter name.");
@@ -155,8 +161,8 @@ int __ms_node_create(media_streamer_node_s * node, media_format_h in_fmt, media_
 		dec_use = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
 		if (dec_use) {
 			node->gst_element = __ms_element_create("decodebin", NULL);
-			g_signal_connect(node->gst_element, "pad-added", G_CALLBACK(__decodebin_newpad_client_cb), (gpointer) node);
-			g_signal_connect(node->gst_element, "autoplug-select", G_CALLBACK(__ms_decodebin_autoplug_select), NULL);
+			__ms_signal_create(&node->sig_list, node->gst_element, "pad-added", G_CALLBACK(__decodebin_newpad_client_cb), node);
+			__ms_signal_create(&node->sig_list, node->gst_element, "autoplug-select", G_CALLBACK(__ms_decodebin_autoplug_select), NULL);
 		} else {
 			format_prefix = g_strdup_printf("%s:decoder", __ms_convert_mime_to_string(mime));
 			plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_DECODER);
@@ -296,8 +302,8 @@ int __ms_src_node_create(media_streamer_node_s * node)
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_CUSTOM:
 		node->gst_element = __ms_element_create(DEFAULT_APP_SOURCE, NULL);
-		g_signal_connect(node->gst_element, "need-data", G_CALLBACK(__ms_src_start_feed_cb), (gpointer) node);
-		g_signal_connect(node->gst_element, "enough-data", G_CALLBACK(__ms_src_stop_feed_cb), (gpointer) node);
+		__ms_signal_create(&node->sig_list, node->gst_element, "need-data", G_CALLBACK(__ms_src_start_feed_cb), node);
+		__ms_signal_create(&node->sig_list, node->gst_element, "enough-data", G_CALLBACK(__ms_src_stop_feed_cb), node);
 		break;
 	default:
 		ms_error("Error: invalid Src node Type [%d]", node->subtype);
@@ -381,8 +387,8 @@ int __ms_sink_node_create(media_streamer_node_s * node)
 	case MEDIA_STREAMER_NODE_SINK_TYPE_CUSTOM:
 		node->gst_element = __ms_element_create(DEFAULT_APP_SINK, NULL);
 		g_object_set(G_OBJECT(node->gst_element), "emit-signals", TRUE, NULL);
-		g_signal_connect(node->gst_element, "new-sample", G_CALLBACK(__ms_sink_new_buffer_cb), (gpointer) node);
-		g_signal_connect(node->gst_element, "eos", G_CALLBACK(sink_eos), (gpointer) node);
+		__ms_signal_create(&node->sig_list, node->gst_element, "new-sample", G_CALLBACK(__ms_sink_new_buffer_cb), node);
+		__ms_signal_create(&node->sig_list, node->gst_element, "eos", G_CALLBACK(sink_eos), node);
 		break;
 	default:
 		ms_error("Error: invalid Sink node Type [%d]", node->subtype);
@@ -402,9 +408,11 @@ int __ms_sink_node_create(media_streamer_node_s * node)
 
 void __ms_node_destroy(media_streamer_node_s * node)
 {
-	char *node_name = NULL;
+	gchar *node_name = g_strdup(node->name);
 
-	node_name = g_strdup(node->name);
+	/* Disconnects and clean all node signals */
+	g_list_free_full(node->sig_list, __ms_signal_destroy);
+
 	MS_SAFE_UNREF(node->gst_element);
 	MS_SAFE_FREE(node->name);
 	MS_SAFE_FREE(node->callbacks_structure);
@@ -466,10 +474,6 @@ static gboolean __ms_src_need_typefind(GstElement * src)
 
 int __ms_pipeline_prepare(media_streamer_s * ms_streamer)
 {
-	GstElement *unlinked_element = NULL;
-	GstPad *unlinked_pad = NULL;
-
-	GstElement *parent;
 	GstElement *found_element;
 
 	GstCaps *new_pad_caps = NULL;
@@ -479,43 +483,38 @@ int __ms_pipeline_prepare(media_streamer_s * ms_streamer)
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	/* Find unlinked element in src_bin */
-	unlinked_pad = gst_bin_find_unlinked_pad(GST_BIN(ms_streamer->src_bin), GST_PAD_SRC);
+	GstPad *unlinked_pad = gst_bin_find_unlinked_pad(GST_BIN(ms_streamer->src_bin), GST_PAD_SRC);
+	GstElement *unlinked_element = NULL;
 
 	while (unlinked_pad) {
 		unlinked_element = gst_pad_get_parent_element(unlinked_pad);
 		ms_debug("Autoplug: found unlinked element [%s]", GST_ELEMENT_NAME(unlinked_element));
 
-		parent = (GstElement *) gst_element_get_parent(GST_OBJECT_CAST(unlinked_element));
-		ms_info("Received new pad '%s' from [%s]", GST_PAD_NAME(unlinked_pad), GST_ELEMENT_NAME(unlinked_element));
-
 		/* If element in src bin is filesrc */
 		if (__ms_src_need_typefind(unlinked_element)) {
 			found_element = __ms_element_create("decodebin", NULL);
-			gst_bin_add_many((GstBin *) ms_streamer->topology_bin, found_element, NULL);
-
+			__ms_bin_add_element(ms_streamer->topology_bin, found_element, FALSE);
 			gst_element_sync_state_with_parent(found_element);
 
-			if (__ms_bin_find_element_by_klass(ms_streamer->topology_bin, found_element, MEDIA_STREAMER_BIN_KLASS, "rtp_container"))
+			if (__ms_bin_find_element_by_klass(ms_streamer->topology_bin, found_element, MEDIA_STREAMER_BIN_KLASS, "rtp_container")) {
+				__ms_signal_create(&ms_streamer->autoplug_sig_list, found_element, "pad-added", G_CALLBACK(__decodebin_newpad_streamer_cb), ms_streamer);
 				g_signal_connect(found_element, "pad-added", G_CALLBACK(__decodebin_newpad_streamer_cb), ms_streamer);
-			else
+			} else {
+				__ms_signal_create(&ms_streamer->autoplug_sig_list, found_element, "pad-added", G_CALLBACK(__decodebin_newpad_cb), ms_streamer);
 				g_signal_connect(found_element, "pad-added", G_CALLBACK(__decodebin_newpad_cb), ms_streamer);
-
-			g_signal_connect(found_element, "autoplug-select", G_CALLBACK(__ms_decodebin_autoplug_select), NULL);
+			}
+			__ms_signal_create(&ms_streamer->autoplug_sig_list, found_element, "autoplug-select", G_CALLBACK(__ms_decodebin_autoplug_select), NULL);
 
 			found_element = __ms_link_with_new_element(unlinked_element, found_element, NULL);
 			__ms_generate_dots(ms_streamer->pipeline, GST_ELEMENT_NAME(found_element));
 
-			MS_SAFE_UNREF(unlinked_pad);
-
 		} else {
 
 			found_element = __ms_element_create(DEFAULT_QUEUE, NULL);
-			gst_bin_add_many((GstBin *) ms_streamer->topology_bin, found_element, NULL);
-
+			__ms_bin_add_element(ms_streamer->topology_bin, found_element, FALSE);
 			gst_element_sync_state_with_parent(found_element);
 
 			found_element = __ms_link_with_new_element(unlinked_element, found_element, NULL);
-			__ms_generate_dots(parent, DEFAULT_QUEUE);
 
 			/* Check the new pad's type */
 			new_pad_caps = gst_pad_query_caps(unlinked_pad, 0);
@@ -533,8 +532,11 @@ int __ms_pipeline_prepare(media_streamer_s * ms_streamer)
 				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
 				found_element = __ms_combine_next_element(found_element, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
 			}
-			__ms_generate_dots(parent, GST_ELEMENT_NAME(found_element));
+			__ms_generate_dots(ms_streamer->pipeline, GST_ELEMENT_NAME(found_element));
+			gst_caps_unref(new_pad_caps);
 		}
+		MS_SAFE_UNREF(unlinked_pad);
+		MS_SAFE_UNREF(unlinked_element);
 		unlinked_pad = gst_bin_find_unlinked_pad(GST_BIN(ms_streamer->src_bin), GST_PAD_SRC);
 	}
 
@@ -589,6 +591,9 @@ int __ms_pipeline_unprepare(media_streamer_s * ms_streamer)
 		ms_debug("Got a few errors during unprepare [%s] bin.", GST_ELEMENT_NAME(bin));\
 		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;\
 	}
+	/* Disconnects and clean all autoplug signals */
+	g_list_free_full(ms_streamer->autoplug_sig_list, __ms_signal_destroy);
+	ms_streamer->autoplug_sig_list = NULL;
 
 	MS_BIN_UNPREPARE(ms_streamer->src_bin);
 	MS_BIN_UNPREPARE(ms_streamer->topology_bin);

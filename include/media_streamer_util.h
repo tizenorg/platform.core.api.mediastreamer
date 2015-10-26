@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <glib.h>
+#include <gst/gst.h>
 #include <dlog.h>
 #include <iniparser.h>
 
@@ -97,6 +98,15 @@ typedef struct __media_streamer_ini {
 
 } media_streamer_ini_t;
 
+/**
+ * @brief Media Streamer signal structure.
+ *
+ * @since_tizen 3.0
+ */
+typedef struct {
+	GObject* obj;
+	gulong signal_id;
+} media_streamer_signal_s;
 
 /*Test elements*/
 #define DEFAULT_VIDEO_TEST_SOURCE           "videotestsrc"
@@ -253,6 +263,22 @@ const gchar *__ms_convert_mime_to_rtp_format(media_format_mimetype_e mime);
  * @since_tizen 3.0
  */
 media_format_mimetype_e __ms_convert_string_format_to_mime(const char *format_type);
+
+/**
+ * @brief Creates Media streamer signal structure,
+ *        connects it to object and appends it to signal list.
+ *
+ * @since_tizen 3.0
+ */
+void __ms_signal_create(GList **sig_list, GstElement *obj, const char *sig_name, GCallback cb, gpointer user_data);
+
+/**
+ * @brief Disconnects signal from object and
+ * destroys Media streamer signal object.
+ *
+ * @since_tizen 3.0
+ */
+void __ms_signal_destroy(void *data);
 
 #ifdef __cplusplus
 }

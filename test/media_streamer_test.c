@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -80,6 +79,7 @@ typedef enum {
 #define DEFAULT_IP_ADDR   "127.0.0.1"
 #define DEFAULT_SEEK_POS   0
 #define MSEC_MULTIPLIER   1000
+#define MAX_NODES_COUNT   50
 
 #define VIDEO_PORT 5000
 #define AUDIO_PORT 6000
@@ -91,6 +91,10 @@ typedef enum {
 static media_streamer_h g_media_streamer;
 static media_streamer_h g_media_streamer_2;
 static media_streamer_h current_media_streamer = &g_media_streamer;
+
+media_streamer_node_h g_nodes[MAX_NODES_COUNT] = {0,};
+int g_node_counter = 0;
+#define APPEND_NODE(x) {g_nodes[g_node_counter++] = x; }
 
 GMainLoop *g_loop;
 
@@ -337,16 +341,19 @@ static void _create_file_playing()
 	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &file_src);
 	media_streamer_node_set_param(file_src, MEDIA_STREAMER_PARAM_URI, g_uri);
 	media_streamer_node_add(current_media_streamer, file_src);
+	APPEND_NODE(file_src);
 
 	/*********************** videosink *********************************** */
 	media_streamer_node_h video_sink = NULL;
 	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
 	media_streamer_node_add(current_media_streamer, video_sink);
+	APPEND_NODE(video_sink);
 
 	/*********************** audiosink *********************************** */
 	media_streamer_node_h audio_sink = NULL;
 	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO, &audio_sink);
 	media_streamer_node_add(current_media_streamer, audio_sink);
+	APPEND_NODE(audio_sink);
 }
 
 static void _create_file_sub_playing()
@@ -355,21 +362,25 @@ static void _create_file_sub_playing()
 	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &file_sub_src);
 	media_streamer_node_set_param(file_sub_src, MEDIA_STREAMER_PARAM_URI, g_uri);
 	media_streamer_node_add(current_media_streamer, file_sub_src);
+	APPEND_NODE(file_sub_src);
 
 	media_streamer_node_h txt_src = NULL;
 	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &txt_src);
 	media_streamer_node_set_param(txt_src, MEDIA_STREAMER_PARAM_URI, g_sub_uri);
 	media_streamer_node_add(current_media_streamer, txt_src);
+	APPEND_NODE(txt_src);
 
 	/*********************** videosink *********************************** */
 	media_streamer_node_h video_sink = NULL;
 	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
 	media_streamer_node_add(current_media_streamer, video_sink);
+	APPEND_NODE(video_sink);
 
 	/*********************** audiosink *********************************** */
 	media_streamer_node_h audio_sink = NULL;
 	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO, &audio_sink);
 	media_streamer_node_add(current_media_streamer, audio_sink);
+	APPEND_NODE(audio_sink);
 }
 
 static void _create_file_streaming()
@@ -379,6 +390,7 @@ static void _create_file_streaming()
 	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &file_src);
 	media_streamer_node_set_param(file_src, MEDIA_STREAMER_PARAM_URI, g_uri);
 	media_streamer_node_add(current_media_streamer, file_src);
+	APPEND_NODE(file_src);
 }
 
 static void _create_http_playing()
@@ -387,16 +399,19 @@ static void _create_http_playing()
 	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_HTTP, &http_src);
 	media_streamer_node_set_param(http_src, MEDIA_STREAMER_PARAM_URI, g_uri);
 	media_streamer_node_add(current_media_streamer, http_src);
+	APPEND_NODE(http_src);
 
 	/*********************** videosink *********************************** */
 	media_streamer_node_h video_sink = NULL;
 	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
 	media_streamer_node_add(current_media_streamer, video_sink);
+	APPEND_NODE(video_sink);
 
 	/*********************** audiosink *********************************** */
 	media_streamer_node_h audio_sink = NULL;
 	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO, &audio_sink);
 	media_streamer_node_add(current_media_streamer, audio_sink);
+	APPEND_NODE(audio_sink);
 }
 
 static void _create_rtp_streamer(media_streamer_node_h rtp_bin)
@@ -416,16 +431,19 @@ static void _create_rtp_streamer(media_streamer_node_h rtp_bin)
 		}
 
 		media_streamer_node_add(current_media_streamer, video_src);
+		APPEND_NODE(video_src);
 
 		/*********************** encoder **************************************** */
 		media_streamer_node_h video_enc = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER, NULL, vfmt_encoded, &video_enc);
 		media_streamer_node_add(current_media_streamer, video_enc);
+		APPEND_NODE(video_enc);
 
 		/*********************** videopay *************************************** */
 		media_streamer_node_h video_pay = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY, NULL, vfmt_encoded, &video_pay);
 		media_streamer_node_add(current_media_streamer, video_pay);
+		APPEND_NODE(video_pay);
 
 		/*====================Linking Video Streamer=========================== */
 		media_streamer_node_link(video_src, "src", video_enc, "sink");
@@ -449,16 +467,19 @@ static void _create_rtp_streamer(media_streamer_node_h rtp_bin)
 		}
 
 		media_streamer_node_add(current_media_streamer, audio_src);
+		APPEND_NODE(audio_src);
 
 		/*********************** audioencoder *********************************** */
 		media_streamer_node_h audio_enc = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER, NULL, NULL, &audio_enc);
 		media_streamer_node_add(current_media_streamer, audio_enc);
+		APPEND_NODE(audio_enc);
 
 		/*********************** rtpL16pay *********************************** */
 		media_streamer_node_h audio_pay = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY, NULL, NULL, &audio_pay);
 		media_streamer_node_add(current_media_streamer, audio_pay);
+		APPEND_NODE(audio_pay);
 
 		/*====================Linking Audio Streamer========================== */
 		media_streamer_node_link(audio_src, "src", audio_enc, "sink");
@@ -487,6 +508,7 @@ static void _create_rtp_streamer_autoplug(media_streamer_node_h rtp_bin)
 		}
 
 		media_streamer_node_add(current_media_streamer, video_src);
+		APPEND_NODE(video_src);
 
 		g_print("== success streamer_autoplug video part \n");
 	}
@@ -504,6 +526,7 @@ static void _create_rtp_streamer_autoplug(media_streamer_node_h rtp_bin)
 		}
 
 		media_streamer_node_add(current_media_streamer, audio_src);
+		APPEND_NODE(audio_src);
 
 		g_print("== success streamer_autoplug audio part \n");
 	}
@@ -519,21 +542,25 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_h video_depay = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY, NULL, vfmt_encoded, &video_depay);
 		media_streamer_node_add(current_media_streamer, video_depay);
+		APPEND_NODE(video_depay);
 
 		/*********************** videodec *********************************** */
 		media_streamer_node_h video_dec = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER, NULL, vfmt_encoded, &video_dec);
 		media_streamer_node_add(current_media_streamer, video_dec);
+		APPEND_NODE(video_dec);
 
 		/*********************** videoconvertor *********************************** */
 		media_streamer_node_h video_conv = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER, NULL, vfmt_encoded, &video_conv);
 		media_streamer_node_add(current_media_streamer, video_conv);
+		APPEND_NODE(video_conv);
 
 		/*********************** videosink *********************************** */
 		media_streamer_node_h video_sink = NULL;
 		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
 		media_streamer_node_add(current_media_streamer, video_sink);
+		APPEND_NODE(video_sink);
 
 		/*====================Linking Video Client=========================== */
 		media_streamer_node_link(video_depay, "src", video_dec, "sink");
@@ -549,21 +576,25 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_h audio_depay = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY, NULL, NULL, &audio_depay);
 		media_streamer_node_add(current_media_streamer, audio_depay);
+		APPEND_NODE(audio_depay);
 
 		/*********************** audiodecoder *********************************** */
 		media_streamer_node_h audio_dec = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_DECODER, NULL, NULL, &audio_dec);
 		media_streamer_node_add(current_media_streamer, audio_dec);
+		APPEND_NODE(audio_dec);
 
 		/*********************** audioconverter *********************************** */
 		media_streamer_node_h audio_conv = NULL;
 		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER, NULL, NULL, &audio_conv);
 		media_streamer_node_add(current_media_streamer, audio_conv);
+		APPEND_NODE(audio_conv);
 
 		/*********************** audiosink *********************************** */
 		media_streamer_node_h audio_sink = NULL;
 		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO, &audio_sink);
 		media_streamer_node_add(current_media_streamer, audio_sink);
+		APPEND_NODE(audio_sink);
 
 		/*====================Linking Audio Client=========================== */
 		media_streamer_node_link(audio_depay, "src", audio_dec, "sink");
@@ -585,6 +616,7 @@ static void _create_rtp_client_autoplug(media_streamer_node_h rtp_bin)
 		media_streamer_node_h video_sink = NULL;
 		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
 		media_streamer_node_add(current_media_streamer, video_sink);
+		APPEND_NODE(video_sink);
 
 		g_print("== success client_autoplug video part \n");
 	}
@@ -595,6 +627,7 @@ static void _create_rtp_client_autoplug(media_streamer_node_h rtp_bin)
 		media_streamer_node_h audio_sink = NULL;
 		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO, &audio_sink);
 		media_streamer_node_add(current_media_streamer, audio_sink);
+		APPEND_NODE(audio_sink);
 
 		g_print("== success client_autoplug audio part \n");
 	}
@@ -610,6 +643,7 @@ static media_streamer_node_h _create_rtp(int video_port,
 	media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_RTP, NULL, NULL, &rtp_bin);
 	set_rtp_params(rtp_bin, g_broadcast_address, video_port, audio_port, second_client);
 	media_streamer_node_add(current_media_streamer, rtp_bin);
+	APPEND_NODE(rtp_bin);
 	return rtp_bin;
 }
 
@@ -666,12 +700,14 @@ static void _create_app_test()
 	media_streamer_node_h app_src = NULL;
 	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_CUSTOM, &app_src);
 	media_streamer_node_add(current_media_streamer, app_src);
+	APPEND_NODE(app_src);
 
 	/*********************** app_sink *********************************** */
 	media_streamer_node_h app_sink = NULL;
 	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_CUSTOM, &app_sink);
 	media_streamer_node_set_pad_format(app_sink, "sink", vfmt_raw);
 	media_streamer_node_add(current_media_streamer, app_sink);
+	APPEND_NODE(app_sink);
 
 	/*====================Linking ======================================== */
 	media_streamer_node_link(app_src, "src", app_sink, "sink");
@@ -722,6 +758,14 @@ void reset_current_menu_state(void)
 		g_free(g_sub_uri);
 		g_sub_uri = NULL;
 	}
+
+	/* Clean Up Nodes */
+	int i = g_node_counter-1;
+	for (; i >= 0; --i) {
+		media_streamer_node_destroy(g_nodes[i]);
+		g_nodes[i] = NULL;
+	}
+	g_node_counter = 0;
 }
 
 void quit()
@@ -944,17 +988,26 @@ static void run_preset(void)
 			_create_rtp_client_autoplug(rtp_bin);
 		else
 			_create_rtp_client(rtp_bin);
-
 		break;
 	case PRESET_VOIP:
 		rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
-		_create_rtp_streamer(rtp_bin);
-		_create_rtp_client(rtp_bin);
+		if (g_autoplug_mode) {
+			_create_rtp_streamer_autoplug(rtp_bin);
+			_create_rtp_client_autoplug(rtp_bin);
+		} else {
+			_create_rtp_streamer(rtp_bin);
+			_create_rtp_client(rtp_bin);
+		}
 		break;
 	case PRESET_VOIP_2:
 		rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, TRUE);
-		_create_rtp_streamer(rtp_bin);
-		_create_rtp_client(rtp_bin);
+		if (g_autoplug_mode) {
+			_create_rtp_streamer_autoplug(rtp_bin);
+			_create_rtp_client_autoplug(rtp_bin);
+		} else {
+			_create_rtp_streamer(rtp_bin);
+			_create_rtp_client(rtp_bin);
+		}
 		break;
 	case PRESET_DOUBLE_VOIP_SERVER:
 		rtp_bin = _create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
@@ -1397,5 +1450,8 @@ int main(int argc, char **argv)
 
 	g_loop = g_main_loop_new(NULL, FALSE);
 	g_main_loop_run(g_loop);
+
+	g_main_loop_unref(g_loop);
+	g_io_channel_unref(stdin_channel);
 	return 0;
 }

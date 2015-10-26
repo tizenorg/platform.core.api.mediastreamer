@@ -111,7 +111,7 @@ GstElement *__ms_rtp_element_create(media_streamer_node_s *ms_node);
 
 /**
  * @brief Find Udp elements into rtp container by name.
- *
+ *        It returns elements with increased ref count.
  * @since_tizen 3.0
  */
 gboolean __ms_get_rtp_elements(media_streamer_node_s *ms_node, GstElement **rtp_elem,

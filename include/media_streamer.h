@@ -792,6 +792,22 @@ int media_streamer_set_play_position(media_streamer_h streamer, int time,
 int media_streamer_get_play_position(media_streamer_h streamer, int *time);
 
 /**
+ * @brief Gets the total running time of the associated media.
+ * @since_tizen 3.0
+ * @remarks The streamer's src node type should be MEDIA_STREAMER_NODE_SRC_TYPE_FILE or MEDIA_STREAMER_NODE_SRC_TYPE_HTTP.
+ * @param [in]  streamer     Media streamer handle
+ * @param [out] duration     The duration in milliseconds
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #MEDIA_STREAMER_ERROR_NONE Successful
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_STATE Invalid state
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_OPERATION Invalid operation
+ * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_READY, #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
+ */
+int media_streamer_get_duration(media_streamer_h streamer, int *duration);
+
+/**
  * @brief Gets media streamer state.
  * @since_tizen 3.0
  * @param [in]  streamer     Media streamer handle

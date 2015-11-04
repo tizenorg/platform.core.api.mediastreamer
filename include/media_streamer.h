@@ -117,7 +117,8 @@ typedef enum {
 	MEDIA_STREAMER_NODE_SINK_TYPE_RTSP,   /**<  Rtsp sink type, Network internet feature is required */
 	MEDIA_STREAMER_NODE_SINK_TYPE_HTTP,   /**<  Http sink type, Network internet feature is required */
 	MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO,  /**<  Audio sink type */
-	MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, /**<  Screen sink type */
+	MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY,/**<  Overlay sink type */
+	MEDIA_STREAMER_NODE_SINK_TYPE_EVAS,   /**<  EVAS sink type */
 	MEDIA_STREAMER_NODE_SINK_TYPE_FAKE,   /**<  Fake sink type */
 	MEDIA_STREAMER_NODE_SINK_TYPE_CUSTOM  /**<  Custom sink type */
 } media_streamer_node_sink_type_e;
@@ -353,6 +354,17 @@ typedef enum {
  * @see media_streamer_node_get_params
  */
 #define MEDIA_STREAMER_PARAM_HOST "host"
+
+/**
+ * @brief Definition for evas image object of evas sink node
+ * @details It is a object to draw video frame on.
+ *          Needs to check EFL APIs to create evas object.
+ *          Data type is Pointer.
+ * @since_tizen 3.0
+ * @see media_streamer_node_get_params
+
+ */
+#define MEDIA_STREAMER_PARAM_EVAS_OBJECT "evas-object"
 
 
 /**
@@ -790,6 +802,23 @@ int media_streamer_set_play_position(media_streamer_h streamer, int time,
  * @see media_streamer_set_play_position()
  */
 int media_streamer_get_play_position(media_streamer_h streamer, int *time);
+
+/**
+ * @brief Gets the total running time of the associated media.
+ * @since_tizen 3.0
+ * @remarks The streamer's src node type should be MEDIA_STREAMER_NODE_SRC_TYPE_FILE or MEDIA_STREAMER_NODE_SRC_TYPE_HTTP.
+ *          If not, return value will be MEDIA_STREAMER_ERROR_NONE and duration will be -1.
+ * @param [in]  streamer     Media streamer handle
+ * @param [out] duration     The duration in milliseconds
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #MEDIA_STREAMER_ERROR_NONE Successful
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_STATE Invalid state
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #MEDIA_STREAMER_ERROR_INVALID_OPERATION Invalid operation
+ * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_READY, #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
+ */
+int media_streamer_get_duration(media_streamer_h streamer, int *duration);
 
 /**
  * @brief Gets media streamer state.

@@ -47,8 +47,8 @@ char *param_table[PROPERTY_COUNT][2] = {
 
 int __ms_node_set_property(media_streamer_node_s * ms_node, const gchar * param_key, const gchar * param_value)
 {
-	ms_retvm_if(!ms_node && !ms_node->gst_element, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error: empty node");
-	ms_retvm_if(!param_key && !param_value, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Error: invalid property parameter");
+	ms_retvm_if(!ms_node || !ms_node->gst_element, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error: empty node");
+	ms_retvm_if(!param_key || !param_value, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Error: invalid property parameter");
 
 	__ms_element_set_property(ms_node->gst_element, param_key, param_value);
 
@@ -57,7 +57,7 @@ int __ms_node_set_property(media_streamer_node_s * ms_node, const gchar * param_
 
 static int __ms_rtp_node_set_property(media_streamer_node_s * ms_node, const char *param_key, const char *param_value)
 {
-	ms_retvm_if(!ms_node && !ms_node->gst_element, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error: empty node");
+	ms_retvm_if(!ms_node || !ms_node->gst_element, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error: empty node");
 
 	gchar **tokens = NULL;
 	GstElement *rtp_elem = NULL;

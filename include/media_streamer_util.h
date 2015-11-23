@@ -118,6 +118,7 @@ typedef struct {
 /* general */
 #define DEFAULT_GENERATE_DOT                FALSE
 #define DEFAULT_USE_DECODEBIN               FALSE
+#define DEFAULT_DECODEBIN                   "decodebin"
 #define DEFAULT_AUDIO_SOURCE                "alsasrc"
 #define DEFAULT_CAMERA_SOURCE               "v4l2src"
 #define DEFAULT_VIDEO_SOURCE                "ximagesrc"
@@ -158,10 +159,21 @@ typedef struct {
 #define MS_ELEMENT_IS_INPUT(el) g_strrstr(el, "in")
 #define MS_ELEMENT_IS_AUDIO(el) g_strrstr(el, "audio")
 #define MS_ELEMENT_IS_VIDEO(el) g_strrstr(el, "video")
-#define MS_ELEMENT_IS_RTP(el) g_strrstr(el, "rtp")
+#define MS_RTP_PAD_VIDEO_IN "video_in"
+#define MS_RTP_PAD_AUDIO_IN "audio_in"
+#define MS_ELEMENT_IS_RTP(el) g_strrstr(el, "rtp_container")
 #define MS_ELEMENT_IS_TEXT(el) g_strrstr(el, "text")
 #define MS_ELEMENT_IS_ENCODER(el) g_strrstr(el, "encoder")
 #define MS_ELEMENT_IS_DECODER(el) g_strrstr(el, "decoder")
+
+#define MS_BIN_FOREACH_ELEMENTS(bin, fn, streamer) \
+{ \
+	GstIterator *iter = gst_bin_iterate_elements(GST_BIN(bin)); \
+	if (gst_iterator_foreach(iter, fn, streamer) != GST_ITERATOR_DONE) { \
+		ms_error("Error while iterating elements in bin [%s]!", GST_ELEMENT_NAME(bin)); \
+	} \
+	gst_iterator_free(iter); \
+}
 
 #define MEDIA_STREAMER_DEFAULT_DOT_DIR "/tmp"
 #define MEDIA_STREAMER_DEFAULT_INI "\

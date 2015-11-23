@@ -80,7 +80,7 @@ int __ms_create(media_streamer_s * ms_streamer)
 	return __ms_pipeline_create(ms_streamer);
 }
 
-int __ms_get_position(media_streamer_s *ms_streamer, int *time)
+int __ms_get_position(media_streamer_s * ms_streamer, int *time)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
@@ -90,14 +90,14 @@ int __ms_get_position(media_streamer_s *ms_streamer, int *time)
 		ms_error("Could not query current position.");
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	} else {
-		*time = (int)(((GstClockTime)(current)) / GST_MSECOND);
+		*time = (int)(((GstClockTime) (current)) / GST_MSECOND);
 		ms_info("Media streamer queried position at [%d] msec successfully.", *time);
 	}
 
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
-int __ms_streamer_seek(media_streamer_s *ms_streamer, int g_time, bool flag)
+int __ms_streamer_seek(media_streamer_s * ms_streamer, int g_time, bool flag)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
@@ -109,7 +109,7 @@ int __ms_streamer_seek(media_streamer_s *ms_streamer, int g_time, bool flag)
 		seek_flag = GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT;
 
 	if (!__ms_gst_seek(ms_streamer->pipeline, (gint64) g_time * GST_MSECOND, seek_flag)) {
-		ms_error("Error while seeking media streamer to [%d]\n", g_time);
+		ms_error("Error while seeking media streamer to [%d]", g_time);
 		return MEDIA_STREAMER_ERROR_SEEK_FAILED;
 	} else {
 		ms_streamer->is_seeking = TRUE;
@@ -129,13 +129,8 @@ int __ms_streamer_destroy(media_streamer_s * ms_streamer)
 	ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_NONE);
 	MS_TABLE_SAFE_UNREF(ms_streamer->nodes_table);
 
-	__ms_bin_remove_element(ms_streamer->sink_video_bin);
-	__ms_bin_remove_element(ms_streamer->sink_audio_bin);
-
 	MS_SAFE_UNREF(ms_streamer->bus);
 	MS_SAFE_UNREF(ms_streamer->pipeline);
-	MS_SAFE_UNREF(ms_streamer->sink_video_bin);
-	MS_SAFE_UNREF(ms_streamer->sink_audio_bin);
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 	g_mutex_clear(&ms_streamer->mutex_lock);

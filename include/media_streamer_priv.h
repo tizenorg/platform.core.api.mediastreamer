@@ -62,13 +62,13 @@ typedef struct {
 	GstElement *pipeline;
 
 	GstElement *src_bin;
-	GstElement *sink_video_bin;
-	GstElement *sink_audio_bin;
+	GstElement *sink_bin;
 	GstElement *topology_bin;
 
 	GHashTable *nodes_table;
 	GMutex mutex_lock;
 	GList *autoplug_sig_list;
+	GList *pads_types_list;
 
 	GstBus *bus;
 	guint bus_watcher;

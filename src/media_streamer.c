@@ -186,8 +186,6 @@ int media_streamer_prepare(media_streamer_h streamer)
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
 	__ms_generate_dots(ms_streamer->pipeline, "before_prepare");
-	__ms_generate_dots(ms_streamer->sink_audio_bin, "before_prepare_audio");
-	__ms_generate_dots(ms_streamer->sink_video_bin, "before_prepare_video");
 
 	ret = __ms_pipeline_prepare(ms_streamer);
 
@@ -195,8 +193,6 @@ int media_streamer_prepare(media_streamer_h streamer)
 		ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY);
 
 	__ms_generate_dots(ms_streamer->pipeline, "after_prepare");
-	__ms_generate_dots(ms_streamer->sink_audio_bin, "after_prepare_audio");
-	__ms_generate_dots(ms_streamer->sink_video_bin, "after_prepare_video");
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 
@@ -214,16 +210,12 @@ int media_streamer_unprepare(media_streamer_h streamer)
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
 	__ms_generate_dots(ms_streamer->pipeline, "before_unprepare");
-	__ms_generate_dots(ms_streamer->sink_audio_bin, "before_unprepare_audio");
-	__ms_generate_dots(ms_streamer->sink_video_bin, "before_unprepare_video");
 
 	ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE);
 
 	if (ret == MEDIA_STREAMER_ERROR_NONE)
 		ret = __ms_pipeline_unprepare(ms_streamer);
 
-	__ms_generate_dots(ms_streamer->sink_audio_bin, "after_unprepare_audio");
-	__ms_generate_dots(ms_streamer->sink_video_bin, "after_unprepare_video");
 	__ms_generate_dots(ms_streamer->pipeline, "after_unprepare");
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);

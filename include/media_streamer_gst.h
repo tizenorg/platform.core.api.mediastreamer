@@ -22,8 +22,7 @@
 
 #define MEDIA_STREAMER_PIPELINE_NAME "media-streamer-pipeline"
 #define MEDIA_STREAMER_SRC_BIN_NAME "streamer_src"
-#define MEDIA_STREAMER_VIDEO_SINK_BIN_NAME "streamer_video_sink"
-#define MEDIA_STREAMER_AUDIO_SINK_BIN_NAME "streamer_audio_sink"
+#define MEDIA_STREAMER_SINK_BIN_NAME "streamer_sink"
 #define MEDIA_STREAMER_TOPOLOGY_BIN_NAME "streamer_topology"
 
 #define MEDIA_STREAMER_PAYLOADER_KLASS "Codec/Payloader/Network/RTP"
@@ -31,6 +30,7 @@
 
 #define MEDIA_STREAMER_DEPAYLOADER_KLASS "Depayloader/Network/RTP"
 #define MEDIA_STREAMER_BIN_KLASS "Generic/Bin"
+#define MEDIA_STREAMER_QUEUE_KLASS "Generic"
 #define MEDIA_STREAMER_OVERLAY_KLASS "Filter/Editor"
 #define MEDIA_STREAMER_PARSER_KLASS "Codec/Parser/Converter"
 #define MEDIA_STREAMER_CONVERTER_KLASS "Filter/Converter"
@@ -50,7 +50,7 @@ void __ms_generate_dots(GstElement *bin, gchar *name_tag);
  * @since_tizen 3.0
  */
 GstElement *__ms_bin_find_element_by_klass(GstElement *sink_bin, GstElement *previous_elem,
-					const gchar *klass_name, const gchar *bin_name);
+					GstPad *source_pad, const gchar *klass_name, const gchar *bin_name);
 
 /**
  * @brief Creates GstElement by klass name.
@@ -65,7 +65,7 @@ GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_
  * @since_tizen 3.0
  */
 GstElement *__ms_link_with_new_element(GstElement *previous_element,
-					GstElement *new_element, const gchar *next_elem_bin_name);
+					GstElement *new_element);
 
 /**
  * @brief Creates GstElement by plugin name.
@@ -147,39 +147,25 @@ gboolean __ms_bin_remove_element(GstElement *element);
 gboolean __ms_bin_add_element(GstElement *bin, GstElement *element, gboolean do_ref);
 
 /**
- * @brief Callback function to filter factories while decodebin is searching them.
+ * @brief Gets pad type of element pad.
  *
  * @since_tizen 3.0
  */
-gint __ms_decodebin_autoplug_select(GstElement *bin, GstPad *pad, GstCaps *caps, GstElementFactory *factory, gpointer data);
-
+const gchar * __ms_get_pad_type(GstPad *element_pad);
 /**
- * @brief Callback function to link decodebin with the sink element at the streamer part.
+ * @brief Creates decodebin to link with sink part.
  *
  * @since_tizen 3.0
  */
-void __decodebin_newpad_streamer_cb(GstElement *decodebin, GstPad *pad, gpointer user_data);
-
-/**
- * @brief Callback function to link decodebin with the sink element at the client part.
- *
- * @since_tizen 3.0
- */
-void __decodebin_newpad_cb(GstElement *decodebin, GstPad *pad, gpointer user_data);
-
-/**
- * @brief Callback function to link decodebin with the sink element at the client part.
- *
- * @since_tizen 3.0
- */
-void __decodebin_newpad_client_cb(GstElement *decodebin, GstPad *pad, gpointer user_data);
+GstElement *__ms_decodebin_create(media_streamer_s *ms_streamer);
 
 /**
  * @brief Creates next element by klass or by properties and links with the previous one.
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_combine_next_element(GstElement *previous_element, const gchar *next_elem_klass_name, const gchar *next_elem_bin_name, gchar *default_element);
+GstElement *__ms_combine_next_element(GstElement *previous_element, GstPad *prev_elem_src_pad, GstElement *bin_to_find_in,
+					const gchar *next_elem_klass_name, const gchar *next_elem_bin_name, gchar *default_element);
 
 /**
  * @brief Creates pipeline, bus and src/sink/topology bins.

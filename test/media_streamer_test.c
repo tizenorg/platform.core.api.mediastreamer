@@ -345,7 +345,7 @@ static void _create_file_playing()
 
 	/*********************** videosink *********************************** */
 	media_streamer_node_h video_sink = NULL;
-	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
+	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY, &video_sink);
 	media_streamer_node_add(current_media_streamer, video_sink);
 	APPEND_NODE(video_sink);
 
@@ -372,7 +372,7 @@ static void _create_file_sub_playing()
 
 	/*********************** videosink *********************************** */
 	media_streamer_node_h video_sink = NULL;
-	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
+	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY, &video_sink);
 	media_streamer_node_add(current_media_streamer, video_sink);
 	APPEND_NODE(video_sink);
 
@@ -403,7 +403,7 @@ static void _create_http_playing()
 
 	/*********************** videosink *********************************** */
 	media_streamer_node_h video_sink = NULL;
-	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
+	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY, &video_sink);
 	media_streamer_node_add(current_media_streamer, video_sink);
 	APPEND_NODE(video_sink);
 
@@ -558,7 +558,7 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 
 		/*********************** videosink *********************************** */
 		media_streamer_node_h video_sink = NULL;
-		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
+		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY, &video_sink);
 		media_streamer_node_add(current_media_streamer, video_sink);
 		APPEND_NODE(video_sink);
 
@@ -614,7 +614,7 @@ static void _create_rtp_client_autoplug(media_streamer_node_h rtp_bin)
 
 		/*********************** videosink *********************************** */
 		media_streamer_node_h video_sink = NULL;
-		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN, &video_sink);
+		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY, &video_sink);
 		media_streamer_node_add(current_media_streamer, video_sink);
 		APPEND_NODE(video_sink);
 

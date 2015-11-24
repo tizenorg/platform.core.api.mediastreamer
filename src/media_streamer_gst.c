@@ -218,6 +218,10 @@ gboolean __ms_element_set_property(GstElement * element, const char *key, const 
 			pint = atoi(param_value);
 			g_object_set(obj, init_name, pint, NULL);
 			ms_info("Set int value: [%d] ", pint);
+		} else if (!g_strcmp0(key, MEDIA_STREAMER_PARAM_EVAS_OBJECT)) {
+			g_value_set_pointer(&value, (gpointer)param_value);
+			g_object_set(obj, init_name, (gpointer)param_value, NULL);
+			ms_info("Set pointer: [%p]", g_value_get_pointer(&value));
 		} else if (!g_strcmp0(key, MEDIA_STREAMER_PARAM_VISIBLE)) {
 			bool_val = !g_strcmp0(param_value, "true") ? TRUE : FALSE;
 			g_value_set_boolean(&value, bool_val);
@@ -1253,7 +1257,7 @@ int __ms_add_node_into_bin(media_streamer_s * ms_streamer, media_streamer_node_s
 		break;
 	case MEDIA_STREAMER_NODE_TYPE_SINK:
 		switch (ms_node->subtype) {
-		case MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN:
+		case MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY:
 			bin = ms_streamer->sink_video_bin;
 			break;
 		case MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO:

@@ -83,6 +83,7 @@ int __ms_create(media_streamer_s * ms_streamer)
 int __ms_get_position(media_streamer_s *ms_streamer, int *time)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(time == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Return value is NULL");
 
 	gint64 current = -1;
 
@@ -92,6 +93,24 @@ int __ms_get_position(media_streamer_s *ms_streamer, int *time)
 	} else {
 		*time = (int)(((GstClockTime)(current)) / GST_MSECOND);
 		ms_info("Media streamer queried position at [%d] msec successfully.", *time);
+	}
+
+	return MEDIA_STREAMER_ERROR_NONE;
+}
+
+int __ms_get_duration(media_streamer_s *ms_streamer, int *time)
+{
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(time == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Return value is NULL");
+
+	gint64 duration = -1;
+
+	if (!gst_element_query_duration(ms_streamer->pipeline, GST_FORMAT_TIME, &duration)) {
+		ms_error("Could not query current duration.");
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	} else {
+		*time = (int)(((GstClockTime)(duration)) / GST_MSECOND);
+		ms_info("Media streamer queried duration [%d] msec successfully.", *time);
 	}
 
 	return MEDIA_STREAMER_ERROR_NONE;

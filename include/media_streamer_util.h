@@ -124,6 +124,7 @@ typedef struct {
 #define DEFAULT_APP_SOURCE                  "appsrc"
 #define DEFAULT_AUDIO_SINK                  "pulsesink"
 #define DEFAULT_VIDEO_SINK                  "waylandsink"
+#define DEFAULT_EVAS_SINK                   "evaspixmapsink"
 #define DEFAULT_VIDEO_CONVERT               "videoconvert"
 #define DEFAULT_TEXT_OVERLAY                "textoverlay"
 #define DEFAULT_AUDIO_CONVERT               "audioconvert"
@@ -174,17 +175,18 @@ dot dir = /tmp \n\
 \n\
 [sources] \n\
 \n\
-audio_source = pulsesrc \n\
-camera_source = v4l2src \n\
-video_source = ximagesrc \n\
-udp_source = udpsrc \n\
+audio_source = "DEFAULT_AUDIO_SOURCE" \n\
+camera_source = "DEFAULT_CAMERA_SOURCE" \n\
+video_source = "DEFAULT_VIDEO_SOURCE" \n\
+udp_source = "DEFAULT_UDP_SOURCE" \n\
 \n\
 \n\
 [sinks] \n\
 \n\
-audio_sink = pulsesink \n\
-video_sink = waylandsink \n\
-udp_sink = udpsink \n\
+audio_sink = "DEFAULT_AUDIO_SINK" \n\
+video_sink = "DEFAULT_VIDEO_SINK" \n\
+evas_sink = "DEFAULT_EVAS_SINK" \n\
+udp_sink = "DEFAULT_UDP_SINK" \n\
 \n\
 \n\
 [h263] \n\

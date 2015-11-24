@@ -533,6 +533,26 @@ int media_streamer_get_play_position(media_streamer_h streamer, int *time)
 	return ret;
 }
 
+int media_streamer_get_duration(media_streamer_h streamer, int *duration)
+{
+	media_streamer_s *ms_streamer = (media_streamer_s *)streamer;
+	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+
+	ms_retvm_if(ms_streamer->state < MEDIA_STREAMER_STATE_READY ||
+                ms_streamer->state > MEDIA_STREAMER_STATE_PAUSED,
+                MEDIA_STREAMER_ERROR_INVALID_STATE,
+                "The media streamer state is not in the appropriate state");
+
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+	g_mutex_lock(&ms_streamer->mutex_lock);
+
+	ret = __ms_get_duration(streamer, duration);
+
+	g_mutex_unlock(&ms_streamer->mutex_lock);
+
+	return ret;
+}
+
 int media_streamer_node_push_packet(media_streamer_node_h src, media_packet_h packet)
 {
 	media_streamer_node_s *ms_node = (media_streamer_node_s *) src;

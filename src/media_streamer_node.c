@@ -41,6 +41,7 @@ char *param_table[PROPERTY_COUNT][2] = {
 	{MEDIA_STREAMER_PARAM_ROTATE, "rotate"},
 	{MEDIA_STREAMER_PARAM_FLIP, "flip"},
 	{MEDIA_STREAMER_PARAM_DISPLAY_GEOMETRY_METHOD, "display-geometry-method"},
+	{MEDIA_STREAMER_PARAM_EVAS_OBJECT, "evas-object"},
 	{MEDIA_STREAMER_PARAM_VISIBLE, "visible"},
 	{MEDIA_STREAMER_PARAM_HOST, "host"}
 };
@@ -377,7 +378,7 @@ int __ms_sink_node_create(media_streamer_node_s * node)
 		plugin_name = __ms_ini_get_string(dict, "sinks:audio_sink", DEFAULT_AUDIO_SINK);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
-	case MEDIA_STREAMER_NODE_SINK_TYPE_SCREEN:
+	case MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY:
 		plugin_name = __ms_ini_get_string(dict, "sinks:video_sink", DEFAULT_VIDEO_SINK);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;

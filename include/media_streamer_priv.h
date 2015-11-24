@@ -39,7 +39,7 @@ typedef struct {
 	void *user_data;
 } media_streamer_callback_s;
 
-#define PROPERTY_COUNT 24
+#define PROPERTY_COUNT 25
 extern char *param_table[PROPERTY_COUNT][2];
 
 /**
@@ -117,6 +117,13 @@ typedef struct {
  * @since_tizen 3.0
  */
 int __ms_get_position(media_streamer_s *ms_streamer, int *time);
+
+/**
+ * @brief Gets the duration of Media streamer element.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_get_duration(media_streamer_s *ms_streamer, int *time);
 
 /**
  * @brief Seeks Media streamer element to the pointed position.

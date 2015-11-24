@@ -181,7 +181,6 @@ const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime)
 		ms_error("Invalid or Unsupported media format [%d].", mime);
 		return NULL;
 	}
-
 }
 
 const gchar *__ms_convert_mime_to_rtp_format(media_format_mimetype_e mime)
@@ -202,7 +201,6 @@ const gchar *__ms_convert_mime_to_rtp_format(media_format_mimetype_e mime)
 		ms_error("Invalid or Unsupported media format [%d].", mime);
 		return NULL;
 	}
-
 }
 
 media_format_mimetype_e __ms_convert_string_format_to_mime(const char *format_type)
@@ -223,11 +221,11 @@ media_format_mimetype_e __ms_convert_string_format_to_mime(const char *format_ty
 	}
 }
 
-void __ms_signal_create(GList **sig_list, GstElement *obj, const char *sig_name, GCallback cb, gpointer user_data)
+void __ms_signal_create(GList ** sig_list, GstElement * obj, const char *sig_name, GCallback cb, gpointer user_data)
 {
 	ms_retm_if(!sig_list || !obj || !sig_name, "Empty signal data!");
 
-	media_streamer_signal_s *sig_data = (media_streamer_signal_s*) g_try_malloc(sizeof(media_streamer_signal_s));
+	media_streamer_signal_s *sig_data = (media_streamer_signal_s *) g_try_malloc(sizeof(media_streamer_signal_s));
 	if (!sig_data) {
 		ms_error("Failed to create signal [%s] for object [%s]", sig_name, GST_OBJECT_NAME(obj));
 		return;
@@ -238,8 +236,7 @@ void __ms_signal_create(GList **sig_list, GstElement *obj, const char *sig_name,
 
 	if (sig_data->signal_id > 0) {
 		*sig_list = g_list_append(*sig_list, sig_data);
-		ms_debug("Signal [%s] with id[%lu] connected to object [%s].",
-						sig_name, sig_data->signal_id, GST_OBJECT_NAME(sig_data->obj));
+		ms_debug("Signal [%s] with id[%lu] connected to object [%s].", sig_name, sig_data->signal_id, GST_OBJECT_NAME(sig_data->obj));
 	} else {
 		ms_error("Failed to connect signal [%s] for object [%s]", sig_name, GST_OBJECT_NAME(obj));
 	}
@@ -253,10 +250,8 @@ void __ms_signal_destroy(void *data)
 	if (sig_data->obj && GST_IS_ELEMENT(sig_data->obj)) {
 		if (g_signal_handler_is_connected(sig_data->obj, sig_data->signal_id)) {
 			g_signal_handler_disconnect(sig_data->obj, sig_data->signal_id);
-			ms_debug("Signal with id[%lu] disconnected from object [%s].",
-						sig_data->signal_id, GST_OBJECT_NAME(sig_data->obj));
+			ms_debug("Signal with id[%lu] disconnected from object [%s].", sig_data->signal_id, GST_OBJECT_NAME(sig_data->obj));
 		}
 	}
-
 	MS_SAFE_GFREE(sig_data);
 }

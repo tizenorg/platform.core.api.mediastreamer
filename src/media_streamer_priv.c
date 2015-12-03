@@ -19,6 +19,8 @@
 #include "media_streamer_node.h"
 #include "media_streamer_gst.h"
 
+#define GST_TIME_TO_MSEC(t) (t == GST_CLOCK_TIME_NONE ? t : (int)(((GstClockTime)(t)) / GST_MSECOND))
+
 int __ms_state_change(media_streamer_s * ms_streamer, media_streamer_state_e state)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
@@ -85,13 +87,13 @@ int __ms_get_position(media_streamer_s * ms_streamer, int *time)
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(time == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Return value is NULL");
 
-	gint64 current = -1;
+	gint64 current = GST_CLOCK_TIME_NONE;
 
 	if (!gst_element_query_position(ms_streamer->pipeline, GST_FORMAT_TIME, &current)) {
 		ms_error("Could not query current position.");
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	} else {
-		*time = (int)(((GstClockTime) (current)) / GST_MSECOND);
+		*time = GST_TIME_TO_MSEC(current);
 		ms_info("Media streamer queried position at [%d] msec successfully.", *time);
 	}
 
@@ -103,13 +105,13 @@ int __ms_get_duration(media_streamer_s *ms_streamer, int *time)
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(time == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Return value is NULL");
 
-	gint64 duration = -1;
+	gint64 duration = GST_CLOCK_TIME_NONE;
 
 	if (!gst_element_query_duration(ms_streamer->pipeline, GST_FORMAT_TIME, &duration)) {
 		ms_error("Could not query current duration.");
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	} else {
-		*time = (int)(((GstClockTime)(duration)) / GST_MSECOND);
+		*time = GST_TIME_TO_MSEC(duration);
 		ms_info("Media streamer queried duration [%d] msec successfully.", *time);
 	}
 

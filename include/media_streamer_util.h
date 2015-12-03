@@ -82,6 +82,8 @@ extern "C" {
 #define MS_SAFE_UNREF(src)          {if (src) { gst_object_unref(GST_OBJECT(src)); src = NULL; } }
 #define MS_TABLE_SAFE_UNREF(src)    {if (src) { g_hash_table_unref(src); src = NULL; } }
 
+#define MS_TIME_NONE ((int)-1)
+
 /* Ini Utils */
 #define MEDIA_STREAMER_INI_DEFAULT_PATH	"/usr/etc/media_streamer.ini"
 #define MEDIA_STREAMER_INI_MAX_STRLEN	100

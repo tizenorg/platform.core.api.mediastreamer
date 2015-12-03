@@ -496,12 +496,20 @@ int media_streamer_set_play_position(media_streamer_h streamer, int time, bool a
 	ms_retvm_if(ms_streamer->is_seeking, MEDIA_STREAMER_ERROR_INVALID_STATE, "Media streamer is seeking");
 
 	int ret = MEDIA_STREAMER_ERROR_NONE;
+	int duration = MS_TIME_NONE;
+
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	ms_streamer->seek_done_cb.callback = callback;
-	ms_streamer->seek_done_cb.user_data = user_data;
+	/* if query duration failed or returns duration value MS_TIME_NONE,
+	 * we suppose that pipeline does not support seek. */
+	ret = __ms_get_duration(ms_streamer, &duration);
+	if (ret == MEDIA_STREAMER_ERROR_NONE && duration != MS_TIME_NONE) {
+		ms_streamer->seek_done_cb.callback = callback;
+		ms_streamer->seek_done_cb.user_data = user_data;
 
-	ret = __ms_streamer_seek(streamer, time, accurate);
+		ret = __ms_streamer_seek(streamer, time, accurate);
+	} else
+		ret = MEDIA_STREAMER_ERROR_NOT_SUPPORTED;
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 

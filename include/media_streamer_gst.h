@@ -75,13 +75,6 @@ GstElement *__ms_link_with_new_element(GstElement *previous_element,
 GstElement *__ms_element_create(const char *plugin_name, const char *name);
 
 /**
- * @brief Creates camera GstElement by camera plugin name.
- *
- * @since_tizen 3.0
- */
-GstElement *__ms_camera_element_create(const char *camera_plugin_name);
-
-/**
  * @brief Creates encoder GstElement by mime type.
  *
  * @since_tizen 3.0

@@ -114,12 +114,13 @@ typedef struct {
 #define DEFAULT_VIDEO_TEST_SOURCE           "videotestsrc"
 #define DEFAULT_AUDIO_TEST_SOURCE           "audiotestsrc"
 #define DEFAULT_FAKE_SINK                   "fakesink"
-#define DEFAULT_QUEUE                       "queue"
 
 /* setting default values if each value is not specified in .ini file */
 /* general */
 #define DEFAULT_GENERATE_DOT                FALSE
 #define DEFAULT_USE_DECODEBIN               FALSE
+#define DEFAULT_QUEUE                       "queue"
+#define DEFAULT_TYPEFIND                    "typefind"
 #define DEFAULT_DECODEBIN                   "decodebin"
 #define DEFAULT_AUDIO_SOURCE                "alsasrc"
 #define DEFAULT_CAMERA_SOURCE               "v4l2src"
@@ -128,6 +129,7 @@ typedef struct {
 #define DEFAULT_AUDIO_SINK                  "pulsesink"
 #define DEFAULT_VIDEO_SINK                  "waylandsink"
 #define DEFAULT_EVAS_SINK                   "evaspixmapsink"
+#define DEFAULT_VIDEO_SCALE                 "videoscale"
 #define DEFAULT_VIDEO_CONVERT               "videoconvert"
 #define DEFAULT_TEXT_OVERLAY                "textoverlay"
 #define DEFAULT_AUDIO_CONVERT               "audioconvert"
@@ -156,12 +158,13 @@ typedef struct {
 #define DEFAULT_AUDIO "S16LE"
 #define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,width=1280,height=720"
 #define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=44100,format="DEFAULT_AUDIO
-#define MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT "video/x-h263,stream-format=byte-stream,profile=high"
+#define MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT(format) "video/x-"format",stream-format=byte-stream"
 
 #define MS_ELEMENT_IS_OUTPUT(el) g_strrstr(el, "out")
 #define MS_ELEMENT_IS_INPUT(el) g_strrstr(el, "in")
 #define MS_ELEMENT_IS_AUDIO(el) g_strrstr(el, "audio")
 #define MS_ELEMENT_IS_VIDEO(el) g_strrstr(el, "video")
+#define MS_ELEMENT_IS_IMAGE(el) g_strrstr(el, "image")
 #define MS_RTP_PAD_VIDEO_IN "video_in"
 #define MS_RTP_PAD_AUDIO_IN "audio_in"
 #define MS_ELEMENT_IS_RTP(el) g_strrstr(el, "rtp_container")

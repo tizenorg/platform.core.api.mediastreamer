@@ -275,7 +275,7 @@ int __ms_src_node_create(media_streamer_node_s * node)
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA:
 		plugin_name = __ms_ini_get_string(dict, "sources:camera_source", DEFAULT_CAMERA_SOURCE);
-		node->gst_element = __ms_camera_element_create(plugin_name);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
 
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_CAPTURE:
@@ -500,7 +500,7 @@ static void _src_node_prepare(const GValue * item, gpointer user_data)
 			return;
 		}
 
-		if (MS_ELEMENT_IS_VIDEO(new_pad_type)) {
+		if (MS_ELEMENT_IS_VIDEO(new_pad_type) || MS_ELEMENT_IS_IMAGE(new_pad_type)) {
 			found_element = __ms_combine_next_element(src_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "video_encoder", NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
@@ -531,7 +531,9 @@ static gboolean __ms_bin_remove_elements(media_streamer_s * ms_streamer, GstElem
 	GValue element = G_VALUE_INIT;
 	GstIterator *bin_iterator = gst_bin_iterate_elements(GST_BIN(bin));
 
-	gboolean ret = TRUE;		/* If Bin doesn't have any elements function returns TRUE */
+	/* If Bin doesn't have any elements function returns TRUE */
+	gboolean ret = TRUE;
+
 	GstElement *found_element = NULL;
 	GstIteratorResult it_res = gst_iterator_next(bin_iterator, &element);
 	while (GST_ITERATOR_OK == it_res) {
@@ -544,7 +546,6 @@ static gboolean __ms_bin_remove_elements(media_streamer_s * ms_streamer, GstElem
 				ret = ret && __ms_element_unlink(found_element);
 			else
 				ms_info("Unprepare skipped user-linked node [%s]", found_node->name);
-
 			__ms_generate_dots(ms_streamer->pipeline, GST_ELEMENT_NAME(found_element));
 		} else {
 			ret = ret && __ms_bin_remove_element(found_element);
@@ -564,6 +565,12 @@ static gboolean __ms_bin_remove_elements(media_streamer_s * ms_streamer, GstElem
 	return ret;
 }
 
+static void __ms_pending_pads_remove(void *data)
+{
+	GstPad *pad = GST_PAD(data);
+	MS_SAFE_UNREF(pad);
+}
+
 int __ms_pipeline_unprepare(media_streamer_s * ms_streamer)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -579,7 +586,7 @@ int __ms_pipeline_unprepare(media_streamer_s * ms_streamer)
 	ms_streamer->autoplug_sig_list = NULL;
 
 	/* Removes all pending pads according to list */
-	g_list_free(ms_streamer->pads_types_list);
+	g_list_free_full(ms_streamer->pads_types_list, __ms_pending_pads_remove);
 	ms_streamer->pads_types_list = NULL;
 
 	MS_BIN_UNPREPARE(ms_streamer->src_bin);

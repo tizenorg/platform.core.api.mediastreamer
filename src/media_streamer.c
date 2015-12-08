@@ -614,18 +614,14 @@ int media_streamer_node_set_pad_format(media_streamer_node_h node, const char *p
 	return __ms_element_set_fmt(node, pad_name, fmt);
 }
 
-int media_streamer_node_get_pad_format(media_streamer_node_h node, const char *pad_name, media_format_h * fmt)
+int media_streamer_node_get_pad_format(media_streamer_node_h node, const char *pad_name, media_format_h *fmt)
 {
 	media_streamer_node_s *ms_node = (media_streamer_node_s *) node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(pad_name == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Empty pad name");
 	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Format is NULL");
 
-	*fmt = __ms_element_get_pad_fmt(ms_node->gst_element, pad_name);
-
-	ms_retvm_if(*fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Error while getting node fmt");
-
-	return MEDIA_STREAMER_ERROR_NONE;
+	return __ms_element_get_pad_fmt(ms_node->gst_element, pad_name, fmt);
 }
 
 int media_streamer_node_get_pad_name(media_streamer_node_h node, char ***src_pad_name, int *src_pad_num, char ***sink_pad_name, int *sink_pad_num)

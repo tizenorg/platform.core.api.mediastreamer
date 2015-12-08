@@ -373,6 +373,10 @@ int __ms_sink_node_create(media_streamer_node_s * node)
 		plugin_name = __ms_ini_get_string(dict, "sinks:video_sink", DEFAULT_VIDEO_SINK);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
+	case MEDIA_STREAMER_NODE_SINK_TYPE_EVAS:
+		plugin_name = __ms_ini_get_string(dict, "sinks:evas_sink", DEFAULT_EVAS_SINK);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
+		break;
 	case MEDIA_STREAMER_NODE_SINK_TYPE_FAKE:
 		node->gst_element = __ms_element_create(DEFAULT_FAKE_SINK, NULL);
 		break;

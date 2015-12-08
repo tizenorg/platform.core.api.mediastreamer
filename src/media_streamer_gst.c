@@ -1619,33 +1619,50 @@ int __ms_element_pad_names(GstElement * gst_element, GstPadDirection pad_type, c
 	return ret;
 }
 
-media_format_h __ms_element_get_pad_fmt(GstElement * gst_element, const char *pad_name)
+int __ms_element_get_pad_fmt(GstElement * gst_element, const char *pad_name, media_format_h *fmt)
 {
-	media_format_h fmt;
-	GstCaps *caps = NULL;
+	GstCaps *allowed_caps = NULL;
+	GstCaps *property_caps = NULL;
+	GValue value = G_VALUE_INIT;
+
+	ms_retvm_if(gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Element handle is NULL");
 
 	GstPad *pad = gst_element_get_static_pad(gst_element, pad_name);
-	gchar *element_name = gst_element_get_name(gst_element);
+	ms_retvm_if(pad == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Fail to get pad [%s] from element [%s].", pad_name, GST_ELEMENT_NAME(gst_element));
 
-	if (pad == NULL) {
-		ms_error("Fail to get pad [%s] from element [%s].", pad_name, element_name);
-		MS_SAFE_FREE(element_name);
-		return NULL;
+	GParamSpec *param = g_object_class_find_property(G_OBJECT_GET_CLASS(gst_element), "caps");
+	if (param) {
+		g_value_init(&value, param->value_type);
+		if (param->flags & G_PARAM_READWRITE) {
+			g_object_get_property(G_OBJECT(gst_element), "caps", &value);
+			property_caps = gst_value_get_caps(&value);
+		}
+		g_value_unset(&value);
 	}
 
-	caps = gst_pad_get_allowed_caps(pad);
-	if (caps == NULL) {
-		ms_error("Fail to get caps from element [%s] and pad [%s].", element_name, pad_name);
-		MS_SAFE_FREE(element_name);
-		MS_SAFE_UNREF(pad);
-		return NULL;
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+	allowed_caps = gst_pad_get_allowed_caps(pad);
+	if (allowed_caps) {
+		if (gst_caps_is_empty(allowed_caps) || gst_caps_is_any(allowed_caps)) {
+			if (property_caps)
+				*fmt = __ms_create_fmt_from_caps(property_caps);
+			else
+				ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+		} else {
+			*fmt = __ms_create_fmt_from_caps(allowed_caps);
+		}
+	} else {
+		if (property_caps)
+			*fmt = __ms_create_fmt_from_caps(property_caps);
+		else
+			ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
-	fmt = __ms_create_fmt_from_caps(caps);
+	if (allowed_caps)
+		gst_caps_unref(allowed_caps);
 
-	MS_SAFE_FREE(element_name);
 	MS_SAFE_UNREF(pad);
-	return fmt;
+	return ret;
 }
 
 int __ms_element_set_fmt(media_streamer_node_s * node, const char *pad_name, media_format_h fmt)
@@ -1773,6 +1790,7 @@ int __ms_element_pull_packet(GstElement * sink_element, media_packet_h * packet)
 	GstSample *sample = NULL;
 	GstMapInfo map;
 	guint8 *buffer_res = NULL;
+	int ret = MEDIA_STREAMER_ERROR_NONE;
 
 	ms_retvm_if(sink_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(packet == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -1784,7 +1802,8 @@ int __ms_element_pull_packet(GstElement * sink_element, media_packet_h * packet)
 	buffer = gst_sample_get_buffer(sample);
 	gst_buffer_map(buffer, &map, GST_MAP_READ);
 
-	media_format_h fmt = __ms_element_get_pad_fmt(sink_element, "sink");
+	media_format_h fmt = NULL;
+	ret = __ms_element_get_pad_fmt(sink_element, "sink", &fmt);
 	if (!fmt) {
 		ms_error("Error while getting media format from sink pad");
 
@@ -1805,5 +1824,5 @@ int __ms_element_pull_packet(GstElement * sink_element, media_packet_h * packet)
 	gst_buffer_unmap(buffer, &map);
 	gst_sample_unref(sample);
 
-	return MEDIA_STREAMER_ERROR_NONE;
+	return ret;
 }

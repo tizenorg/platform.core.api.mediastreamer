@@ -193,7 +193,7 @@ int __ms_element_pad_names(GstElement *gst_element, GstPadDirection pad_type, ch
  *
  * @since_tizen 3.0
  */
-media_format_h __ms_element_get_pad_fmt(GstElement *gst_element, const char *pad_name);
+int __ms_element_get_pad_fmt(GstElement * gst_element, const char *pad_name, media_format_h *fmt);
 
 /**
  * @brief Sets mediaformat into GstElement.

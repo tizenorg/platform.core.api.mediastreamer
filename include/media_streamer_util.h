@@ -85,7 +85,10 @@ extern "C" {
 #define MS_TIME_NONE ((int)-1)
 
 /* Ini Utils */
-#define MEDIA_STREAMER_INI_DEFAULT_PATH	"/usr/etc/media_streamer.ini"
+#ifndef MEDIA_STREAMER_INI_PATH
+	#define MEDIA_STREAMER_INI_PATH	"/etc/media_streamer.ini"
+#endif
+
 #define MEDIA_STREAMER_INI_MAX_STRLEN	100
 
 /**
@@ -182,56 +185,6 @@ typedef struct {
 }
 
 #define MEDIA_STREAMER_DEFAULT_DOT_DIR "/tmp"
-#define MEDIA_STREAMER_DEFAULT_INI "\
-[general] \n\
-; generating dot file representing pipeline state \n\
-generate dot = no \n\
-use decodebin = yes \n\
-dot dir = /tmp \n\
-\n\
-\n\
-[sources] \n\
-\n\
-audio_source = "DEFAULT_AUDIO_SOURCE" \n\
-camera_source = "DEFAULT_CAMERA_SOURCE" \n\
-video_source = "DEFAULT_VIDEO_SOURCE" \n\
-udp_source = "DEFAULT_UDP_SOURCE" \n\
-\n\
-\n\
-[sinks] \n\
-\n\
-audio_sink = "DEFAULT_AUDIO_SINK" \n\
-video_sink = "DEFAULT_VIDEO_SINK" \n\
-evas_sink = "DEFAULT_EVAS_SINK" \n\
-udp_sink = "DEFAULT_UDP_SINK" \n\
-\n\
-\n\
-[h263] \n\
-\n\
-encoder = avenc_h263 \n\
-decoder = avdec_h263 \n\
-rtppay = rtph263pay \n\
-rtpdepay = rtph263depay \n\
-parser = h263parse \n\
-\n\
-\n\
-[h264] \n\
-\n\
-encoder = omxh264enc \n\
-decoder = avdec_h264 \n\
-rtppay = rtph264pay \n\
-rtpdepay = rtph264depay \n\
-parser = h264parse \n\
-\n\
-\n\
-[audio-raw] \n\
-\n\
-encoder = \n\
-decoder = \n\
-rtppay = rtpL16pay \n\
-rtpdepay = rtpL16depay \n\
-\n\
-"
 
 /**
  * @brief Loads media streamer settings from ini file.

@@ -19,10 +19,6 @@
 #include <media_streamer.h>
 #include <media_streamer_util.h>
 
-#ifdef MEDIA_STREAMER_DEFAULT_INI
-static gboolean __ms_generate_default_ini(void);
-#endif
-
 static void __ms_check_ini_status(void);
 
 gchar *__ms_ini_get_string(dictionary * dict, const char *ini_path, char *default_str)
@@ -53,22 +49,14 @@ gboolean __ms_load_ini_dictionary(dictionary ** dict)
 	dictionary *ms_dict = NULL;
 
 	/* loading existing ini file */
-	ms_dict = iniparser_load(MEDIA_STREAMER_INI_DEFAULT_PATH);
+	ms_dict = iniparser_load(MEDIA_STREAMER_INI_PATH);
 
 	/* if no file exists. create one with set of default values */
 	if (!ms_dict) {
-#ifdef MEDIA_STREAMER_DEFAULT_INI
-		ms_debug("No inifile found. Media streamer will create default inifile.");
-		if (FALSE == __ms_generate_default_ini()) {
-			ms_debug("Creating default .ini file failed. Media-streamer will use default values.");
-		} else {
-			/* load default ini */
-			ms_dict = iniparser_load(MEDIA_STREAMER_INI_DEFAULT_PATH);
-		}
-#else
-		ms_debug("No ini file found.");
+		ms_debug("Could not open ini [%s]. Media-streamer will use default values.", MEDIA_STREAMER_INI_PATH);
 		return FALSE;
-#endif
+	} else {
+		ms_debug("Open ini file [%s].", MEDIA_STREAMER_INI_PATH);
 	}
 
 	*dict = ms_dict;
@@ -104,9 +92,6 @@ void __ms_load_ini_settings(media_streamer_ini_t * ini)
 		ini->use_decodebin = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
 	} else {
 		/* if dict is not available just fill the structure with default values */
-		ms_debug("failed to load ini. using hardcoded default");
-
-		/* general settings */
 		ini->generate_dot = DEFAULT_GENERATE_DOT;
 		ini->use_decodebin = DEFAULT_USE_DECODEBIN;
 	}
@@ -120,7 +105,7 @@ void __ms_load_ini_settings(media_streamer_ini_t * ini)
 
 static void __ms_check_ini_status(void)
 {
-	FILE *fp = fopen(MEDIA_STREAMER_INI_DEFAULT_PATH, "r");
+	FILE *fp = fopen(MEDIA_STREAMER_INI_PATH, "r");
 	int file_size = 0;
 	int status = 0;
 
@@ -132,35 +117,12 @@ static void __ms_check_ini_status(void)
 		fclose(fp);
 		if (file_size < 5) {
 			ms_debug("media_streamer.ini file size=%d, Corrupted! Removed", file_size);
-			status = g_remove(MEDIA_STREAMER_INI_DEFAULT_PATH);
+			status = g_remove(MEDIA_STREAMER_INI_PATH);
 			if (status == -1)
 				ms_error("failed to delete corrupted ini");
 		}
 	}
 }
-
-#ifdef MEDIA_STREAMER_DEFAULT_INI
-static gboolean __ms_generate_default_ini(void)
-{
-	FILE *fp = NULL;
-	gchar *default_ini = MEDIA_STREAMER_DEFAULT_INI;
-
-	/* create new file */
-	fp = fopen(MEDIA_STREAMER_INI_DEFAULT_PATH, "wt");
-
-	if (!fp)
-		return FALSE;
-
-	/* writing default ini file */
-	if (strlen(default_ini) != fwrite(default_ini, 1, strlen(default_ini), fp)) {
-		fclose(fp);
-		return FALSE;
-	}
-
-	fclose(fp);
-	return TRUE;
-}
-#endif
 
 const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime)
 {

@@ -201,6 +201,8 @@ void __ms_signal_create(GList ** sig_list, GstElement * obj, const char *sig_nam
 		ms_debug("Signal [%s] with id[%lu] connected to object [%s].", sig_name, sig_data->signal_id, GST_OBJECT_NAME(sig_data->obj));
 	} else {
 		ms_error("Failed to connect signal [%s] for object [%s]", sig_name, GST_OBJECT_NAME(obj));
+		if (sig_data)
+			g_free(sig_data);
 	}
 }
 

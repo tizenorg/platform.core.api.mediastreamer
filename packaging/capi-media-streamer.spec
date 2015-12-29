@@ -76,14 +76,14 @@ chsmack -a "_" %{ini_path}
 %files
 %manifest %{name}.manifest
 %license LICENSE.APLv2
-%{_libdir}/libcapi-media-streamer.so.*
+%{_libdir}/lib%{name}.so.*
 %{_datadir}/license/%{name}
 %{_bindir}/*
 %config %{ini_path}
+%attr(755, -, root) %{ini_path}
 
 %files devel
 %manifest %{name}.manifest
 %{_includedir}/media/*.h
 %{_libdir}/pkgconfig/*.pc
-%{_libdir}/libcapi-media-streamer.so
-
+%{_libdir}/lib%{name}.so

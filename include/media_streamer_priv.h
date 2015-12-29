@@ -39,9 +39,6 @@ typedef struct {
 	void *user_data;
 } media_streamer_callback_s;
 
-#define PROPERTY_COUNT 25
-extern char *param_table[PROPERTY_COUNT][2];
-
 /**
  * @brief Media Streamer sink callbacks structure.
  *

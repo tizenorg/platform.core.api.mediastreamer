@@ -64,7 +64,7 @@ GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_link_with_new_element(GstElement *previous_element,
+GstElement *__ms_link_with_new_element(GstElement *previous_element, GstPad *prev_elem_src_pad,
 					GstElement *new_element);
 
 /**

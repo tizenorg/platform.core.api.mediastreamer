@@ -780,7 +780,7 @@ int media_streamer_destroy(media_streamer_h streamer);
  * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #MEDIA_STREAMER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #MEDIA_STREAMER_ERROR_SEEK_FAILED Seek operation failure
- * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_READY, #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
+ * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
  * @post It invokes media_streamer_set_play_position() when seek operation completes, if you set a callback.
  * @see media_streamer_get_play_position()
  */
@@ -798,7 +798,7 @@ int media_streamer_set_play_position(media_streamer_h streamer, int time,
  * @retval #MEDIA_STREAMER_ERROR_INVALID_STATE Invalid state
  * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #MEDIA_STREAMER_ERROR_INVALID_OPERATION Invalid operation
- * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_READY, #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
+ * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
  * @see media_streamer_set_play_position()
  */
 int media_streamer_get_play_position(media_streamer_h streamer, int *time);
@@ -816,7 +816,7 @@ int media_streamer_get_play_position(media_streamer_h streamer, int *time);
  * @retval #MEDIA_STREAMER_ERROR_INVALID_STATE Invalid state
  * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #MEDIA_STREAMER_ERROR_INVALID_OPERATION Invalid operation
- * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_READY, #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
+ * @pre The media streamer state must be one of these: #MEDIA_STREAMER_STATE_PAUSED, or #MEDIA_STREAMER_STATE_PLAYING.
  */
 int media_streamer_get_duration(media_streamer_h streamer, int *duration);
 

@@ -495,7 +495,7 @@ static void _src_node_prepare(const GValue * item, gpointer user_data)
 
 	if (__ms_src_need_typefind(src_pad)) {
 		found_element = __ms_decodebin_create(ms_streamer);
-		found_element = __ms_link_with_new_element(src_element, found_element);
+		found_element = __ms_link_with_new_element(src_element, src_pad, found_element);
 	} else {
 		/* Check the source element`s pad type */
 		const gchar *new_pad_type = __ms_get_pad_type(src_pad);

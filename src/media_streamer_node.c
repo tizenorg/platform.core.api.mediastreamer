@@ -18,7 +18,7 @@
 #include <media_streamer_util.h>
 #include <media_streamer_gst.h>
 
-char *param_table[PROPERTY_COUNT][2] = {
+char *param_table[][2] = {
 	{MEDIA_STREAMER_PARAM_CAMERA_ID, "camera-id"},
 	{MEDIA_STREAMER_PARAM_CAMERA_ID, "camera"},
 	{MEDIA_STREAMER_PARAM_CAMERA_ID, "device-name"},
@@ -43,7 +43,8 @@ char *param_table[PROPERTY_COUNT][2] = {
 	{MEDIA_STREAMER_PARAM_DISPLAY_GEOMETRY_METHOD, "display-geometry-method"},
 	{MEDIA_STREAMER_PARAM_EVAS_OBJECT, "evas-object"},
 	{MEDIA_STREAMER_PARAM_VISIBLE, "visible"},
-	{MEDIA_STREAMER_PARAM_HOST, "host"}
+	{MEDIA_STREAMER_PARAM_HOST, "host"},
+	{NULL, NULL}
 };
 
 int __ms_node_set_property(media_streamer_node_s * ms_node, const gchar * param_key, const gchar * param_value)
@@ -720,7 +721,7 @@ void __ms_node_check_param_name(GstElement * element, gboolean name_is_known, co
 
 	GParamSpec *param;
 
-	for (it_param = 0; it_param < PROPERTY_COUNT; it_param++) {
+	for (it_param = 0; param_table[it_param][0] != NULL; it_param++) {
 		set_param_name = param_table[it_param][0];
 		orig_param_name = param_table[it_param][1];
 		param = g_object_class_find_property(G_OBJECT_GET_CLASS(element), orig_param_name);

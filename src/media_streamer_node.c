@@ -449,7 +449,7 @@ void __ms_node_remove_from_table(void *data)
 	}
 }
 
-static gboolean __ms_src_need_typefind(GstPad * src_pad)
+static gboolean __ms_src_need_typefind(media_streamer_s *ms_streamer, GstPad * src_pad)
 {
 	gboolean ret = FALSE;
 
@@ -457,7 +457,8 @@ static gboolean __ms_src_need_typefind(GstPad * src_pad)
 		return FALSE;
 
 	GstCaps *src_caps = gst_pad_query_caps(src_pad, NULL);
-	if (gst_caps_is_any(src_caps))
+	if (gst_caps_is_any(src_caps) ||
+		!__ms_bin_find_element_by_klass(ms_streamer->topology_bin, NULL, NULL, MEDIA_STREAMER_BIN_KLASS, "rtp_container"))
 		ret = TRUE;
 
 	gst_caps_unref(src_caps);
@@ -493,7 +494,7 @@ static void _src_node_prepare(const GValue * item, gpointer user_data)
 	GstPad *src_pad = gst_element_get_static_pad(src_element, "src");
 	GstElement *found_element = NULL;
 
-	if (__ms_src_need_typefind(src_pad)) {
+	if (__ms_src_need_typefind(ms_streamer, src_pad)) {
 		found_element = __ms_decodebin_create(ms_streamer);
 		found_element = __ms_link_with_new_element(src_element, src_pad, found_element);
 	} else {

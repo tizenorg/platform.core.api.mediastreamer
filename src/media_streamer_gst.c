@@ -1813,10 +1813,8 @@ int __ms_element_push_packet(GstElement * src_element, media_packet_h packet)
 
 int __ms_element_pull_packet(GstElement * sink_element, media_packet_h * packet)
 {
-	GstBuffer *buffer = NULL;
 	GstSample *sample = NULL;
-	GstMapInfo map;
-	guint8 *buffer_res = NULL;
+	media_format_h fmt = NULL;
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
 	ms_retvm_if(sink_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -1826,30 +1824,30 @@ int __ms_element_pull_packet(GstElement * sink_element, media_packet_h * packet)
 	g_signal_emit_by_name(sink_element, "pull-sample", &sample, NULL);
 	ms_retvm_if(sample == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Pull sample failed!");
 
-	buffer = gst_sample_get_buffer(sample);
-	gst_buffer_map(buffer, &map, GST_MAP_READ);
-
-	media_format_h fmt = NULL;
 	ret = __ms_element_get_pad_fmt(sink_element, "sink", &fmt);
-	if (!fmt) {
-		ms_error("Error while getting media format from sink pad");
+	if (ret == MEDIA_STREAMER_ERROR_NONE) {
+		GstMapInfo map;
+		guint8 *buffer_res = NULL;
+		GstBuffer *buffer = gst_sample_get_buffer(sample);
+		gst_buffer_map(buffer, &map, GST_MAP_READ);
 
+		buffer_res = (guint8 *) malloc(map.size * sizeof(guint8));
+		if (buffer_res != NULL) {
+			memcpy(buffer_res, map.data, map.size);
+
+			media_packet_create_from_external_memory(fmt, (void *)buffer_res, map.size, NULL, NULL, packet);
+			media_packet_set_pts(*packet, GST_BUFFER_PTS(buffer));
+			media_packet_set_dts(*packet, GST_BUFFER_DTS(buffer));
+			media_packet_set_pts(*packet, GST_BUFFER_DURATION(buffer));
+
+			media_format_unref(fmt);
+		} else {
+			ms_error("Error allocation memory for packet data");
+			ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+		}
 		gst_buffer_unmap(buffer, &map);
-		gst_sample_unref(sample);
-		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
-	buffer_res = (guint8 *) calloc(map.size, sizeof(guint8));
-	memcpy(buffer_res, map.data, map.size);
-
-	media_packet_create_from_external_memory(fmt, (void *)buffer_res, map.size, NULL, NULL, packet);
-	media_packet_set_pts(*packet, GST_BUFFER_PTS(buffer));
-	media_packet_set_dts(*packet, GST_BUFFER_DTS(buffer));
-	media_packet_set_pts(*packet, GST_BUFFER_DURATION(buffer));
-
-	media_format_unref(fmt);
-	gst_buffer_unmap(buffer, &map);
 	gst_sample_unref(sample);
-
 	return ret;
 }

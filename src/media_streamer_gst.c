@@ -246,11 +246,7 @@ static gboolean __ms_pad_peer_unlink(GstPad * pad)
 
 	gboolean ret = TRUE;
 	GstPad *peer_pad = gst_pad_get_peer(pad);
-
-	if (!peer_pad) {
-		ms_error ("Fail to get peer pad");
-		return FALSE;
-	}
+	ms_retvm_if(!peer_pad, FALSE, "Fail to get peer pad");
 
 	if (GST_IS_PROXY_PAD(peer_pad)) {
 
@@ -259,17 +255,14 @@ static gboolean __ms_pad_peer_unlink(GstPad * pad)
 			GstPad *ghost_pad = GST_PAD(ghost_object);
 			GstPad *target_pad = gst_pad_get_peer(ghost_pad);
 
-			if (!target_pad) {
-				ms_error ("Fail to get peer pad");
-				MS_SAFE_UNREF(peer_pad);
-				return FALSE;
-			}
-
-			if (GST_IS_GHOST_PAD(target_pad)) {
+			if (GST_IS_GHOST_PAD(target_pad))
 				ret = ret && gst_element_remove_pad(GST_ELEMENT(GST_PAD_PARENT(target_pad)), target_pad);
-			} else {
+			else {
 				/* This is a usual static pad */
-				ret = ret && MS_PADS_UNLINK(ghost_pad, target_pad);
+				if (target_pad)
+					ret = ret && MS_PADS_UNLINK(ghost_pad, target_pad);
+				else
+					ms_info("Ghost Pad [%s] does not have target.", GST_PAD_NAME(ghost_pad));
 			}
 			ret = ret && gst_element_remove_pad(GST_ELEMENT(GST_PAD_PARENT(ghost_pad)), ghost_pad);
 
@@ -298,10 +291,7 @@ static GstElement *__ms_pad_get_peer_element(GstPad * pad)
 	}
 
 	GstPad *peer_pad = gst_pad_get_peer(pad);
-	if (!peer_pad) {
-		ms_error ("Fail to get peer pad");
-		return NULL;
-	}
+	ms_retvm_if(!peer_pad, FALSE, "Fail to get peer pad");
 
 	GstElement *ret = gst_pad_get_parent_element(peer_pad);
 	if (!ret) {
@@ -470,11 +460,7 @@ static gboolean __ms_check_unlinked_element(GstElement * previous_elem, GstPad *
 	gboolean ret = FALSE;
 
 	GstElement *found_element = gst_pad_get_parent_element(found_elem_sink_pad);
-
-	if (!found_element) {
-		ms_error ("Fail to get parent element");
-		return ret;
-	}
+	ms_retvm_if(!found_element, FALSE, "Fail to get parent element");
 
 	if (previous_elem) {
 		/* Previous element is set. */
@@ -571,11 +557,7 @@ GstElement *__ms_bin_find_element_by_klass(GstElement * sink_bin, GstElement * p
 
 		found_element = (GstElement *) g_value_get_object(&element_value);
 		const gchar *found_klass = gst_element_factory_get_klass(gst_element_get_factory(found_element));
-
-		if (!found_element) {
-			ms_error("Fail to get element from element value");
-			return NULL;
-		}
+		ms_retvm_if(!found_element, NULL, "Fail to get element from element value");
 
 		/* Check if found element is of appropriate needed plugin class */
 		if ((klass_name && g_strrstr(found_klass, klass_name)) && (bin_name == NULL || g_strrstr(GST_ELEMENT_NAME(found_element), bin_name))) {

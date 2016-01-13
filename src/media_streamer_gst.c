@@ -609,6 +609,8 @@ int __ms_get_rank_increase(const char *factory_name)
 		ret = rank_skip;
 	else if (g_strrstr(factory_name, "rtph263ppay"))
 		ret = rank_skip;
+	else if (g_strrstr(factory_name, "sprd"))
+		ret = rank_skip;
 
 	return ret;
 }
@@ -817,6 +819,12 @@ static gint __decodebin_autoplug_select_cb(GstElement * bin, GstPad * pad, GstCa
 
 		/* Skip OMX HW decoders */
 		if (g_strrstr(factory_name, "omx")) {
+			ms_debug("Decodebin: skipping [%s] as disabled", factory_name);
+			return GST_AUTOPLUG_SELECT_SKIP;
+		}
+
+		/* Skip SPRD HW decoders */
+		if (g_strrstr(factory_name, "sprd")) {
 			ms_debug("Decodebin: skipping [%s] as disabled", factory_name);
 			return GST_AUTOPLUG_SELECT_SKIP;
 		}

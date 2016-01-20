@@ -26,10 +26,6 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#ifndef TIZEN_ERROR_MEDIA_STREAMER
-#define TIZEN_ERROR_MEDIA_STREAMER -0x03000000
-#endif
-
 /**
 * @file media_streamer.h
 * @brief This file contains the capi media streamer API.

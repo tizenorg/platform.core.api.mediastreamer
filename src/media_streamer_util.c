@@ -21,7 +21,7 @@
 
 static void __ms_check_ini_status(void);
 
-gchar *__ms_ini_get_string(dictionary * dict, const char *ini_path, char *default_str)
+gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path, char *default_str)
 {
 	gchar *result_str = NULL;
 
@@ -40,7 +40,7 @@ gchar *__ms_ini_get_string(dictionary * dict, const char *ini_path, char *defaul
 	return result_str;
 }
 
-gboolean __ms_load_ini_dictionary(dictionary ** dict)
+gboolean __ms_load_ini_dictionary(dictionary **dict)
 {
 	ms_retvm_if(dict == NULL, FALSE, "Handle is NULL");
 
@@ -63,7 +63,7 @@ gboolean __ms_load_ini_dictionary(dictionary ** dict)
 	return TRUE;
 }
 
-gboolean __ms_destroy_ini_dictionary(dictionary * dict)
+gboolean __ms_destroy_ini_dictionary(dictionary *dict)
 {
 	ms_retvm_if(dict == NULL, FALSE, "Handle is null");
 
@@ -73,7 +73,7 @@ gboolean __ms_destroy_ini_dictionary(dictionary * dict)
 	return TRUE;
 }
 
-void __ms_load_ini_settings(media_streamer_ini_t * ini)
+void __ms_load_ini_settings(media_streamer_ini_t *ini)
 {
 	dictionary *dict = NULL;
 
@@ -183,7 +183,7 @@ media_format_mimetype_e __ms_convert_string_format_to_mime(const char *format_ty
 	}
 }
 
-void __ms_signal_create(GList ** sig_list, GstElement * obj, const char *sig_name, GCallback cb, gpointer user_data)
+void __ms_signal_create(GList **sig_list, GstElement *obj, const char *sig_name, GCallback cb, gpointer user_data)
 {
 	ms_retm_if(!sig_list || !obj || !sig_name, "Empty signal data!");
 
@@ -217,4 +217,16 @@ void __ms_signal_destroy(void *data)
 		}
 	}
 	MS_SAFE_GFREE(sig_data);
+}
+
+void __ms_rtp_param_value_destroy(gpointer data)
+{
+	GValue *val = (GValue *)data;
+	ms_retm_if(!data, "Empty object data!");
+
+	if (GST_VALUE_HOLDS_CAPS(val))
+		gst_caps_unref(GST_CAPS(gst_value_get_caps(val)));
+
+	g_value_unset(val);
+	MS_SAFE_GFREE(val);
 }

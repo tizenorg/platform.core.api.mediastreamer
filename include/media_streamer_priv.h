@@ -29,6 +29,7 @@ extern "C" {
 #include <media_streamer_util.h>
 
 struct media_streamer_node_s;
+
 /**
  * @brief Media Streamer callbacks structure.
  *
@@ -48,6 +49,16 @@ typedef struct {
 	media_streamer_callback_s data_ready_cb;
 	media_streamer_callback_s eos_cb;
 } media_streamer_sink_callbacks_s;
+
+/**
+ * @brief Media Streamer param type handle.
+ *
+ * @since_tizen 3.0
+ */
+typedef struct {
+	char *param_name;
+	char *origin_name;
+} param_s;
 
 /**
  * @brief Media Streamer type handle.
@@ -83,13 +94,6 @@ typedef struct {
  *
  * @since_tizen 3.0
  */
-typedef int (*ms_node_set_param)(struct media_streamer_node_s *node, const char *param_key, const char *param_value);
-
-/**
- * @brief Media Streamer node type handle.
- *
- * @since_tizen 3.0
- */
 typedef struct {
 	GstElement *gst_element;
 	media_streamer_s *parent_streamer;
@@ -102,7 +106,6 @@ typedef struct {
 
 	GList *sig_list;
 
-	ms_node_set_param set_param;
 	void *callbacks_structure;
 } media_streamer_node_s;
 
@@ -149,14 +152,6 @@ int __ms_create(media_streamer_s *ms_streamer);
  * @since_tizen 3.0
  */
 int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e state);
-
-/**
- * @brief Returns initial parameter name among defined parameter values.
- *
- * @since_tizen 3.0
- */
-void __ms_node_check_param_name(GstElement *element, gboolean name_is_known,
-					const char *param_name, char **init_param_name);
 
 #ifdef __cplusplus
 }

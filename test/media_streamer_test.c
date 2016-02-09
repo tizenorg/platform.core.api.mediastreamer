@@ -134,7 +134,7 @@ static void streamer_seek_cb(void *user_data)
 	g_print("Current play position [%02d:%02d:%03d] \n", current_time / (1000 * 60), (current_time / 1000) % 60, current_time % 1000);
 }
 
-static void _create(media_streamer_h * streamer)
+static void _create(media_streamer_h *streamer)
 {
 	g_print("== create \n");
 	int ret = MEDIA_STREAMER_ERROR_NONE;
@@ -1401,7 +1401,7 @@ static void interpret_cmd(char *cmd)
 	display_menu();
 }
 
-gboolean input(GIOChannel * channel)
+gboolean input(GIOChannel *channel)
 {
 	gchar buf[MAX_STRING_LEN];
 	gsize read;

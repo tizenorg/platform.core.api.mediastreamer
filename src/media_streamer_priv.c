@@ -21,7 +21,7 @@
 
 #define GST_TIME_TO_MSEC(t) (t == GST_CLOCK_TIME_NONE ? t : (int)(((GstClockTime)(t)) / GST_MSECOND))
 
-int __ms_state_change(media_streamer_s * ms_streamer, media_streamer_state_e state)
+int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e state)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
@@ -72,7 +72,7 @@ int __ms_state_change(media_streamer_s * ms_streamer, media_streamer_state_e sta
 	return ret;
 }
 
-int __ms_create(media_streamer_s * ms_streamer)
+int __ms_create(media_streamer_s *ms_streamer)
 {
 	__ms_load_ini_settings(&ms_streamer->ini);
 
@@ -82,7 +82,7 @@ int __ms_create(media_streamer_s * ms_streamer)
 	return __ms_pipeline_create(ms_streamer);
 }
 
-int __ms_get_position(media_streamer_s * ms_streamer, int *time)
+int __ms_get_position(media_streamer_s *ms_streamer, int *time)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(time == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Return value is NULL");
@@ -118,7 +118,7 @@ int __ms_get_duration(media_streamer_s *ms_streamer, int *time)
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
-int __ms_streamer_seek(media_streamer_s * ms_streamer, int g_time, bool flag)
+int __ms_streamer_seek(media_streamer_s *ms_streamer, int g_time, bool flag)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
@@ -141,7 +141,7 @@ int __ms_streamer_seek(media_streamer_s * ms_streamer, int g_time, bool flag)
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
-int __ms_streamer_destroy(media_streamer_s * ms_streamer)
+int __ms_streamer_destroy(media_streamer_s *ms_streamer)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 

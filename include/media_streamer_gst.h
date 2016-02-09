@@ -103,20 +103,10 @@ GstElement *__ms_audio_encoder_element_create(void);
 GstElement *__ms_rtp_element_create(media_streamer_node_s *ms_node);
 
 /**
- * @brief Find Udp elements into rtp container by name.
- *        It returns elements with increased ref count.
+ * @brief Prepares rtp container according to parameters data.
  * @since_tizen 3.0
  */
-gboolean __ms_get_rtp_elements(media_streamer_node_s *ms_node, GstElement **rtp_elem,
-					GstElement **rtcp_elem, const gchar *elem_name, const gchar *direction, gboolean auto_create);
-
-/**
- * @brief Converts key-value property into needed GType
- * and sets this property into GstElement.
- *
- * @since_tizen 3.0
- */
-gboolean __ms_element_set_property(GstElement *src_element, const char *key, const gchar *param_value);
+gboolean __ms_rtp_element_prepare(media_streamer_node_s *ms_node);
 
 /**
  * @brief Unlink all pads into GstElement.
@@ -144,7 +134,7 @@ gboolean __ms_bin_add_element(GstElement *bin, GstElement *element, gboolean do_
  *
  * @since_tizen 3.0
  */
-const gchar * __ms_get_pad_type(GstPad *element_pad);
+const gchar *__ms_get_pad_type(GstPad *element_pad);
 /**
  * @brief Creates decodebin to link with sink part.
  *
@@ -193,10 +183,10 @@ int __ms_element_pad_names(GstElement *gst_element, GstPadDirection pad_type, ch
  *
  * @since_tizen 3.0
  */
-int __ms_element_get_pad_fmt(GstElement * gst_element, const char *pad_name, media_format_h *fmt);
+int __ms_element_get_pad_fmt(GstElement *gst_element, const char *pad_name, media_format_h *fmt);
 
 /**
- * @brief Sets mediaformat into GstElement.
+ * @brief Sets mediaformat into Node's pad.
  *
  * @since_tizen 3.0
  */

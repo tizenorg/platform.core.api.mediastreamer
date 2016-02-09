@@ -28,7 +28,7 @@
 * Public Implementation
 */
 
-int media_streamer_node_create_src(media_streamer_node_src_type_e type, media_streamer_node_h * src)
+int media_streamer_node_create_src(media_streamer_node_src_type_e type, media_streamer_node_h *src)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
@@ -54,7 +54,7 @@ int media_streamer_node_create_src(media_streamer_node_src_type_e type, media_st
 	return ret;
 }
 
-int media_streamer_node_create_sink(media_streamer_node_sink_type_e type, media_streamer_node_h * sink)
+int media_streamer_node_create_sink(media_streamer_node_sink_type_e type, media_streamer_node_h *sink)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
@@ -80,7 +80,7 @@ int media_streamer_node_create_sink(media_streamer_node_sink_type_e type, media_
 	return ret;
 }
 
-int media_streamer_node_create(media_streamer_node_type_e type, media_format_h in_fmt, media_format_h out_fmt, media_streamer_node_h * node)
+int media_streamer_node_create(media_streamer_node_type_e type, media_format_h in_fmt, media_format_h out_fmt, media_streamer_node_h *node)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
@@ -240,7 +240,7 @@ int media_streamer_play(media_streamer_h streamer)
 	return ret;
 }
 
-int media_streamer_create(media_streamer_h * streamer)
+int media_streamer_create(media_streamer_h *streamer)
 {
 	ms_retvm_if(streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
@@ -475,7 +475,7 @@ int media_streamer_stop(media_streamer_h streamer)
 	return ret;
 }
 
-int media_streamer_get_state(media_streamer_h streamer, media_streamer_state_e * state)
+int media_streamer_get_state(media_streamer_h streamer, media_streamer_state_e *state)
 {
 	media_streamer_s *ms_streamer = (media_streamer_s *) streamer;
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -561,7 +561,7 @@ int media_streamer_node_push_packet(media_streamer_node_h src, media_packet_h pa
 	return __ms_element_push_packet(ms_node->gst_element, packet);
 }
 
-int media_streamer_node_pull_packet(media_streamer_node_h sink, media_packet_h * packet)
+int media_streamer_node_pull_packet(media_streamer_node_h sink, media_packet_h *packet)
 {
 	media_streamer_node_s *ms_node = (media_streamer_node_s *) sink;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -611,7 +611,7 @@ int media_streamer_node_set_pad_format(media_streamer_node_h node, const char *p
 	ms_retvm_if(fmt == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Format is NULL");
 
 	/* By default it sets format to object's property 'caps' */
-	return __ms_element_set_fmt(node, pad_name, fmt);
+	return __ms_node_set_pad_format(node, pad_name, fmt);
 }
 
 int media_streamer_node_get_pad_format(media_streamer_node_h node, const char *pad_name, media_format_h *fmt)
@@ -645,7 +645,7 @@ int media_streamer_node_get_pad_name(media_streamer_node_h node, char ***src_pad
 	return ret;
 }
 
-int media_streamer_node_set_params(media_streamer_node_h node, bundle * param_list)
+int media_streamer_node_set_params(media_streamer_node_h node, bundle *param_list)
 {
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
@@ -654,42 +654,47 @@ int media_streamer_node_set_params(media_streamer_node_h node, bundle * param_li
 	ms_retvm_if(ms_node->gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(param_list == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Parameters list is NULL");
 
-	ret = __ms_node_read_params_from_bundle(ms_node, param_list);
+	ret = __ms_node_set_params_from_bundle(ms_node, param_list);
 	ms_retvm_if(ret != MEDIA_STREAMER_ERROR_NONE, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Parameters list is NULL");
 
 	return ret;
 }
 
-int media_streamer_node_get_params(media_streamer_node_h node, bundle ** param_list)
+int media_streamer_node_get_params(media_streamer_node_h node, bundle **param_list)
 {
 	media_streamer_node_s *ms_node = (media_streamer_node_s *) node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(param_list == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Param list pionter is NULL");
 
-	bundle *ms_params = NULL;
-	ms_params = bundle_create();
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+
+	bundle *ms_params = bundle_create();
 	ms_retvm_if(ms_params == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Error creating new params object");
 
-	if (__ms_node_write_params_into_bundle(ms_node, ms_params) != MEDIA_STREAMER_ERROR_NONE) {
-		ms_info("Node [%s] does not have any params.", ms_node->name);
+	ret = __ms_node_write_params_into_bundle(ms_node, ms_params);
+	if (ret == MEDIA_STREAMER_ERROR_NONE)
+		*param_list = ms_params;
+	else
 		bundle_free(ms_params);
-		*param_list = NULL;
 
-		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
-	}
-
-	*param_list = ms_params;
-	return MEDIA_STREAMER_ERROR_NONE;
+	return ret;
 }
 
 int media_streamer_node_set_param(media_streamer_node_h node, const char *param_name, const char *param_value)
 {
 	media_streamer_node_s *ms_node = (media_streamer_node_s *) node;
 	ms_retvm_if(ms_node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
-	ms_retvm_if(ms_node->gst_element == NULL && ms_node->set_param, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(ms_node->gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	ms_retvm_if(param_name == NULL || param_value == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Parameters name or value is NULL");
 
-	return ms_node->set_param((struct media_streamer_node_s *)ms_node, param_name, param_value);
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+	param_s *param = NULL;
+
+	ret = __ms_node_get_param(node, param_name, &param);
+	if (ret == MEDIA_STREAMER_ERROR_NONE)
+		ret = __ms_node_set_param_value(node, param, param_value);
+
+	return ret;
 }
 
 int media_streamer_node_get_param(media_streamer_node_h node, const char *param_name, char **param_value)
@@ -699,14 +704,12 @@ int media_streamer_node_get_param(media_streamer_node_h node, const char *param_
 	ms_retvm_if(param_name == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Param name is NULL");
 	ms_retvm_if(param_value == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Param value is NULL");
 
-	char *ms_param = NULL;
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+	param_s *param = NULL;
 
-	if (__ms_node_write_param_into_value(ms_node, param_name, &ms_param) != MEDIA_STREAMER_ERROR_NONE) {
-		ms_info("Node [%s] does not have param [%s]", ms_node->name, param_name);
+	ret = __ms_node_get_param(ms_node, param_name, &param);
+	if (ret == MEDIA_STREAMER_ERROR_NONE)
+		ret = __ms_node_get_param_value(ms_node, param, param_value);
 
-		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
-	}
-
-	*param_value = ms_param;
-	return MEDIA_STREAMER_ERROR_NONE;
+	return ret;
 }

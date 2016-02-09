@@ -43,38 +43,45 @@ extern "C" {
 #define FONT_COLOR_CYAN     "\033[36m"
 #define FONT_COLOR_GRAY     "\033[37m"
 
-#define ms_debug(fmt, arg...) do { \
-		LOGD(FONT_COLOR_RESET""fmt"", ##arg);     \
+#define ms_debug(fmt, arg...)                         \
+	do {                                              \
+		LOGD(FONT_COLOR_RESET""fmt"", ##arg);         \
 	} while (0)
 
-#define ms_info(fmt, arg...) do { \
-		LOGI(FONT_COLOR_GREEN""fmt"", ##arg);     \
+#define ms_info(fmt, arg...)                          \
+	do {                                              \
+		LOGI(FONT_COLOR_GREEN""fmt"", ##arg);         \
 	} while (0)
 
-#define ms_error(fmt, arg...) do { \
-		LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
+#define ms_error(fmt, arg...)                         \
+	do {                                              \
+		LOGE(FONT_COLOR_RED""fmt"", ##arg);           \
 	} while (0)
 
-#define ms_debug_fenter() do { \
-		LOGD(FONT_COLOR_YELLOW"<Enter>");     \
+#define ms_debug_fenter()                             \
+	do {                                              \
+		LOGD(FONT_COLOR_YELLOW"<Enter>");             \
 	} while (0)
 
-#define ms_debug_fleave() do { \
-		LOGD(FONT_COLOR_PURPLE"<Leave>");     \
+#define ms_debug_fleave()                             \
+	do {                                              \
+		LOGD(FONT_COLOR_PURPLE"<Leave>");             \
 	} while (0)
 
-#define ms_retm_if(expr, fmt, arg...) do { \
-		if (expr) { \
-			LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
-			return; \
-		} \
+#define ms_retm_if(expr, fmt, arg...)                 \
+	do {                                              \
+		if (expr) {                                   \
+			LOGE(FONT_COLOR_RED""fmt"", ##arg);       \
+			return;                                   \
+		}                                             \
 	} while (0)
 
-#define ms_retvm_if(expr, val, fmt, arg...) do { \
-		if (expr) { \
-			LOGE(FONT_COLOR_RED""fmt"", ##arg);     \
-			return(val); \
-		} \
+#define ms_retvm_if(expr, val, fmt, arg...)           \
+	do {                                              \
+		if (expr) {                                   \
+			LOGE(FONT_COLOR_RED""fmt"", ##arg);       \
+			return(val);                              \
+		}                                             \
 	} while (0)
 
 #define MS_SAFE_FREE(src)           {if (src) { free(src); src = NULL; } }
@@ -90,6 +97,7 @@ extern "C" {
 #endif
 
 #define MEDIA_STREAMER_INI_MAX_STRLEN	100
+#define RTP_STREAM_DISABLED (0)
 
 /**
  * @brief Media Streamer ini settings structure.
@@ -109,7 +117,7 @@ typedef struct __media_streamer_ini {
  * @since_tizen 3.0
  */
 typedef struct {
-	GObject* obj;
+	GObject *obj;
 	gulong signal_id;
 } media_streamer_signal_s;
 
@@ -168,23 +176,58 @@ typedef struct {
 #define MS_ELEMENT_IS_AUDIO(el) g_strrstr(el, "audio")
 #define MS_ELEMENT_IS_VIDEO(el) g_strrstr(el, "video")
 #define MS_ELEMENT_IS_IMAGE(el) g_strrstr(el, "image")
+
 #define MS_RTP_PAD_VIDEO_IN "video_in"
 #define MS_RTP_PAD_AUDIO_IN "audio_in"
+#define MS_RTP_PAD_VIDEO_OUT "video_out"
+#define MS_RTP_PAD_AUDIO_OUT "audio_out"
+#define MEDIA_STREAMER_PARAM_VIDEO_IN_FORMAT MS_RTP_PAD_VIDEO_IN"_format"
+#define MEDIA_STREAMER_PARAM_AUDIO_IN_FORMAT MS_RTP_PAD_AUDIO_IN"_format"
+
 #define MS_ELEMENT_IS_RTP(el) g_strrstr(el, "rtp_container")
 #define MS_ELEMENT_IS_TEXT(el) g_strrstr(el, "text")
 #define MS_ELEMENT_IS_ENCODER(el) g_strrstr(el, "encoder")
 #define MS_ELEMENT_IS_DECODER(el) g_strrstr(el, "decoder")
 
-#define MS_BIN_FOREACH_ELEMENTS(bin, fn, streamer) \
-{ \
-	GstIterator *iter = gst_bin_iterate_elements(GST_BIN(bin)); \
-	if (gst_iterator_foreach(iter, fn, streamer) != GST_ITERATOR_DONE) { \
-		ms_error("Error while iterating elements in bin [%s]!", GST_ELEMENT_NAME(bin)); \
-	} \
-	gst_iterator_free(iter); \
-}
-
 #define MEDIA_STREAMER_DEFAULT_DOT_DIR "/tmp"
+
+#define MS_BIN_FOREACH_ELEMENTS(bin, fn, streamer) \
+	do { \
+		GstIterator *iter = gst_bin_iterate_elements(GST_BIN(bin)); \
+		if (gst_iterator_foreach(iter, fn, streamer) != GST_ITERATOR_DONE) \
+			ms_error("Error while iterating elements in bin [%s]!", GST_ELEMENT_NAME(bin)); \
+		gst_iterator_free(iter); \
+	} while (0)
+
+#define MS_BIN_UNPREPARE(bin) \
+	if (!__ms_bin_remove_elements(ms_streamer, bin)) {\
+		ms_debug("Got a few errors during unprepare [%s] bin.", GST_ELEMENT_NAME(bin));\
+		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;\
+	}
+
+#define MS_SET_INT_RTP_PARAM(obj, key, value) \
+	do { \
+		GValue *val = g_malloc0(sizeof(GValue)); \
+		g_value_init(val, G_TYPE_INT); \
+		g_value_set_int(val, value); \
+		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_rtp_param_value_destroy); \
+	} while (0)
+
+#define MS_SET_INT_STATIC_STRING_PARAM(obj, key, value) \
+	do { \
+		GValue *val = g_malloc0(sizeof(GValue)); \
+		g_value_init(val, G_TYPE_STRING); \
+		g_value_set_static_string(val, value); \
+		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_rtp_param_value_destroy); \
+	} while (0)
+
+#define MS_SET_INT_CAPS_PARAM(obj, key, value) \
+	do { \
+		GValue *val = g_malloc0(sizeof(GValue)); \
+		g_value_init(val, GST_TYPE_CAPS); \
+		gst_value_set_caps(val, value); \
+		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_rtp_param_value_destroy); \
+	} while (0)
 
 /**
  * @brief Loads media streamer settings from ini file.
@@ -251,6 +294,13 @@ void __ms_signal_create(GList **sig_list, GstElement *obj, const char *sig_name,
  * @since_tizen 3.0
  */
 void __ms_signal_destroy(void *data);
+
+/**
+ * @brief Destroys the which set as rtp node parameter.
+ *
+ * @since_tizen 3.0
+ */
+void __ms_rtp_param_value_destroy(gpointer data);
 
 #ifdef __cplusplus
 }

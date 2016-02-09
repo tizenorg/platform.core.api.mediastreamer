@@ -16,12 +16,6 @@
 
 #include <media_streamer_priv.h>
 
-/**
- * @brief Sets property to media streamer node with key and value.
- *
- * @since_tizen 3.0
- */
-int __ms_node_set_property(media_streamer_node_s *ms_node, const gchar *param_key, const gchar *param_value);
 
 /**
  * @brief Creates media streamer node using input and output format.
@@ -85,7 +79,7 @@ int __ms_pipeline_unprepare(media_streamer_s *ms_streamer);
  *
  * @since_tizen 3.0
  */
-int __ms_node_read_params_from_bundle(media_streamer_node_s *node, bundle *param_list);
+int __ms_node_set_params_from_bundle(media_streamer_node_s *node, bundle *param_list);
 
 /**
  * @brief Writes GstElement properties into user's bundle object.
@@ -95,8 +89,36 @@ int __ms_node_read_params_from_bundle(media_streamer_node_s *node, bundle *param
 int __ms_node_write_params_into_bundle(media_streamer_node_s *node, bundle *param_list);
 
 /**
- * @brief Writes GstElement property into user's value.
+ * @brief Gets node's parameter by param_name.
  *
  * @since_tizen 3.0
  */
-int __ms_node_write_param_into_value(media_streamer_node_s *node, const char *param_name, char **param_value);
+int __ms_node_get_param(media_streamer_node_s *node, const char *param_name, param_s **param);
+
+/**
+ * @brief Gets list of all node's parameters.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_node_get_param_list(media_streamer_node_s *node, GList **param_list);
+
+/**
+ * @brief Gets string value of node's parameter.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_node_get_param_value(media_streamer_node_s *node, param_s *param, char **string_value);
+
+/**
+ * @brief Sets parameter value into node's parameter.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_node_set_param_value(media_streamer_node_s *ms_node, param_s *param, const gchar *param_value);
+
+/**
+ * @brief Sets media format value into node's pad.
+ *
+ * @since_tizen 3.0
+ */
+int __ms_node_set_pad_format(media_streamer_node_s *node, const char *pad_name, media_format_h fmt);

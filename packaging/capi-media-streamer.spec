@@ -36,7 +36,7 @@ MediaStreamer Library in Tizen Native API (DEV).
 %setup -q
 cp %{SOURCE1001} .
 
-%define ini_path /usr/etc/media_streamer.ini
+%define ini_path /usr/etc/mmfw_media_streamer.ini
 
 %build
 flags="-DMEDIA_STREAMER_INI_PATH=\\\"%{ini_path}\\\""
@@ -62,13 +62,11 @@ cp LICENSE.APLv2 %{buildroot}%{_datadir}/license/%{name}
 cp test/media_streamer_test %{buildroot}/usr/bin
 
 mkdir -p %{buildroot}/usr/etc
-cp -rf config/media_streamer.ini %{buildroot}%{ini_path}
 
 %make_install
 
 %post
 /sbin/ldconfig
-chsmack -a "_" %{ini_path}
 
 %postun -p /sbin/ldconfig
 
@@ -79,8 +77,6 @@ chsmack -a "_" %{ini_path}
 %{_libdir}/lib%{name}.so.*
 %{_datadir}/license/%{name}
 %{_bindir}/*
-%config %{ini_path}
-%attr(755, -, root) %{ini_path}
 
 %files devel
 %manifest %{name}.manifest

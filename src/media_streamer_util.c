@@ -73,6 +73,21 @@ gboolean __ms_destroy_ini_dictionary(dictionary *dict)
 	return TRUE;
 }
 
+static void __ms_ini_read_list(dictionary *dict, const char* key, gchar ***list)
+{
+	ms_retm_if(!dict || !list || !key, "Handle is NULL");
+
+	/* Read exclude elements list */
+	gchar *str = iniparser_getstring(dict, key, NULL);
+	if (str && strlen(str) > 0) {
+		gchar *strtmp = g_strdup(str);
+		g_strstrip(strtmp);
+
+		*list = g_strsplit(strtmp, ",", 10);
+		MS_SAFE_FREE(strtmp);
+	}
+}
+
 void __ms_load_ini_settings(media_streamer_ini_t *ini)
 {
 	dictionary *dict = NULL;
@@ -90,6 +105,12 @@ void __ms_load_ini_settings(media_streamer_ini_t *ini)
 		}
 
 		ini->use_decodebin = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
+
+		/* Read exclude elements list */
+		__ms_ini_read_list(dict, "general:exclude elements", &ini->exclude_elem_names);
+		/* Read gstreamer arguments list */
+		__ms_ini_read_list(dict, "general:gstreamer arguments", &ini->gst_args);
+
 	} else {
 		/* if dict is not available just fill the structure with default values */
 		ini->generate_dot = DEFAULT_GENERATE_DOT;

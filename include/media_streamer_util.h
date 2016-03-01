@@ -108,6 +108,8 @@ typedef struct __media_streamer_ini {
 	/* general */
 	gboolean generate_dot;
 	gboolean use_decodebin;
+	gchar **exclude_elem_names;
+	gchar **gst_args;
 
 } media_streamer_ini_t;
 

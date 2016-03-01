@@ -674,6 +674,9 @@ static gint __decodebin_autoplug_select_cb(GstElement * bin, GstPad * pad, GstCa
 		GST_AUTOPLUG_SELECT_SKIP
 	} GstAutoplugSelectResult;
 
+	media_streamer_s *ms_streamer = (media_streamer_s *) data;
+	ms_retvm_if(!ms_streamer, GST_AUTOPLUG_SELECT_TRY, "Handle is NULL");
+
 	gchar *factory_name = NULL;
 	const gchar *klass = NULL;
 
@@ -682,25 +685,17 @@ static gint __decodebin_autoplug_select_cb(GstElement * bin, GstPad * pad, GstCa
 
 	ms_debug("Decodebin: found new element [%s] to link [%s]", factory_name, klass);
 
-	if ((g_strrstr(klass, "Codec/Decoder/Video"))) {
+	if (ms_streamer->ini.exclude_elem_names) {
+		/* Search if such plugin must be excluded */
 
-		/* Skip Video4Linux decoders */
-		if (g_strrstr(factory_name, "v4l2video")) {
-			ms_debug("Decodebin: skipping [%s] as not required", factory_name);
-			return GST_AUTOPLUG_SELECT_SKIP;
+		int index = 0;
+		for ( ; ms_streamer->ini.exclude_elem_names[index]; ++index) {
+			if (g_strrstr(factory_name, ms_streamer->ini.exclude_elem_names[index])) {
+				ms_debug("Decodebin: skipping [%s] as excluded", factory_name);
+				return GST_AUTOPLUG_SELECT_SKIP;
+			}
 		}
 
-		/* Skip OMX HW decoders */
-		if (g_strrstr(factory_name, "omx")) {
-			ms_debug("Decodebin: skipping [%s] as disabled", factory_name);
-			return GST_AUTOPLUG_SELECT_SKIP;
-		}
-
-		/* Skip SPRD HW decoders */
-		if (g_strrstr(factory_name, "sprd")) {
-			ms_debug("Decodebin: skipping [%s] as disabled", factory_name);
-			return GST_AUTOPLUG_SELECT_SKIP;
-		}
 	}
 
 	return GST_AUTOPLUG_SELECT_TRY;
@@ -858,7 +853,7 @@ GstElement *__ms_decodebin_create(media_streamer_s * ms_streamer)
 	gst_element_sync_state_with_parent(decodebin);
 
 	__ms_signal_create(&ms_streamer->autoplug_sig_list, decodebin, "pad-added", G_CALLBACK(__decodebin_newpad_cb), ms_streamer);
-	__ms_signal_create(&ms_streamer->autoplug_sig_list, decodebin, "autoplug-select", G_CALLBACK(__decodebin_autoplug_select_cb), NULL);
+	__ms_signal_create(&ms_streamer->autoplug_sig_list, decodebin, "autoplug-select", G_CALLBACK(__decodebin_autoplug_select_cb), ms_streamer);
 	__ms_signal_create(&ms_streamer->autoplug_sig_list, decodebin, "no-more-pads", G_CALLBACK(__decodebin_nomore_pads_cb), ms_streamer);
 
 	return decodebin;
@@ -1382,7 +1377,44 @@ int __ms_pipeline_create(media_streamer_s *ms_streamer)
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	GError *err = NULL;
-	if (!gst_init_check(NULL, NULL, &err)) {
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+
+	int *argc = (int *)malloc(sizeof(int));
+	char **argv = NULL;
+	if (argc) {
+		*argc = 1;
+		if (ms_streamer->ini.gst_args)
+			(*argc) += g_strv_length(ms_streamer->ini.gst_args);
+
+		argv = (char **)calloc(*argc, sizeof(char*));
+		if (argv) {
+			argv[0] = g_strdup("MediaStreamer");
+
+			if (ms_streamer->ini.gst_args) {
+				int i = 0;
+				for ( ; ms_streamer->ini.gst_args[i]; ++i) {
+					argv[i+1] = ms_streamer->ini.gst_args[i];
+					ms_debug("Add [%s] gstreamer parameter.", argv[i+1]);
+				}
+			}
+
+		} else {
+			MS_SAFE_FREE(argc);
+			ms_error("Error allocation memory");
+		}
+	} else {
+		ms_error("Error allocation memory");
+	}
+
+	gboolean gst_ret = gst_init_check(argc, &argv, &err);
+	/* Clean memory of gstreamer arguments*/
+	g_strfreev(ms_streamer->ini.gst_args);
+	ms_streamer->ini.gst_args = NULL;
+	MS_SAFE_FREE(argv[0]);
+	MS_SAFE_FREE(argv);
+	MS_SAFE_FREE(argc);
+
+	if (!gst_ret) {
 		ms_error("Error: Failed to initialize GStreamer [%s].", err->message);
 		g_clear_error(&err);
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
@@ -1408,7 +1440,7 @@ int __ms_pipeline_create(media_streamer_s *ms_streamer)
 	gst_bin_add_many(GST_BIN(ms_streamer->pipeline), ms_streamer->src_bin, ms_streamer->sink_bin, ms_streamer->topology_bin, NULL);
 	ms_info("Media streamer pipeline created successfully.");
 
-	return MEDIA_STREAMER_ERROR_NONE;
+	return ret;
 }
 
 static GstCaps *__ms_create_caps_from_fmt(media_format_h fmt)

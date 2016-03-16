@@ -1,6 +1,6 @@
 Name:       capi-media-streamer
 Summary:    A Media Streamer library in Tizen Native API
-Version:    0.1.3
+Version:    0.1.4
 Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0

@@ -676,6 +676,7 @@ static gint __decodebin_autoplug_select_cb(GstElement * bin, GstPad * pad, GstCa
 
 	gchar *factory_name = NULL;
 	const gchar *klass = NULL;
+	GstAutoplugSelectResult result = GST_AUTOPLUG_SELECT_TRY;
 
 	factory_name = GST_OBJECT_NAME(factory);
 	klass = gst_element_factory_get_metadata(factory, GST_ELEMENT_METADATA_KLASS);
@@ -687,23 +688,27 @@ static gint __decodebin_autoplug_select_cb(GstElement * bin, GstPad * pad, GstCa
 		/* Skip Video4Linux decoders */
 		if (g_strrstr(factory_name, "v4l2video")) {
 			ms_debug("Decodebin: skipping [%s] as not required", factory_name);
-			return GST_AUTOPLUG_SELECT_SKIP;
+			result = GST_AUTOPLUG_SELECT_SKIP;
+			goto DONE;
 		}
 
 		/* Skip OMX HW decoders */
 		if (g_strrstr(factory_name, "omx")) {
 			ms_debug("Decodebin: skipping [%s] as disabled", factory_name);
-			return GST_AUTOPLUG_SELECT_SKIP;
+			result = GST_AUTOPLUG_SELECT_SKIP;
+			goto DONE;
 		}
 
 		/* Skip SPRD HW decoders */
 		if (g_strrstr(factory_name, "sprd")) {
 			ms_debug("Decodebin: skipping [%s] as disabled", factory_name);
-			return GST_AUTOPLUG_SELECT_SKIP;
+			result = GST_AUTOPLUG_SELECT_SKIP;
+			goto DONE;
 		}
 	}
 
-	return GST_AUTOPLUG_SELECT_TRY;
+DONE:
+	return result;
 }
 
 static void __decodebin_newpad_streamer(GstElement * decodebin, GstPad * new_pad, const gchar * new_pad_type)

@@ -679,6 +679,7 @@ static gint __decodebin_autoplug_select_cb(GstElement * bin, GstPad * pad, GstCa
 
 	gchar *factory_name = NULL;
 	const gchar *klass = NULL;
+	GstAutoplugSelectResult result = GST_AUTOPLUG_SELECT_TRY;
 
 	factory_name = GST_OBJECT_NAME(factory);
 	klass = gst_element_factory_get_metadata(factory, GST_ELEMENT_METADATA_KLASS);
@@ -695,10 +696,10 @@ static gint __decodebin_autoplug_select_cb(GstElement * bin, GstPad * pad, GstCa
 				return GST_AUTOPLUG_SELECT_SKIP;
 			}
 		}
-
 	}
 
-	return GST_AUTOPLUG_SELECT_TRY;
+DONE:
+	return result;
 }
 
 static void __decodebin_newpad_streamer(GstElement * decodebin, GstPad * new_pad, const gchar * new_pad_type)

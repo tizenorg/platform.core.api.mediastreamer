@@ -151,7 +151,7 @@ int __ms_node_create(media_streamer_node_s *node, media_format_h in_fmt, media_f
 		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_TYPE_FILTER:
-		node->gst_element = __ms_element_create("capsfilter", NULL);
+		node->gst_element = __ms_element_create(DEFAULT_FILTER, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY:
 		format_prefix = g_strdup_printf("%s:rtppay", __ms_convert_mime_to_string(mime));
@@ -180,14 +180,17 @@ int __ms_node_create(media_streamer_node_s *node, media_format_h in_fmt, media_f
 	case MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER:
 		node->gst_element = __ms_audio_encoder_element_create();
 		break;
+	case MEDIA_STREAMER_NODE_TYPE_AUDIO_DECODER:
+		node->gst_element = __ms_element_create(DEFAULT_AUDIO_DECODER, NULL);
+		break;
 	case MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER:
-		node->gst_element = __ms_element_create("videoconvert", NULL);
+		node->gst_element = __ms_element_create(DEFAULT_VIDEO_CONVERT, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER:
-		node->gst_element = __ms_element_create("audioconvert", NULL);
+		node->gst_element = __ms_element_create(DEFAULT_AUDIO_CONVERT, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE:
-		node->gst_element = __ms_element_create("audioresample", NULL);
+		node->gst_element = __ms_element_create(DEFAULT_AUDIO_RESAMPLE, NULL);
 		break;
 	default:
 		ms_error("Error: invalid node Type [%d]", node->type);
@@ -484,16 +487,18 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 		}
 
 		if (MS_ELEMENT_IS_VIDEO(new_pad_type) || MS_ELEMENT_IS_IMAGE(new_pad_type)) {
-			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_QUEUE_KLASS, NULL, DEFAULT_QUEUE);
+			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, NULL, NULL, DEFAULT_FILTER);
+			GstCaps *videoCaps = gst_caps_from_string(MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT);
+			g_object_set(G_OBJECT(found_element), "caps", videoCaps,NULL);
+			gst_caps_unref(videoCaps);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "video_encoder", NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
 		}
 
 		if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
-			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_QUEUE_KLASS, NULL, DEFAULT_QUEUE);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "audio_encoder", NULL);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, DEFAULT_AUDIO_RTPPAY);
+			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "audio_encoder", NULL);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
 		}
 		__ms_generate_dots(ms_streamer->pipeline, "after_connecting_rtp");
@@ -821,7 +826,7 @@ int __ms_node_set_pad_format(media_streamer_node_s *node, const char *pad_name, 
 		if (!strcmp(pad_name, MS_RTP_PAD_VIDEO_IN"_rtp")) {
 			ret = media_format_get_video_info(fmt, &mime, NULL, NULL, NULL, NULL);
 			if (MEDIA_FORMAT_ERROR_NONE == ret) {
-				rtp_caps_str = g_strdup_printf("application/x-rtp,media=video,clock-rate=90000,encoding-name=%s", __ms_convert_mime_to_rtp_format(mime));
+				rtp_caps_str = g_strdup_printf("application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=%s", __ms_convert_mime_to_rtp_format(mime));
 				param_s param = {MEDIA_STREAMER_PARAM_VIDEO_IN_FORMAT, MEDIA_STREAMER_PARAM_VIDEO_IN_FORMAT};
 				ret = __ms_node_set_param_value(node, &param, rtp_caps_str);
 			}
@@ -829,7 +834,7 @@ int __ms_node_set_pad_format(media_streamer_node_s *node, const char *pad_name, 
 			int audio_channels, audio_samplerate;
 			ret = media_format_get_audio_info(fmt, &mime, &audio_channels, &audio_samplerate, NULL, NULL);
 			if (MEDIA_FORMAT_ERROR_NONE == ret) {
-				rtp_caps_str = g_strdup_printf("application/x-rtp,media=audio,clock-rate=%d,encoding-name=%s,channels=%d,payload=96", audio_samplerate, __ms_convert_mime_to_rtp_format(mime), audio_channels);
+				rtp_caps_str = g_strdup_printf("application/x-rtp,media=(string)audio,clock-rate=(int)8000,encoding-name=(string)AMR,encoding-params=(string)1,octet-align=(string)1");
 				param_s param = {MEDIA_STREAMER_PARAM_AUDIO_IN_FORMAT, MEDIA_STREAMER_PARAM_AUDIO_IN_FORMAT};
 				ret = __ms_node_set_param_value(node, &param, rtp_caps_str);
 			}

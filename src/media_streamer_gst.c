@@ -21,6 +21,7 @@
 		gst_pad_unlink(pad, peer) : \
 		gst_pad_unlink(peer, pad)
 #define H264_PARSER_CONFIG_INTERVAL 5
+#define H264_ENCODER_ZEROLATENCY 0x00000004
 
 void __ms_generate_dots(GstElement *bin, gchar *name_tag)
 {
@@ -764,7 +765,7 @@ static void __decodebin_nomore_pads_streamer(GstElement * decodebin, media_strea
 		} else if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
 			found_element = __ms_combine_next_element(found_element, new_pad, ms_streamer->topology_bin, NULL, NULL, DEFAULT_QUEUE);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "audio_encoder", NULL);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, DEFAULT_AUDIO_RTPPAY);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
 		} else if (MS_ELEMENT_IS_TEXT(new_pad_type)) {
 			found_element = __ms_combine_next_element(found_element, new_pad, ms_streamer->topology_bin, MEDIA_STREAMER_OVERLAY_KLASS, NULL, DEFAULT_TEXT_OVERLAY);
@@ -890,7 +891,7 @@ static gboolean __ms_sink_bin_prepare(media_streamer_s * ms_streamer, GstPad * s
 			previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_SINK_KLASS, NULL, NULL);
 		}
 	} else if (MS_ELEMENT_IS_AUDIO(src_pad_type)) {
-		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_CONVERTER_KLASS, NULL, DEFAULT_AUDIO_CONVERT);
+		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_DECODER_KLASS, NULL, NULL);
 		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_QUEUE_KLASS, NULL, DEFAULT_QUEUE);
 		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_SINK_KLASS, NULL, NULL);
 	} else {
@@ -983,33 +984,35 @@ GstElement *__ms_video_encoder_element_create(dictionary * dict, media_format_mi
 
 	GstElement *video_scale = __ms_element_create(DEFAULT_VIDEO_SCALE, NULL);
 	GstElement *video_convert = __ms_element_create(DEFAULT_VIDEO_CONVERT, NULL);
-	GstElement *video_rate = __ms_element_create(DEFAULT_VIDEO_RATE, NULL);
 
 	format_prefix = g_strdup_printf("%s:encoder", __ms_convert_mime_to_string(mime));
 	plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_ENCODER);
 	GstElement *encoder_elem = __ms_element_create(plugin_name, NULL);
+
 	MS_SAFE_FREE(format_prefix);
 	MS_SAFE_FREE(plugin_name);
 
 	format_prefix = g_strdup_printf("%s:parser", __ms_convert_mime_to_string(mime));
 	plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_PARSER);
 	GstElement *encoder_parser = __ms_element_create(plugin_name, NULL);
+
 	MS_SAFE_FREE(format_prefix);
 	MS_SAFE_FREE(plugin_name);
 
 	gboolean gst_ret = FALSE;
 	GstElement *encoder_bin = gst_bin_new("video_encoder");
-	GstElement *filter = __ms_element_create("capsfilter", NULL);
-	ms_retvm_if(!video_convert || !video_rate || !video_scale || !filter || !encoder_elem || !encoder_bin || !encoder_parser, (GstElement *) NULL, "Error: creating elements for video encoder bin");
+	ms_retvm_if(!video_convert || !video_scale || !encoder_elem || !encoder_bin || !encoder_parser, (GstElement *) NULL, "Error: creating elements for video encoder bin");
 
-	format_prefix = g_strdup_printf(MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT("%s"), __ms_convert_mime_to_string(mime));
-	GstCaps *videoCaps = gst_caps_from_string(format_prefix);
-	g_object_set(G_OBJECT(filter), "caps", videoCaps, NULL);
-	MS_SAFE_FREE(format_prefix);
-	gst_caps_unref(videoCaps);
+	if (mime == MEDIA_FORMAT_H264_SP) {
+		g_object_set(GST_OBJECT(encoder_parser), "config-interval", H264_PARSER_CONFIG_INTERVAL, NULL);
+		g_object_set(G_OBJECT(encoder_elem), "tune",  H264_ENCODER_ZEROLATENCY, NULL);
+		g_object_set(G_OBJECT(encoder_elem), "byte-stream", TRUE, NULL);
+		g_object_set(G_OBJECT(encoder_elem), "bitrate", 3000, NULL);
+		g_object_set(G_OBJECT(encoder_elem), "threads", 2, NULL);
+	}
 
-	gst_bin_add_many(GST_BIN(encoder_bin), video_convert, video_scale, video_rate, encoder_elem, filter, encoder_parser, NULL);
-	gst_ret = gst_element_link_many(video_convert, video_scale, video_rate, encoder_elem, filter, encoder_parser, NULL);
+	gst_bin_add_many(GST_BIN(encoder_bin), video_convert, video_scale, encoder_elem, encoder_parser, NULL);
+	gst_ret = gst_element_link_many(video_convert, video_scale, encoder_elem, encoder_parser, NULL);
 	if (gst_ret != TRUE) {
 		ms_error("Failed to link elements into encoder_bin");
 		MS_SAFE_UNREF(encoder_bin);
@@ -1088,21 +1091,22 @@ GstElement *__ms_audio_encoder_element_create(void)
 	GstElement *audio_resample = __ms_element_create("audioresample", NULL);
 	GstElement *audio_filter = __ms_element_create("capsfilter", NULL);
 	GstElement *audio_postenc_convert = __ms_element_create("audioconvert", NULL);
+	GstElement *audio_encoder = __ms_element_create(DEFAULT_AUDIO_ENCODER, NULL);
 	GstElement *audio_enc_bin = gst_bin_new("audio_encoder");
-	ms_retvm_if(!audio_convert || !audio_postenc_convert || !audio_filter || !audio_enc_bin, (GstElement *) NULL, "Error: creating elements for encoder bin");
+	ms_retvm_if(!audio_convert || !audio_postenc_convert || !audio_filter || !audio_encoder || !audio_enc_bin, (GstElement *) NULL, "Error: creating elements for encoder bin");
 
 	GstCaps *audioCaps = gst_caps_from_string(MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT);
 	g_object_set(G_OBJECT(audio_filter), "caps", audioCaps, NULL);
 	gst_caps_unref(audioCaps);
 
-	gst_bin_add_many(GST_BIN(audio_enc_bin), audio_convert, audio_postenc_convert, audio_filter, audio_resample, NULL);
-	gst_ret = gst_element_link_many(audio_convert, audio_resample, audio_filter, audio_postenc_convert, NULL);
+	gst_bin_add_many(GST_BIN(audio_enc_bin), audio_convert, audio_postenc_convert, audio_filter, audio_resample, audio_encoder, NULL);
+	gst_ret = gst_element_link_many(audio_convert, audio_resample, audio_filter, audio_postenc_convert, audio_encoder, NULL);
 	if (gst_ret != TRUE) {
 		ms_error("Failed to link elements into decoder_bin");
 		MS_SAFE_UNREF(audio_enc_bin);
 	}
 
-	__ms_add_ghostpad(audio_postenc_convert, "src", audio_enc_bin, "src");
+	__ms_add_ghostpad(audio_encoder, "src", audio_enc_bin, "src");
 	__ms_add_ghostpad(audio_convert, "sink", audio_enc_bin, "sink");
 
 	return audio_enc_bin;
@@ -1206,9 +1210,9 @@ gboolean __ms_rtp_element_prepare(media_streamer_node_s *ms_node)
 		ret = ret && gst_element_link_pads(rtpbin, "send_rtcp_src_0", rtcp_el, "sink");
 
 		g_object_set_property(G_OBJECT(rtp_el), MEDIA_STREAMER_PARAM_PORT, val);
-		g_object_set(GST_OBJECT(rtp_el), "sync", FALSE, NULL);
 		g_object_set(GST_OBJECT(rtp_el), MEDIA_STREAMER_PARAM_HOST, host, NULL);
 		g_object_set(G_OBJECT(rtcp_el), MEDIA_STREAMER_PARAM_PORT, (g_value_get_int(val) + 1), NULL);
+		g_object_set(GST_OBJECT(rtcp_el), "sync", FALSE, NULL);
 		g_object_set(GST_OBJECT(rtcp_el), "async", FALSE, NULL);
 		g_object_set(GST_OBJECT(rtcp_el), MEDIA_STREAMER_PARAM_HOST, host, NULL);
 	}
@@ -1230,9 +1234,9 @@ gboolean __ms_rtp_element_prepare(media_streamer_node_s *ms_node)
 		ret = ret && gst_element_link_pads(rtpbin, "send_rtcp_src_1", rtcp_el, "sink");
 
 		g_object_set_property(G_OBJECT(rtp_el), MEDIA_STREAMER_PARAM_PORT, val);
-		g_object_set(GST_OBJECT(rtp_el), "sync", FALSE, NULL);
 		g_object_set(GST_OBJECT(rtp_el), MEDIA_STREAMER_PARAM_HOST, host, NULL);
 		g_object_set(G_OBJECT(rtcp_el), MEDIA_STREAMER_PARAM_PORT, (g_value_get_int(val) + 1), NULL);
+		g_object_set(GST_OBJECT(rtcp_el), "sync", FALSE, NULL);
 		g_object_set(GST_OBJECT(rtcp_el), "async", FALSE, NULL);
 		g_object_set(GST_OBJECT(rtcp_el), MEDIA_STREAMER_PARAM_HOST, host, NULL);
 	}

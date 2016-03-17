@@ -133,6 +133,7 @@ typedef struct {
 #define DEFAULT_GENERATE_DOT                FALSE
 #define DEFAULT_USE_DECODEBIN               FALSE
 #define DEFAULT_QUEUE                       "queue"
+#define DEFAULT_FILTER                      "capsfilter"
 #define DEFAULT_TYPEFIND                    "typefind"
 #define DEFAULT_DECODEBIN                   "decodebin"
 #define DEFAULT_AUDIO_SOURCE                "alsasrc"
@@ -165,13 +166,15 @@ typedef struct {
 #define DEFAULT_VIDEO_RTPDEPAY              "rtph263depay"
 
 /* audio format defaults */
-#define DEFAULT_AUDIO_PARSER                "aacparse"
-#define DEFAULT_AUDIO_RTPPAY                "rtpL16pay"
-#define DEFAULT_AUDIO_RTPDEPAY              "rtpL16depay"
+#define DEFAULT_AUDIO_ENCODER               "amrnbenc"
+#define DEFAULT_AUDIO_DECODER               "amrnbdec"
+#define DEFAULT_AUDIO_PARSER                "amrparse"
+#define DEFAULT_AUDIO_RTPPAY                "rtpamrpay"
+#define DEFAULT_AUDIO_RTPDEPAY              "rtpamrdepay"
 
 #define DEFAULT_AUDIO "S16LE"
-#define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,width=1280,height=720"
-#define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=44100,format="DEFAULT_AUDIO
+#define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,format=I420,width=1280,height=720"
+#define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=8000,format="DEFAULT_AUDIO
 #define MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT(format) "video/x-"format",stream-format=byte-stream"
 
 #define MS_ELEMENT_IS_OUTPUT(el) g_strrstr(el, "out")

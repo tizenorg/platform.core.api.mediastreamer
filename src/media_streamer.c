@@ -589,8 +589,24 @@ int media_streamer_node_link(media_streamer_node_h src_node, const char *src_pad
 	gchar *src_element_name = gst_element_get_name(ms_src_node->gst_element);
 	gchar *sink_element_name = gst_element_get_name(ms_dest_node->gst_element);
 
-	gboolean link_ret = gst_element_link_pads(ms_src_node->gst_element, src_pad_name,
-											  ms_dest_node->gst_element, sink_pad_name);
+	GstCaps *src_pad_caps = NULL;
+	GstCaps *sink_pad_caps = NULL;
+	GValue *val = NULL;
+
+	val = (GValue *) g_object_get_data(G_OBJECT(ms_src_node->gst_element), src_pad_name);
+	if (val) {
+		src_pad_caps = GST_CAPS(gst_value_get_caps(val));
+		ms_info("Pad [%s] of node [%s] was set with caps [%s]\n", src_pad_name, ms_src_node->name, gst_caps_to_string(src_pad_caps));
+	}
+
+	val = (GValue *) g_object_get_data(G_OBJECT(ms_dest_node->gst_element), sink_pad_name);
+	if (val) {
+		sink_pad_caps = GST_CAPS(gst_value_get_caps(val));
+		ms_info("Pad [%s] of node [%s] was set with caps [%s]\n", src_pad_name, ms_src_node->name, gst_caps_to_string(sink_pad_caps));
+	}
+
+	gboolean link_ret = gst_element_link_pads_filtered(ms_src_node->gst_element, src_pad_name,
+											  ms_dest_node->gst_element, sink_pad_name, src_pad_caps ? src_pad_caps : sink_pad_caps);
 	if (!link_ret) {
 		ms_error("Can not link [%s]->%s pad to [%s]->%s pad, ret code [%d] ", ms_src_node->name, src_pad_name, ms_dest_node->name, sink_pad_name, link_ret);
 		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;

@@ -983,6 +983,7 @@ GstElement *__ms_video_encoder_element_create(dictionary * dict, media_format_mi
 
 	GstElement *video_scale = __ms_element_create(DEFAULT_VIDEO_SCALE, NULL);
 	GstElement *video_convert = __ms_element_create(DEFAULT_VIDEO_CONVERT, NULL);
+	GstElement *video_rate = __ms_element_create(DEFAULT_VIDEO_RATE, NULL);
 
 	format_prefix = g_strdup_printf("%s:encoder", __ms_convert_mime_to_string(mime));
 	plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_ENCODER);
@@ -999,17 +1000,16 @@ GstElement *__ms_video_encoder_element_create(dictionary * dict, media_format_mi
 	gboolean gst_ret = FALSE;
 	GstElement *encoder_bin = gst_bin_new("video_encoder");
 	GstElement *filter = __ms_element_create("capsfilter", NULL);
-	ms_retvm_if(!video_convert || !video_scale || !filter || !encoder_elem || !encoder_bin || !encoder_parser, (GstElement *) NULL, "Error: creating elements for video encoder bin");
+	ms_retvm_if(!video_convert || !video_rate || !video_scale || !filter || !encoder_elem || !encoder_bin || !encoder_parser, (GstElement *) NULL, "Error: creating elements for video encoder bin");
 
 	format_prefix = g_strdup_printf(MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT("%s"), __ms_convert_mime_to_string(mime));
 	GstCaps *videoCaps = gst_caps_from_string(format_prefix);
 	g_object_set(G_OBJECT(filter), "caps", videoCaps, NULL);
 	MS_SAFE_FREE(format_prefix);
-
 	gst_caps_unref(videoCaps);
 
-	gst_bin_add_many(GST_BIN(encoder_bin), video_convert, video_scale, encoder_elem, filter, encoder_parser, NULL);
-	gst_ret = gst_element_link_many(video_convert, video_scale, encoder_elem, filter, encoder_parser, NULL);
+	gst_bin_add_many(GST_BIN(encoder_bin), video_convert, video_scale, video_rate, encoder_elem, filter, encoder_parser, NULL);
+	gst_ret = gst_element_link_many(video_convert, video_scale, video_rate, encoder_elem, filter, encoder_parser, NULL);
 	if (gst_ret != TRUE) {
 		ms_error("Failed to link elements into encoder_bin");
 		MS_SAFE_UNREF(encoder_bin);
@@ -1085,23 +1085,25 @@ GstElement *__ms_audio_encoder_element_create(void)
 {
 	gboolean gst_ret = FALSE;
 	GstElement *audio_convert = __ms_element_create("audioconvert", NULL);
+	GstElement *audio_resample = __ms_element_create("audioresample", NULL);
 	GstElement *audio_filter = __ms_element_create("capsfilter", NULL);
+	GstElement *audio_postenc_convert = __ms_element_create("audioconvert", NULL);
 	GstElement *audio_enc_bin = gst_bin_new("audio_encoder");
-	ms_retvm_if(!audio_convert || !audio_filter || !audio_enc_bin, (GstElement *) NULL, "Error: creating elements for encoder bin");
+	ms_retvm_if(!audio_convert || !audio_postenc_convert || !audio_filter || !audio_enc_bin, (GstElement *) NULL, "Error: creating elements for encoder bin");
 
 	GstCaps *audioCaps = gst_caps_from_string(MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT);
 	g_object_set(G_OBJECT(audio_filter), "caps", audioCaps, NULL);
 	gst_caps_unref(audioCaps);
 
-	gst_bin_add_many(GST_BIN(audio_enc_bin), audio_convert, audio_filter, NULL);
-	gst_ret = gst_element_link_many(audio_filter, audio_convert, NULL);
+	gst_bin_add_many(GST_BIN(audio_enc_bin), audio_convert, audio_postenc_convert, audio_filter, audio_resample, NULL);
+	gst_ret = gst_element_link_many(audio_convert, audio_resample, audio_filter, audio_postenc_convert, NULL);
 	if (gst_ret != TRUE) {
 		ms_error("Failed to link elements into decoder_bin");
 		MS_SAFE_UNREF(audio_enc_bin);
 	}
 
-	__ms_add_ghostpad(audio_convert, "src", audio_enc_bin, "src");
-	__ms_add_ghostpad(audio_filter, "sink", audio_enc_bin, "sink");
+	__ms_add_ghostpad(audio_postenc_convert, "src", audio_enc_bin, "src");
+	__ms_add_ghostpad(audio_convert, "sink", audio_enc_bin, "sink");
 
 	return audio_enc_bin;
 }

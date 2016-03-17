@@ -114,6 +114,16 @@ typedef struct __media_streamer_ini {
 } media_streamer_ini_t;
 
 /**
+ * @brief Media Streamer format type handle.
+ *
+ * @since_tizen 3.0
+ */
+typedef struct {
+	media_format_mimetype_e format;
+	char *format_name;
+} format_s;
+
+/**
  * @brief Media Streamer signal structure.
  *
  * @since_tizen 3.0
@@ -269,6 +279,13 @@ gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path, char *default
  *
  * @since_tizen 3.0
  */
+const gchar *__ms_convert_mime_to_string_format(media_format_mimetype_e mime);
+
+/**
+ * @brief Converts Media Format mime type into Caps media format string.
+ *
+ * @since_tizen 3.0
+ */
 const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime);
 
 /**
@@ -283,7 +300,7 @@ const gchar *__ms_convert_mime_to_rtp_format(media_format_mimetype_e mime);
  *
  * @since_tizen 3.0
  */
-media_format_mimetype_e __ms_convert_string_format_to_mime(const char *format_type);
+media_format_mimetype_e __ms_convert_string_format_to_media_format(const char *format_type);
 
 /**
  * @brief Creates Media streamer signal structure,

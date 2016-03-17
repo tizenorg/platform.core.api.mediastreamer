@@ -144,6 +144,7 @@ typedef struct {
 #define DEFAULT_EVAS_SINK                   "evaspixmapsink"
 #define DEFAULT_VIDEO_SCALE                 "videoscale"
 #define DEFAULT_VIDEO_CONVERT               "videoconvert"
+#define DEFAULT_VIDEO_RATE                  "videorate"
 #define DEFAULT_TEXT_OVERLAY                "textoverlay"
 #define DEFAULT_AUDIO_CONVERT               "audioconvert"
 #define DEFAULT_AUDIO_RESAMPLE              "audioresample"
@@ -178,6 +179,7 @@ typedef struct {
 #define MS_ELEMENT_IS_AUDIO(el) g_strrstr(el, "audio")
 #define MS_ELEMENT_IS_VIDEO(el) g_strrstr(el, "video")
 #define MS_ELEMENT_IS_IMAGE(el) g_strrstr(el, "image")
+#define MS_ELEMENT_IS_TEXT(el) g_strrstr(el, "text")
 
 #define MS_RTP_PAD_VIDEO_IN "video_in"
 #define MS_RTP_PAD_AUDIO_IN "audio_in"
@@ -187,7 +189,6 @@ typedef struct {
 #define MEDIA_STREAMER_PARAM_AUDIO_IN_FORMAT MS_RTP_PAD_AUDIO_IN"_format"
 
 #define MS_ELEMENT_IS_RTP(el) g_strrstr(el, "rtp_container")
-#define MS_ELEMENT_IS_TEXT(el) g_strrstr(el, "text")
 #define MS_ELEMENT_IS_ENCODER(el) g_strrstr(el, "encoder")
 #define MS_ELEMENT_IS_DECODER(el) g_strrstr(el, "decoder")
 

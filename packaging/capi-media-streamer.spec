@@ -36,7 +36,7 @@ MediaStreamer Library in Tizen Native API (DEV).
 %setup -q
 cp %{SOURCE1001} .
 
-%define ini_path /usr/etc/mmfw_media_streamer.ini
+%define ini_path %{_sysconfdir}/multimedia/mmfw_media_streamer.ini
 
 %build
 flags="-DMEDIA_STREAMER_INI_PATH=\\\"%{ini_path}\\\""

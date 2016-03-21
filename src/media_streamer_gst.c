@@ -710,76 +710,45 @@ static void _sink_node_unlock_state(const GValue * item, gpointer user_data)
 		gst_element_sync_state_with_parent(sink_element);
 	}
 }
-static void __decodebin_nomore_pads_streamer(GstElement * decodebin, media_streamer_s *ms_streamer)
+
+static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *ms_streamer, gboolean is_server_part)
 {
-	GstElement *found_element = NULL;
-	GList *iterator = NULL;
-	GList *list = ms_streamer->pads_types_list;
-	const gchar *new_pad_type = NULL;
+	GstElement *found_element = gst_pad_get_parent_element(src_pad);
+	const gchar *new_pad_type = __ms_get_pad_type(src_pad);
 
-	for (iterator = list; iterator; iterator = iterator->next) {
-		GstPad *new_pad = GST_PAD(iterator->data);
-		new_pad_type = __ms_get_pad_type(new_pad);
-		found_element = gst_pad_get_parent_element(new_pad);
-
-		if (MS_ELEMENT_IS_VIDEO(new_pad_type)) {
-			if(__ms_bin_find_element_by_klass(ms_streamer->topology_bin, NULL, NULL, MEDIA_STREAMER_OVERLAY_KLASS, NULL)) {
-				found_element = __ms_combine_next_element(found_element, new_pad, ms_streamer->topology_bin, MEDIA_STREAMER_OVERLAY_KLASS, NULL, DEFAULT_TEXT_OVERLAY);
-				new_pad = NULL;
-			}
-			found_element = __ms_combine_next_element(found_element, new_pad, ms_streamer->topology_bin, NULL, NULL, DEFAULT_QUEUE);
+	if (MS_ELEMENT_IS_VIDEO(new_pad_type)) {
+		if (__ms_bin_find_element_by_klass(ms_streamer->topology_bin, NULL, NULL, MEDIA_STREAMER_OVERLAY_KLASS, NULL)) {
+			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_OVERLAY_KLASS, NULL, DEFAULT_TEXT_OVERLAY);
+			src_pad = NULL;
+		}
+		if (is_server_part) {
+			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, NULL, NULL, DEFAULT_QUEUE);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "video_encoder", NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
-		} else if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
-			found_element = __ms_combine_next_element(found_element, new_pad, ms_streamer->topology_bin, NULL, NULL, DEFAULT_QUEUE);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "audio_encoder", NULL);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
-		} else if (MS_ELEMENT_IS_TEXT(new_pad_type)) {
-			found_element = __ms_combine_next_element(found_element, new_pad, ms_streamer->topology_bin, MEDIA_STREAMER_OVERLAY_KLASS, NULL, DEFAULT_TEXT_OVERLAY);
 		} else {
-			ms_error("Unsupported pad type [%s]!", new_pad_type);
-			return;
-		}
-		__ms_generate_dots(ms_streamer->pipeline, "after_sink_linked");
-	}
-}
-
-static void __decodebin_nomore_pads_client(GstElement * decodebin, media_streamer_s *ms_streamer)
-{
-
-	GstElement *found_element = NULL;
-	GList *iterator = NULL;
-	GList *list = ms_streamer->pads_types_list;
-	const gchar *pad_type = NULL;
-
-	for (iterator = list; iterator; iterator = iterator->next) {
-		GstPad *src_pad = GST_PAD(iterator->data);
-		pad_type = __ms_get_pad_type(src_pad);
-		found_element = gst_pad_get_parent_element(src_pad);
-
-		if (MS_ELEMENT_IS_AUDIO(pad_type)) {
-			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_CONVERTER_KLASS, NULL, DEFAULT_AUDIO_CONVERT);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_QUEUE_KLASS, NULL, DEFAULT_QUEUE);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_SINK_KLASS, NULL, NULL);
-		} else if (MS_ELEMENT_IS_VIDEO(pad_type)) {
-			if(__ms_bin_find_element_by_klass(ms_streamer->topology_bin, NULL, NULL, MEDIA_STREAMER_OVERLAY_KLASS, NULL)) {
-				found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_OVERLAY_KLASS, NULL, DEFAULT_TEXT_OVERLAY);
-				src_pad = NULL;
-			}
 			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_CONVERTER_KLASS, NULL, DEFAULT_VIDEO_CONVERT);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_QUEUE_KLASS, NULL, DEFAULT_QUEUE);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_SINK_KLASS, NULL, NULL);
-		} else if (MS_ELEMENT_IS_TEXT(pad_type)) {
-			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_OVERLAY_KLASS, NULL, DEFAULT_TEXT_OVERLAY);
-		} else {
-			ms_error("Unsupported pad type [%s]!", pad_type);
-			return;
 		}
-		__ms_generate_dots(ms_streamer->pipeline, "after_sink_linked");
+	} else if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
+		if (is_server_part) {
+			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, NULL, NULL, DEFAULT_QUEUE);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "audio_encoder", NULL);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
+		} else {
+			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_CONVERTER_KLASS, NULL, DEFAULT_AUDIO_CONVERT);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_QUEUE_KLASS, NULL, DEFAULT_QUEUE);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_SINK_KLASS, NULL, NULL);
+		}
+	} else if (MS_ELEMENT_IS_TEXT(new_pad_type)) {
+		found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_OVERLAY_KLASS, NULL, DEFAULT_TEXT_OVERLAY);
+	} else {
+		ms_error("Unsupported pad type [%s]!", new_pad_type);
+		return;
 	}
-	MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, _sink_node_unlock_state, NULL);
+	__ms_generate_dots(ms_streamer->pipeline, "after_sink_linked");
 }
 
 static void __decodebin_nomore_pads_cb(GstElement * decodebin, gpointer user_data)
@@ -789,26 +758,27 @@ static void __decodebin_nomore_pads_cb(GstElement * decodebin, gpointer user_dat
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	char *param_value = NULL;
+	gboolean is_server_part = FALSE;
 	media_streamer_node_s *rtp_node = (media_streamer_node_s *)g_hash_table_lookup(ms_streamer->nodes_table, "rtp_container");
 
+	/* It`s server part of Streaming Scenario*/
 	if (rtp_node) {
-		/* It`s Streaming Scenario*/
+		char *param_value = NULL;
 		media_streamer_node_get_param(rtp_node, MEDIA_STREAMER_PARAM_VIDEO_OUT_PORT, &param_value);
 		if (param_value && (strtol(param_value, NULL, 10) > 0))
+			is_server_part = TRUE;
 
-			/* It`s Streamer part of Streaming */
-			__decodebin_nomore_pads_streamer(decodebin, ms_streamer);
-		else
-			/* It`s Client part of Streaming */
-			__decodebin_nomore_pads_client(decodebin, ms_streamer);
-	} else {
-
-		/* It`s Client Scenario*/
-		__decodebin_nomore_pads_client(decodebin, ms_streamer);
+		MS_SAFE_FREE(param_value);
 	}
 
-	MS_SAFE_FREE(param_value);
+	GList *iterator = NULL;
+	GList *list = ms_streamer->pads_types_list;
+	for (iterator = list; iterator; iterator = iterator->next) {
+		GstPad *src_pad = GST_PAD(iterator->data);
+		__decodebin_nomore_pads_combine(src_pad, ms_streamer, is_server_part);
+	}
+
+	MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, _sink_node_unlock_state, NULL);
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 }
 

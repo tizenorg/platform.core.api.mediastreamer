@@ -698,7 +698,6 @@ static gint __decodebin_autoplug_select_cb(GstElement * bin, GstPad * pad, GstCa
 		}
 	}
 
-DONE:
 	return result;
 }
 

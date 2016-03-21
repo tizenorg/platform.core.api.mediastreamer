@@ -19,6 +19,60 @@
 #include <media_streamer.h>
 #include <media_streamer_util.h>
 
+format_s format_table[] = {
+	/* Audio - ENCODED */
+	{MEDIA_FORMAT_L16, "audio/x-raw"},
+	{MEDIA_FORMAT_ALAW, "audio/x-alaw"},
+	{MEDIA_FORMAT_ULAW, "audio/x-mulaw"},
+	{MEDIA_FORMAT_AMR, "audio/AMR"},
+	{MEDIA_FORMAT_AMR_NB, "audio/AMR"},
+	{MEDIA_FORMAT_AMR_WB, "audio/AMR-WB"},
+	{MEDIA_FORMAT_G729, "audio/G729"},
+	{MEDIA_FORMAT_AAC, "audio/mpeg"},
+	{MEDIA_FORMAT_AAC_LC, "audio/mpeg"},
+	{MEDIA_FORMAT_AAC_HE, "audio/mpeg"},
+	{MEDIA_FORMAT_AAC_HE_PS, "audio/mpeg"},
+	{MEDIA_FORMAT_MP3, "audio/mpeg"},
+	/* Audio - RAW */
+	{MEDIA_FORMAT_PCM, "S16LE"},
+	/* {MEDIA_FORMAT_PCMA, "audio/x-alaw"}, */
+	/* {MEDIA_FORMAT_PCMU, "audio/x-mulaw"}, */
+	/* Video - ENCODED */
+	{MEDIA_FORMAT_H261, "video/x-h261"},
+	{MEDIA_FORMAT_H263, "video/x-h263"},
+	{MEDIA_FORMAT_H263P, "video/x-h263"},
+	{MEDIA_FORMAT_H264_SP, "video/x-h264"},
+	{MEDIA_FORMAT_H264_MP, "video/x-h264"},
+	{MEDIA_FORMAT_H264_HP, "video/x-h264"},
+	{MEDIA_FORMAT_MJPEG, "image/jpeg"},
+	{MEDIA_FORMAT_MPEG1, "video/mpeg"},
+	{MEDIA_FORMAT_MPEG2_SP, "video/mpeg"},
+	{MEDIA_FORMAT_MPEG2_MP, "video/mpeg"},
+	{MEDIA_FORMAT_MPEG2_HP, "video/mpeg"},
+	{MEDIA_FORMAT_MPEG4_SP, "video/mpeg"},
+	{MEDIA_FORMAT_MPEG4_ASP, "video/mpeg"},
+	{MEDIA_FORMAT_HEVC, "video/x-h265"},
+	{MEDIA_FORMAT_VP8, "video/x-vp8"},
+	{MEDIA_FORMAT_VP9, "video/x-vp9"},
+	{MEDIA_FORMAT_VC1, "video/x-wmv"},
+	/* Video - RAW */
+	{MEDIA_FORMAT_I420, "I420"},
+	{MEDIA_FORMAT_NV12, "NV12"},
+	{MEDIA_FORMAT_NV12T, "NV12T"},
+	{MEDIA_FORMAT_YV12, "YV12"},
+	{MEDIA_FORMAT_NV21, "NV21"},
+	{MEDIA_FORMAT_NV16, "NV16"},
+	{MEDIA_FORMAT_YUYV, "YUYV"},
+	{MEDIA_FORMAT_UYVY, "UYVY"},
+	{MEDIA_FORMAT_422P, "422P"},
+	{MEDIA_FORMAT_RGB565, "RGB565"},
+	{MEDIA_FORMAT_RGB888, "RGB888"},
+	{MEDIA_FORMAT_RGBA, "RGBA"},
+	{MEDIA_FORMAT_ARGB, "ARGB"},
+	{MEDIA_FORMAT_NATIVE_VIDEO, "NATIVE_VIDEO"},
+	{MEDIA_FORMAT_MAX, NULL}
+};
+
 static void __ms_check_ini_status(void);
 
 gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path, char *default_str)
@@ -145,6 +199,20 @@ static void __ms_check_ini_status(void)
 	}
 }
 
+const gchar *__ms_convert_mime_to_string_format(media_format_mimetype_e mime)
+{
+	gchar *format_name = NULL;
+	int it_format;
+	for (it_format = 0; format_table[it_format].format != MEDIA_FORMAT_MAX; it_format++) {
+		if (mime == format_table[it_format].format) {
+			format_name = format_table[it_format].format_name;
+			break;
+		}
+	}
+
+	return format_name;
+}
+
 const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime)
 {
 	switch (mime) {
@@ -186,22 +254,18 @@ const gchar *__ms_convert_mime_to_rtp_format(media_format_mimetype_e mime)
 	}
 }
 
-media_format_mimetype_e __ms_convert_string_format_to_mime(const char *format_type)
+media_format_mimetype_e __ms_convert_string_format_to_media_format(const char *format_type)
 {
-	if (g_strrstr(format_type, "I420")) {
-		return MEDIA_FORMAT_I420;
-	} else if (g_strrstr(format_type, "YV12")) {
-		return MEDIA_FORMAT_YV12;
-	} else if (g_strrstr(format_type, "h263")) {
-		return MEDIA_FORMAT_H263;
-	} else if (g_strrstr(format_type, "h264")) {
-		return MEDIA_FORMAT_H264_SP;
-	} else if (g_strrstr(format_type, DEFAULT_AUDIO)) {
-		return MEDIA_FORMAT_PCM;
-	} else {
-		ms_error("Invalid or Unsupported media format [%s].", format_type);
-		return MEDIA_FORMAT_NONE;
+	media_format_mimetype_e mime = 0;
+	int it_format;
+	for (it_format = 0; format_table[it_format].format != MEDIA_FORMAT_MAX; it_format++) {
+		if (g_strrstr(format_type, format_table[it_format].format_name)) {
+			mime = format_table[it_format].format;
+			break;
+		}
 	}
+
+	return mime;
 }
 
 void __ms_signal_create(GList **sig_list, GstElement *obj, const char *sig_name, GCallback cb, gpointer user_data)

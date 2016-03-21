@@ -83,37 +83,6 @@ static gboolean __ms_add_ghostpad(GstElement *gst_element, const char *pad_name,
 	return ret;
 }
 
-static GObject *__ms_get_property_owner(GstElement *element, const gchar *key, GValue *value)
-{
-	GParamSpec *param = NULL;
-	GObject *obj = NULL;
-
-	if (GST_IS_CHILD_PROXY(element)) {
-		int i;
-		const int childs_count = gst_child_proxy_get_children_count(GST_CHILD_PROXY(element));
-
-		for (i = 0; (i < childs_count) && (param == NULL); ++i) {
-			obj = gst_child_proxy_get_child_by_index(GST_CHILD_PROXY(element), i);
-			param = g_object_class_find_property(G_OBJECT_GET_CLASS(obj), key);
-		}
-		ms_retvm_if(param == NULL || obj == NULL, NULL, "Error: Bin object does not have property [%s].", key);
-	} else {
-		obj = G_OBJECT(element);
-		param = g_object_class_find_property(G_OBJECT_GET_CLASS(obj), key);
-	}
-
-	g_value_init(value, param->value_type);
-
-	if (!(param->flags & G_PARAM_WRITABLE)) {
-		/* Skip properties which user can not change. */
-		ms_error("Error: node param [%s] is not writable!", key);
-		return NULL;
-	}
-	ms_info("%-20s: %s\n", g_param_spec_get_name(param), g_param_spec_get_blurb(param));
-
-	return obj;
-}
-
 /* This unlinks from its peer and ghostpads on its way */
 static gboolean __ms_pad_peer_unlink(GstPad *pad)
 {
@@ -1452,43 +1421,33 @@ int __ms_pipeline_create(media_streamer_s *ms_streamer)
 static GstCaps *__ms_create_caps_from_fmt(media_format_h fmt)
 {
 	GstCaps *caps = NULL;
+	gchar *caps_name = NULL;
 	media_format_mimetype_e mime;
-	gchar *format_name = NULL;
-	int width;
-	int height;
-	int avg_bps;
-	int max_bps;
-	int channel;
-	int samplerate;
-	int bit;
+	int width, height, avg_bps, max_bps, channel, samplerate, bit;
 
-	if (media_format_get_video_info(fmt, &mime, &width, &height, &avg_bps, &max_bps) == MEDIA_PACKET_ERROR_NONE) {
+	if (!media_format_get_audio_info(fmt, &mime, &channel, &samplerate, &bit, &avg_bps)) {
+		if (MEDIA_FORMAT_RAW == (mime & MEDIA_FORMAT_RAW))
+			caps = gst_caps_new_simple("audio/x-raw", "channels", G_TYPE_INT, channel, "format",
+								G_TYPE_STRING, __ms_convert_mime_to_string_format(mime), "rate", G_TYPE_INT, samplerate, NULL);
+		else if (MEDIA_FORMAT_ENCODED == (mime & MEDIA_FORMAT_ENCODED))
+			caps = gst_caps_new_simple(__ms_convert_mime_to_string_format(mime), "channels",G_TYPE_INT, channel, "rate", G_TYPE_INT, samplerate, NULL);
+		caps_name = gst_caps_to_string(caps);
+		ms_info("Creating Audio Caps from media format [%s]", caps_name);
 
-		ms_info("Creating video Caps from media format [width=%d, height=%d, bps=%d, mime=%d]", width, height, avg_bps, mime);
+	} else if (!media_format_get_video_info(fmt, &mime, &width, &height, &avg_bps, &max_bps)) {
+		if (MEDIA_FORMAT_RAW == (mime & MEDIA_FORMAT_RAW))
+			caps = gst_caps_new_simple("video/x-raw", "framerate", GST_TYPE_FRACTION, max_bps,
+					avg_bps, "format", G_TYPE_STRING, __ms_convert_mime_to_string_format(mime), "width", G_TYPE_INT, width, "height", G_TYPE_INT, height, NULL);
+		else if (MEDIA_FORMAT_ENCODED == (mime & MEDIA_FORMAT_ENCODED))
+			caps = gst_caps_new_simple(__ms_convert_mime_to_string_format(mime), "framerate", GST_TYPE_FRACTION, max_bps,
+							avg_bps, "width", G_TYPE_INT, width, "height", G_TYPE_INT, height, NULL);
+		caps_name = gst_caps_to_string(caps);
+		ms_info("Creating Video Caps from media format [%s]", caps_name);
 
-		if (mime & MEDIA_FORMAT_RAW) {
-			format_name = g_strdup(__ms_convert_mime_to_string(mime));
-			caps = gst_caps_new_simple("video/x-raw", "framerate", GST_TYPE_FRACTION, max_bps, avg_bps, "format", G_TYPE_STRING, format_name, "width", G_TYPE_INT, width, "height", G_TYPE_INT, height, NULL);
-		} else {
-			/*mime & MEDIA_FORMAT_ENCODED */
-			format_name = g_strdup_printf("video/x-%s", __ms_convert_mime_to_string(mime));
-			caps = gst_caps_new_simple(format_name, "framerate", GST_TYPE_FRACTION, max_bps, avg_bps, "width", G_TYPE_INT, width, "height", G_TYPE_INT, height, NULL);
-		}
+	} else
+		ms_error("Error getting media format information");
 
-	} else if (media_format_get_audio_info(fmt, &mime, &channel, &samplerate, &bit, &avg_bps) == MEDIA_PACKET_ERROR_NONE) {
-		ms_info("Creating audio Caps from media format [channel=%d, samplerate=%d, bit=%d, avg_bps=%d, mime=%d]", channel, samplerate, bit, avg_bps, mime);
-
-		if (mime & MEDIA_FORMAT_RAW) {
-			format_name = g_strdup(__ms_convert_mime_to_string(mime));
-			caps = gst_caps_new_simple("audio/x-raw", "channels", G_TYPE_INT, channel, "format", G_TYPE_STRING, format_name, "rate", G_TYPE_INT, samplerate, NULL);
-		} else {
-			ms_error("Encoded audio formats does not supported yet.");
-		}
-	} else {
-		ms_error("Failed getting media info from fmt.");
-	}
-	MS_SAFE_GFREE(format_name);
-
+	MS_SAFE_GFREE(caps_name);
 	return caps;
 }
 
@@ -1524,14 +1483,14 @@ static media_format_h __ms_create_fmt_from_caps(GstCaps *caps)
 		gst_structure_get_fraction(pad_struct, "framerate", &max_bps, &avg_bps);
 		gst_structure_get_int(pad_struct, "height", &height);
 
-		media_format_set_video_mime(fmt, __ms_convert_string_format_to_mime(pad_format));
+		media_format_set_video_mime(fmt, __ms_convert_string_format_to_media_format(pad_format));
 		media_format_set_video_width(fmt, width);
 		media_format_set_video_height(fmt, height);
 		media_format_set_video_avg_bps(fmt, avg_bps);
 		media_format_set_video_max_bps(fmt, max_bps);
 	} else if (MS_ELEMENT_IS_AUDIO(pad_type)) {
 		int channels, bps;
-		media_format_set_audio_mime(fmt, __ms_convert_string_format_to_mime(pad_format));
+		media_format_set_audio_mime(fmt, __ms_convert_string_format_to_media_format(pad_format));
 		gst_structure_get_int(pad_struct, "channels", &channels);
 		media_format_set_audio_channel(fmt, channels);
 		gst_structure_get_int(pad_struct, "rate", &bps);
@@ -1590,38 +1549,33 @@ int __ms_element_pad_names(GstElement *gst_element, GstPadDirection pad_type, ch
 int __ms_element_get_pad_fmt(GstElement *gst_element, const char *pad_name, media_format_h *fmt)
 {
 	GstCaps *allowed_caps = NULL;
-	GstCaps *property_caps = NULL;
-	GValue value = G_VALUE_INIT;
+	GstCaps *format_caps = NULL;
 
 	ms_retvm_if(gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Element handle is NULL");
 
 	GstPad *pad = gst_element_get_static_pad(gst_element, pad_name);
 	ms_retvm_if(pad == NULL, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Fail to get pad [%s] from element [%s].", pad_name, GST_ELEMENT_NAME(gst_element));
 
-	GParamSpec *param = g_object_class_find_property(G_OBJECT_GET_CLASS(gst_element), "caps");
-	if (param) {
-		g_value_init(&value, param->value_type);
-		if (param->flags & G_PARAM_READWRITE) {
-			g_object_get_property(G_OBJECT(gst_element), "caps", &value);
-			property_caps = GST_CAPS(gst_value_get_caps(&value));
-		}
-		g_value_unset(&value);
-	}
+	GValue *value = (GValue *) g_object_get_data(G_OBJECT(gst_element), pad_name);
+	if (value)
+		format_caps = GST_CAPS(gst_value_get_caps(value));
+	else
+		ms_info(" No any format is set for pad [%s]", pad_name);
 
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 	allowed_caps = gst_pad_get_allowed_caps(pad);
 	if (allowed_caps) {
 		if (gst_caps_is_empty(allowed_caps) || gst_caps_is_any(allowed_caps)) {
-			if (property_caps)
-				*fmt = __ms_create_fmt_from_caps(property_caps);
+			if (format_caps)
+				*fmt = __ms_create_fmt_from_caps(format_caps);
 			else
 				ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 		} else {
 			*fmt = __ms_create_fmt_from_caps(allowed_caps);
 		}
 	} else {
-		if (property_caps)
-			*fmt = __ms_create_fmt_from_caps(property_caps);
+		if (format_caps)
+			*fmt = __ms_create_fmt_from_caps(format_caps);
 		else
 			ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
@@ -1635,19 +1589,31 @@ int __ms_element_get_pad_fmt(GstElement *gst_element, const char *pad_name, medi
 
 int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, media_format_h fmt)
 {
-	ms_retvm_if(!node || !pad_name || !fmt,  MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	ms_retvm_if(!node || !pad_name || !fmt, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
+	gboolean can_accept = FALSE;
 
-	GValue value = G_VALUE_INIT;
-	GObject *obj = __ms_get_property_owner(node->gst_element, "caps", &value);
-	ms_retvm_if(!obj,  MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Can't find object");
+	GstCaps *fmt_caps = __ms_create_caps_from_fmt(fmt);
+	ms_retvm_if(!fmt_caps, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Can't convert fmt into Caps");
 
-	GstCaps *caps = __ms_create_caps_from_fmt(fmt);
-	ms_retvm_if(!caps,  MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Can't convert fmt into Caps");
+	GstElementFactory *factory = gst_element_get_factory(node->gst_element);
+	GstPad *node_pad = gst_element_get_static_pad(node->gst_element, pad_name);
 
-	gst_value_set_caps(&value, caps);
-	g_object_set_property(obj, "caps", &value);
-	g_value_unset(&value);
-	gst_caps_unref(caps);
+	if (GST_PAD_IS_SRC(node_pad))
+		can_accept  = gst_element_factory_can_src_any_caps(factory, fmt_caps);
+	else if (GST_PAD_IS_SINK(node_pad))
+		can_accept  = gst_element_factory_can_sink_any_caps(factory, fmt_caps);
+	else
+		ms_error(" Node [%s] doesn`t have valid pad [%s]", node->name, pad_name);
+
+	if (!can_accept) {
+		if (fmt_caps)
+			gst_caps_unref(fmt_caps);
+		ms_error("Node`s pad [%s] can`t be set with the given format", pad_name);
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	} else {
+		MS_SET_INT_CAPS_PARAM(node->gst_element, pad_name, fmt_caps);
+		ms_info("Pad [%s] of node [%s] was set with given format", pad_name, node->name);
+	}
 
 	return MEDIA_STREAMER_ERROR_NONE;
 }

@@ -468,6 +468,10 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 	media_streamer_s *ms_streamer = (media_streamer_s *) user_data;
 	GstElement *src_element = GST_ELEMENT(g_value_get_object(item));
 
+	media_streamer_node_s *found_node = (media_streamer_node_s *) g_hash_table_lookup(ms_streamer->nodes_table, GST_ELEMENT_NAME(src_element));
+	if (!found_node)
+		return;
+
 	ms_retm_if(!ms_streamer || !src_element, "Handle is NULL");
 	ms_debug("Autoplug: found src element [%s]", GST_ELEMENT_NAME(src_element));
 
@@ -489,7 +493,7 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 		if (MS_ELEMENT_IS_VIDEO(new_pad_type) || MS_ELEMENT_IS_IMAGE(new_pad_type)) {
 			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, NULL, NULL, DEFAULT_FILTER);
 			GstCaps *videoCaps = gst_caps_from_string(MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT);
-			g_object_set(G_OBJECT(found_element), "caps", videoCaps,NULL);
+			g_object_set(G_OBJECT(found_element), "caps", videoCaps, NULL);
 			gst_caps_unref(videoCaps);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "video_encoder", NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);

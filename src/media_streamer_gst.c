@@ -727,7 +727,6 @@ static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *m
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
 		} else {
-			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_CONVERTER_KLASS, NULL, DEFAULT_VIDEO_CONVERT);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_QUEUE_KLASS, NULL, DEFAULT_QUEUE);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_SINK_KLASS, NULL, NULL);
 		}
@@ -967,7 +966,7 @@ GstElement *__ms_video_decoder_element_create(dictionary * dict, media_format_mi
 {
 	char *plugin_name = NULL;
 	char *format_prefix = NULL;
-	gboolean is_omx = FALSE;
+	gboolean is_hw_codec = FALSE;
 	GstElement *last_elem = NULL;
 
 	format_prefix = g_strdup_printf("%s:decoder", __ms_convert_mime_to_string(mime));
@@ -983,8 +982,8 @@ GstElement *__ms_video_decoder_element_create(dictionary * dict, media_format_mi
 	if (mime == MEDIA_FORMAT_H264_SP)
 		g_object_set(G_OBJECT(decoder_parser), "config-interval", H264_PARSER_CONFIG_INTERVAL, NULL);
 
-	if (g_strrstr(format_prefix, "omx"))
-		is_omx = TRUE;
+	if (g_strrstr(format_prefix, "omx") || g_strrstr(format_prefix, "sprd"))
+		is_hw_codec = TRUE;
 
 	MS_SAFE_FREE(format_prefix);
 	MS_SAFE_FREE(plugin_name);
@@ -1003,7 +1002,7 @@ GstElement *__ms_video_decoder_element_create(dictionary * dict, media_format_mi
 	}
 	last_elem = decoder_elem;
 
-	if (!is_omx) {
+	if (!is_hw_codec) {
 		GstElement *video_conv = __ms_element_create("videoconvert", NULL);
 		GstElement *video_scale = __ms_element_create("videoscale", NULL);
 		ms_retvm_if(!video_conv || !video_scale, (GstElement *) NULL, "Error: creating elements for video decoder bin");

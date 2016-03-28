@@ -24,13 +24,13 @@
 
 /**
  * @ingroup CAPI_MEDIA_FRAMEWORK
- * @defgroup CAPI_MEDIA_MEDIASTREAMER_MODULE Media Streamer
- * @brief  The @ref CAPI_MEDIA_MEDIASTREAMER_MODULE  APIs provides functions for building custom pipeline
+ * @defgroup CAPI_MEDIA_STREAMER_MODULE Media Streamer
+ * @brief  The @ref CAPI_MEDIA_STREAMER_MODULE  APIs provides functions for building custom pipeline
  *
- * @section CAPI_MEDIA_MEDIASTREAMER_MODULE_HEADER Required Header
+ * @section CAPI_MEDIA_STREAMER_MODULE Required Header
  *   \#include <media_streamer.h>
  *
- * @section CAPI_MEDIASTREAMER_MODULE_OVERVIEW Overview
+ * @section CAPI_MEDIA_STREAMER_MODULE_OVERVIEW Overview
  *
  * MEDIASTREAMER allows :
  * Create streamer handle and elements to build custom pipeline.

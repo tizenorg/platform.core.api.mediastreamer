@@ -32,7 +32,7 @@ extern "C" {
 */
 
 /**
-* @addtogroup CAPI_MEDIASTREAMER_MODULE
+* @addtogroup CAPI_MEDIA_STREAMER_MODULE
 * @{
 */
 

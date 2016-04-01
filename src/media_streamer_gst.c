@@ -1399,7 +1399,7 @@ static GstCaps *__ms_create_caps_from_fmt(media_format_h fmt)
 			caps = gst_caps_new_simple("audio/x-raw", "channels", G_TYPE_INT, channel, "format",
 								G_TYPE_STRING, __ms_convert_mime_to_string_format(mime), "rate", G_TYPE_INT, samplerate, NULL);
 		else if (MEDIA_FORMAT_ENCODED == (mime & MEDIA_FORMAT_ENCODED))
-			caps = gst_caps_new_simple(__ms_convert_mime_to_string_format(mime), "channels",G_TYPE_INT, channel, "rate", G_TYPE_INT, samplerate, NULL);
+			caps = gst_caps_new_simple(__ms_convert_mime_to_string_format(mime), "channels", G_TYPE_INT, channel, "rate", G_TYPE_INT, samplerate, NULL);
 		caps_name = gst_caps_to_string(caps);
 		ms_info("Creating Audio Caps from media format [%s]", caps_name);
 

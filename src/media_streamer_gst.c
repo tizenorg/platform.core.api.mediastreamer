@@ -433,39 +433,9 @@ GstElement *__ms_bin_find_element_by_klass(GstElement *sink_bin, GstElement *pre
 	return element_found ? found_element : NULL;
 }
 
-int __ms_get_rank_increase(const char *factory_name)
-{
-	gint rank_priority = 20;
-	gint rank_second = 10;
-	gint rank_skip = -10;
-	gint ret = 0;
-
-	if (g_strrstr(factory_name, "av"))
-		ret = rank_priority;
-	else if (g_strrstr(factory_name, "omx"))
-		ret = rank_second;
-	else if (g_strrstr(factory_name, "v4l2video"))
-		ret = rank_skip;
-	else if (g_strrstr(factory_name, "rtph263ppay"))
-		ret = rank_skip;
-	else if (g_strrstr(factory_name, "sprd"))
-		ret = rank_skip;
-
-	return ret;
-}
-
 int __ms_factory_rank_compare(GstPluginFeature * first_feature, GstPluginFeature * second_feature)
 {
-	const gchar *name;
-	int first_feature_rank_inc = 0, second_feature_rank_inc = 0;
-
-	name = gst_plugin_feature_get_plugin_name(first_feature);
-	first_feature_rank_inc = __ms_get_rank_increase(name);
-
-	name = gst_plugin_feature_get_plugin_name(second_feature);
-	second_feature_rank_inc = __ms_get_rank_increase(name);
-
-	return (gst_plugin_feature_get_rank(second_feature) + second_feature_rank_inc) - (gst_plugin_feature_get_rank(first_feature) + first_feature_rank_inc);
+	return (gst_plugin_feature_get_rank(second_feature) - gst_plugin_feature_get_rank(first_feature));
 }
 
 gboolean __ms_feature_filter(GstPluginFeature * feature, gpointer data)
@@ -587,15 +557,6 @@ GstElement *__ms_combine_next_element(GstElement * previous_element, GstPad * pr
 		/* Create element by element name */
 		if (!found_element && !next_elem_bin_name && default_element) {
 			found_element = __ms_element_create(default_element, NULL);
-
-			/* Create element by predefined format element type */
-		} else if (!found_element && next_elem_bin_name && MS_ELEMENT_IS_ENCODER(next_elem_bin_name)) {
-
-
-			if (MS_ELEMENT_IS_VIDEO(next_elem_bin_name))
-				found_element = __ms_video_encoder_element_create(MEDIA_FORMAT_H263);
-			else
-				found_element = __ms_audio_encoder_element_create();
 
 			/* Create element by caps of the previous element */
 		} else if (!found_element) {
@@ -915,16 +876,24 @@ static gboolean __ms_feature_node_filter(GstPluginFeature *feature, gpointer dat
 		return FALSE;
 
 	gboolean can_accept = FALSE;
+	gboolean src_can_accept = FALSE;
+	gboolean sink_can_accept = FALSE;
 	GstElementFactory *factory = GST_ELEMENT_FACTORY(feature);
 	const gchar *factory_klass = gst_element_factory_get_klass(factory);
 
 	if (plug_info && g_strrstr(factory_klass, plug_info->info->klass_name)) {
 
 		if (GST_IS_CAPS(plug_info->src_caps))
-			can_accept = can_accept || gst_element_factory_can_src_any_caps(factory, plug_info->src_caps);
+			src_can_accept = gst_element_factory_can_src_any_caps(factory, plug_info->src_caps);
 
 		if (GST_IS_CAPS(plug_info->sink_caps))
-			can_accept = can_accept || gst_element_factory_can_sink_any_caps(factory, plug_info->sink_caps);
+			sink_can_accept = gst_element_factory_can_sink_any_caps(factory, plug_info->sink_caps);
+
+		if (GST_IS_CAPS(plug_info->src_caps) && GST_IS_CAPS(plug_info->sink_caps)) {
+			if (src_can_accept && sink_can_accept)
+				can_accept = TRUE;
+		} else if (src_can_accept || sink_can_accept)
+			can_accept = TRUE;
 
 		if (can_accept) {
 			int index = 0;
@@ -945,6 +914,64 @@ static gboolean __ms_feature_node_filter(GstPluginFeature *feature, gpointer dat
 	return FALSE;
 }
 
+static GstElement *__ms_element_create_from_ini(node_plug_s *plug_info, media_streamer_node_type_e type)
+{
+	gchar *src_type, *sink_type;
+	gchar *format_type = NULL;
+	MS_GET_CAPS_TYPE(plug_info->src_caps, src_type);
+	MS_GET_CAPS_TYPE(plug_info->sink_caps, sink_type);
+
+	GstElement *gst_element = NULL;
+	ms_info("Specified node formats types: in[%s] - out[%s]", sink_type, src_type);
+	gchar conf_key[INI_MAX_STRLEN] = {0,};
+
+	if (type == MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER || type == MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER)
+		format_type = src_type;
+	else if (type == MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER || type == MEDIA_STREAMER_NODE_TYPE_AUDIO_DECODER)
+		format_type = sink_type;
+	else
+		format_type = sink_type ? sink_type : src_type;
+
+	if (snprintf(conf_key, INI_MAX_STRLEN, "node type %d:%s", type, format_type) >= INI_MAX_STRLEN) {
+		ms_error("Failed to generate config field name, size >= %d", INI_MAX_STRLEN);
+		return NULL;
+	}
+	gchar *plugin_name = __ms_ini_get_string(conf_key, NULL);
+
+	if (plugin_name) {
+		gst_element = __ms_element_create(plugin_name, NULL);
+		MS_SAFE_GFREE(plugin_name);
+	}
+	return gst_element;
+}
+
+static GstElement *__ms_element_create_by_registry(node_plug_s *plug_info, media_streamer_node_type_e type)
+{
+	GstElement *gst_element = NULL;
+	const gchar *src_type, *sink_type;
+	MS_GET_CAPS_TYPE(plug_info->src_caps, src_type);
+	MS_GET_CAPS_TYPE(plug_info->sink_caps, sink_type);
+
+	__ms_ini_read_list("general:exclude elements", &plug_info->exclude_names);
+
+	GList *factories = gst_registry_feature_filter(gst_registry_get(),
+		__ms_feature_node_filter, FALSE, plug_info);
+	factories = g_list_sort(factories,(GCompareFunc) __ms_factory_rank_compare);
+
+	if (factories) {
+		GstElementFactory *factory = GST_ELEMENT_FACTORY(factories->data);
+		gst_element = __ms_element_create(GST_OBJECT_NAME(factory), NULL);
+	} else {
+		ms_error("Error: could not found any compatible element for node [%d]: in[%s] - out[%s]",
+			type, sink_type, src_type);
+	}
+
+	g_strfreev(plug_info->exclude_names);
+	gst_plugin_list_free(factories);
+
+	return gst_element;
+}
+
 GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node_type_e type)
 {
 	GstElement *gst_element = NULL;
@@ -963,23 +990,18 @@ GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node
 			gst_element = __ms_rtp_element_create();
 		else
 			gst_element = __ms_element_create(plug_info->info->default_name, NULL);
-	} else {
+	} else if (type == MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER)
+		gst_element = __ms_audio_encoder_element_create(plug_info, type);
+	else if (type == MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER)
+		gst_element = __ms_video_encoder_element_create(plug_info, type);
+	else if (type == MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER)
+		gst_element = __ms_video_decoder_element_create(plug_info, type);
+	else {
+
 		/* 2. Second priority:
 		 * Try to get plugin name that defined in ini file
 		 * according with node type and specified format. */
-		ms_info("Specified node formats types: in[%s] - out[%s]", sink_type, src_type);
-		gchar conf_key[INI_MAX_STRLEN] = {0,};
-		if (snprintf(conf_key, INI_MAX_STRLEN, "node type %d:%s", type, (sink_type ? sink_type : src_type)) >= INI_MAX_STRLEN) {
-			ms_error("Failed to generate config field name, size >= %d", INI_MAX_STRLEN);
-			return NULL;
-		}
-
-		gchar *plugin_name = __ms_ini_get_string(conf_key, NULL);
-
-		if (plugin_name) {
-			gst_element = __ms_element_create(plugin_name, NULL);
-			MS_SAFE_GFREE(plugin_name);
-		}
+		gst_element = __ms_element_create_from_ini(plug_info, type);
 	}
 
 	/* 3. Third priority:
@@ -988,53 +1010,34 @@ GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node
 	 * Elements that are compatible but defined as excluded will be skipped*/
 	if(!gst_element) {
 		/* Read exclude elements list */
-		__ms_ini_read_list("general:exclude elements", &plug_info->exclude_names);
-
-		GList *factories = gst_registry_feature_filter(gst_registry_get(),
-			__ms_feature_node_filter, TRUE, plug_info);
-
-		if (factories) {
-			GstElementFactory *factory = GST_ELEMENT_FACTORY(factories->data);
-			gst_element = __ms_element_create(GST_OBJECT_NAME(factory), NULL);
-		} else {
-			ms_error("Error: could not found any compatible element for node [%d]: in[%s] - out[%s]",
-				type, sink_type, src_type);
-		}
-
-		g_strfreev(plug_info->exclude_names);
-		gst_plugin_list_free(factories);
+		gst_element = __ms_element_create_by_registry(plug_info, type);
 	}
 
 	return gst_element;
 }
 
-GstElement *__ms_video_encoder_element_create(media_format_mimetype_e mime)
+GstElement *__ms_video_encoder_element_create(node_plug_s *plug_info, media_streamer_node_type_e type)
 {
-	char *plugin_name = NULL;
-	char *format_prefix = NULL;
+	const gchar *src_type;
+	MS_GET_CAPS_TYPE(plug_info->src_caps, src_type);
 
 	GstElement *video_scale = __ms_element_create(DEFAULT_VIDEO_SCALE, NULL);
 	GstElement *video_convert = __ms_element_create(DEFAULT_VIDEO_CONVERT, NULL);
 
-	format_prefix = g_strdup_printf("%s:encoder", __ms_convert_mime_to_string(mime));
-	plugin_name = __ms_ini_get_string(format_prefix, DEFAULT_VIDEO_ENCODER);
-	GstElement *encoder_elem = __ms_element_create(plugin_name, NULL);
+	GstElement *encoder_elem = __ms_element_create_from_ini(plug_info, type);
+	media_format_mimetype_e encoder_type = __ms_convert_string_format_to_media_format(src_type);
 
-	MS_SAFE_FREE(format_prefix);
-	MS_SAFE_FREE(plugin_name);
-
-	format_prefix = g_strdup_printf("%s:parser", __ms_convert_mime_to_string(mime));
-	plugin_name = __ms_ini_get_string(format_prefix, DEFAULT_VIDEO_PARSER);
-	GstElement *encoder_parser = __ms_element_create(plugin_name, NULL);
-
-	MS_SAFE_FREE(format_prefix);
-	MS_SAFE_FREE(plugin_name);
+	node_info_s nodes_info = {MEDIA_STREAMER_PARSER_KLASS, DEFAULT_VIDEO_PARSER};
+	node_plug_s plug_info_parser = { &nodes_info, plug_info->src_caps, NULL, NULL};
+	GstElement *encoder_parser = __ms_element_create_from_ini(plug_info, MEDIA_STREAMER_NODE_TYPE_PARSER);
+	if (!encoder_parser)
+		encoder_parser = __ms_element_create_by_registry(&plug_info_parser, MEDIA_STREAMER_NODE_TYPE_PARSER);
 
 	gboolean gst_ret = FALSE;
 	GstElement *encoder_bin = gst_bin_new("video_encoder");
 	ms_retvm_if(!video_convert || !video_scale || !encoder_elem || !encoder_bin || !encoder_parser, (GstElement *) NULL, "Error: creating elements for video encoder bin");
 
-	if (mime == MEDIA_FORMAT_H264_SP) {
+	if (encoder_type == MEDIA_FORMAT_H264_SP) {
 		g_object_set(GST_OBJECT(encoder_parser), "config-interval", H264_PARSER_CONFIG_INTERVAL, NULL);
 		g_object_set(G_OBJECT(encoder_elem), "tune",  H264_ENCODER_ZEROLATENCY, NULL);
 		g_object_set(G_OBJECT(encoder_elem), "byte-stream", TRUE, NULL);
@@ -1055,31 +1058,31 @@ GstElement *__ms_video_encoder_element_create(media_format_mimetype_e mime)
 	return encoder_bin;
 }
 
-GstElement *__ms_video_decoder_element_create(media_format_mimetype_e mime)
+GstElement *__ms_video_decoder_element_create(node_plug_s *plug_info, media_streamer_node_type_e type)
 {
-	char *plugin_name = NULL;
-	char *format_prefix = NULL;
 	gboolean is_hw_codec = FALSE;
 	GstElement *last_elem = NULL;
 
-	format_prefix = g_strdup_printf("%s:decoder", __ms_convert_mime_to_string(mime));
-	plugin_name = __ms_ini_get_string(format_prefix, DEFAULT_VIDEO_DECODER);
-	GstElement *decoder_elem = __ms_element_create(plugin_name, NULL);
-	MS_SAFE_FREE(format_prefix);
-	MS_SAFE_FREE(plugin_name);
+	const gchar *sink_type;
+	MS_GET_CAPS_TYPE(plug_info->sink_caps, sink_type);
 
-	format_prefix = g_strdup_printf("%s:parser", __ms_convert_mime_to_string(mime));
-	plugin_name = __ms_ini_get_string(format_prefix, DEFAULT_VIDEO_PARSER);
-	GstElement *decoder_parser = __ms_element_create(plugin_name, NULL);
+	GstElement *decoder_elem = __ms_element_create_from_ini(plug_info, MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER);
+	media_format_mimetype_e encoder_type = __ms_convert_string_format_to_media_format(sink_type);
 
-	if (mime == MEDIA_FORMAT_H264_SP)
+	node_info_s nodes_info = {MEDIA_STREAMER_PARSER_KLASS, DEFAULT_VIDEO_PARSER};
+	node_plug_s plug_info_parser = { &nodes_info, plug_info->sink_caps, NULL, NULL};
+
+	GstElement *decoder_parser = __ms_element_create_from_ini(plug_info, MEDIA_STREAMER_NODE_TYPE_PARSER);
+	if (!decoder_parser)
+		decoder_parser = __ms_element_create_by_registry(&plug_info_parser, MEDIA_STREAMER_NODE_TYPE_PARSER);
+
+
+	if (encoder_type == MEDIA_FORMAT_H264_SP)
 		g_object_set(G_OBJECT(decoder_parser), "config-interval", H264_PARSER_CONFIG_INTERVAL, NULL);
 
-	if (g_strrstr(format_prefix, "omx") || g_strrstr(format_prefix, "sprd"))
+	if (g_strrstr(plug_info->info->default_name, "omx") || g_strrstr(plug_info->info->default_name, "sprd"))
 		is_hw_codec = TRUE;
 
-	MS_SAFE_FREE(format_prefix);
-	MS_SAFE_FREE(plugin_name);
 
 	gboolean gst_ret = FALSE;
 	GstElement *decoder_bin = gst_bin_new("video_decoder");
@@ -1115,14 +1118,18 @@ GstElement *__ms_video_decoder_element_create(media_format_mimetype_e mime)
 	return decoder_bin;
 }
 
-GstElement *__ms_audio_encoder_element_create(void)
+GstElement *__ms_audio_encoder_element_create(node_plug_s *plug_info, media_streamer_node_type_e type)
 {
 	gboolean gst_ret = FALSE;
-	GstElement *audio_convert = __ms_element_create("audioconvert", NULL);
-	GstElement *audio_resample = __ms_element_create("audioresample", NULL);
-	GstElement *audio_filter = __ms_element_create("capsfilter", NULL);
-	GstElement *audio_postenc_convert = __ms_element_create("audioconvert", NULL);
-	GstElement *audio_encoder = __ms_element_create(DEFAULT_AUDIO_ENCODER, NULL);
+
+	GstElement *audio_convert = __ms_element_create(DEFAULT_AUDIO_CONVERT, NULL);
+	GstElement *audio_resample = __ms_element_create(DEFAULT_AUDIO_RESAMPLE, NULL);
+	GstElement *audio_filter = __ms_element_create(DEFAULT_FILTER, NULL);
+	GstElement *audio_postenc_convert = __ms_element_create(DEFAULT_AUDIO_CONVERT, NULL);
+	GstElement *audio_encoder = __ms_element_create_from_ini(plug_info, type);
+	if (!audio_encoder)
+		audio_encoder = __ms_element_create_by_registry(plug_info, type);
+
 	GstElement *audio_enc_bin = gst_bin_new("audio_encoder");
 	ms_retvm_if(!audio_convert || !audio_postenc_convert || !audio_filter || !audio_encoder || !audio_enc_bin, (GstElement *) NULL, "Error: creating elements for encoder bin");
 
@@ -1511,7 +1518,7 @@ GstCaps *__ms_create_caps_from_fmt(media_format_h fmt)
 	return caps;
 }
 
-static media_format_h __ms_create_fmt_from_caps(GstCaps *caps)
+media_format_h __ms_create_fmt_from_caps(GstCaps *caps)
 {
 	media_format_h fmt;
 	GstStructure *pad_struct;

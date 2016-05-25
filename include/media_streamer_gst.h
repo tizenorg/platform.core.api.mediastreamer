@@ -88,21 +88,21 @@ GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_video_encoder_element_create(media_format_mimetype_e mime);
+GstElement *__ms_video_encoder_element_create(node_plug_s *plug_info, media_streamer_node_type_e type);
 
 /**
  * @brief Creates decoder GstElement by mime type.
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_video_decoder_element_create(media_format_mimetype_e mime);
+GstElement *__ms_video_decoder_element_create(node_plug_s *plug_info, media_streamer_node_type_e type);
 
 /**
  * @brief Creates audio encoder GstElement.
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_audio_encoder_element_create(void);
+GstElement *__ms_audio_encoder_element_create(node_plug_s *plug_info, media_streamer_node_type_e type);
 
 /**
  * @brief Creates rtp container GstElement.
@@ -207,6 +207,14 @@ int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, medi
  * @since_tizen 3.0
  */
 GstCaps *__ms_create_caps_from_fmt(media_format_h fmt);
+
+/**
+ * @brief Creates mediaformat from GstCaps.
+ *
+ * @since_tizen 3.0
+ */
+media_format_h __ms_create_fmt_from_caps(GstCaps *caps);
+
 /**
  * @brief Seeks GstElement to according time value.
  *

@@ -146,7 +146,7 @@ typedef struct {
 #define DEFAULT_FILTER                      "capsfilter"
 #define DEFAULT_TYPEFIND                    "typefind"
 #define DEFAULT_DECODEBIN                   "decodebin"
-#define DEFAULT_AUDIO_SOURCE                "alsasrc"
+#define DEFAULT_AUDIO_SOURCE                "pulsesrc"
 #define DEFAULT_CAMERA_SOURCE               "v4l2src"
 #define DEFAULT_VIDEO_SOURCE                "ximagesrc"
 #define DEFAULT_APP_SOURCE                  "appsrc"

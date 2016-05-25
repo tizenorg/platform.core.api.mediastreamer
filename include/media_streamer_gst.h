@@ -36,6 +36,8 @@
 #define MEDIA_STREAMER_CONVERTER_KLASS "Filter/Converter"
 #define MEDIA_STREAMER_DECODER_KLASS "Codec/Decoder"
 #define MEDIA_STREAMER_SINK_KLASS "Sink"
+#define MEDIA_STREAMER_STRICT "_strict_"
+
 
 /**
  * @brief Generates dot files for GStreamer pipeline.
@@ -75,6 +77,13 @@ GstElement *__ms_link_with_new_element(GstElement *previous_element, GstPad *pre
 GstElement *__ms_element_create(const char *plugin_name, const char *name);
 
 /**
+ * @brief Creates GstElement from specified node_plug_s structure.
+ *
+ * @since_tizen 3.0
+ */
+GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node_type_e type);
+
+/**
  * @brief Creates encoder GstElement by mime type.
  *
  * @since_tizen 3.0
@@ -100,7 +109,7 @@ GstElement *__ms_audio_encoder_element_create(void);
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_rtp_element_create(media_streamer_node_s *ms_node);
+GstElement *__ms_rtp_element_create(void);
 
 /**
  * @brief Prepares rtp container according to parameters data.
@@ -192,6 +201,12 @@ int __ms_element_get_pad_fmt(GstElement *gst_element, const char *pad_name, medi
  */
 int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, media_format_h fmt);
 
+/**
+ * @brief Creates GstCap's from mediaformat.
+ *
+ * @since_tizen 3.0
+ */
+GstCaps *__ms_create_caps_from_fmt(media_format_h fmt);
 /**
  * @brief Seeks GstElement to according time value.
  *

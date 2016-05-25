@@ -98,9 +98,10 @@ int media_streamer_node_create(media_streamer_node_type_e type, media_format_h i
 		__ms_node_destroy(ms_node);
 		ms_error("Error creating Node [%d]", ret);
 		return ret;
+	} else {
+		ms_info("Node [%s] created", ms_node->name);
 	}
 
-	ms_info("Node [%s] created", ms_node->name);
 	*node = (media_streamer_node_h) ms_node;
 
 	return ret;

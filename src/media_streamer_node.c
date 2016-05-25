@@ -46,6 +46,35 @@ param_s param_table[] = {
 	{NULL, NULL}
 };
 
+node_info_s nodes_info[] = {
+	{NULL, NULL},                              /* MEDIA_STREAMER_NODE_TYPE_NONE */
+	{"Source", "fakesrc"},                     /* MEDIA_STREAMER_NODE_TYPE_SRC */
+	{"Sink", "fakesink"},                      /* MEDIA_STREAMER_NODE_TYPE_SINK */
+	{"Codec/Encoder", "x264enc"},              /* MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER */
+	{"Codec/Decoder", "avdec_h264"},           /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER */
+	{"Codec/Encoder", "amrnbenc"},             /* MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER */
+	{"Codec/Decoder", "amrnbdec"},             /* MEDIA_STREAMER_NODE_TYPE_AUDIO_DECODER */
+	{MEDIA_STREAMER_STRICT, "videoconvert"},   /* MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER */
+	{MEDIA_STREAMER_STRICT, "audioconvert"},   /* MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER */
+	{MEDIA_STREAMER_STRICT, "audioresample"},  /* MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE */
+	{"Payloader", "rtph264pay"},               /* MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY */
+	{"Payloader", "rtpamrpay"},                /* MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY */
+	{"Depayloader", "rtph264depay"},           /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY */
+	{"Depayloader", "rtpamrdepay"},            /* MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY */
+	{MEDIA_STREAMER_STRICT, "capsfilter"},     /* MEDIA_STREAMER_NODE_TYPE_FILTER */
+	{MEDIA_STREAMER_STRICT, "tee"},            /* MEDIA_STREAMER_NODE_TYPE_TEE */
+	{MEDIA_STREAMER_STRICT, "queue"},          /* MEDIA_STREAMER_NODE_TYPE_QUEUE */
+	{MEDIA_STREAMER_STRICT, "multiqueue"},     /* MEDIA_STREAMER_NODE_TYPE_MQUEUE */
+	{"Codec/Muxer", "qtmux"},                  /* MEDIA_STREAMER_NODE_TYPE_MUXER */
+	{"Codec/Demuxer", "qtdemux"},              /* MEDIA_STREAMER_NODE_TYPE_DEMUXER */
+	{MEDIA_STREAMER_STRICT, "rtpbin"},         /* MEDIA_STREAMER_NODE_TYPE_RTP */
+	{MEDIA_STREAMER_STRICT, "input-selector"}, /* MEDIA_STREAMER_NODE_TYPE_INPUT_SELECTOR */
+	{MEDIA_STREAMER_STRICT, "output-selector"},/* MEDIA_STREAMER_NODE_TYPE_OUTPUT_SELECTOR */
+	{MEDIA_STREAMER_STRICT, "interleave"},     /* MEDIA_STREAMER_NODE_TYPE_INTERLEAVE */
+	{MEDIA_STREAMER_STRICT, "deinterleave"},   /* MEDIA_STREAMER_NODE_TYPE_DEINTERLEAVE */
+	{NULL, NULL}
+};
+
 static gboolean __ms_rtp_node_has_property(media_streamer_node_s *ms_node, const gchar *param_name)
 {
 	ms_retvm_if(!ms_node || !ms_node->gst_element, FALSE, "Error: empty node");
@@ -124,87 +153,25 @@ int __ms_node_create(media_streamer_node_s *node, media_format_h in_fmt, media_f
 	ms_retvm_if(node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	int ret = MEDIA_STREAMER_ERROR_NONE;
-	dictionary *dict = NULL;
-	char *plugin_name = NULL;
-	media_format_mimetype_e mime;
 
-	if (MEDIA_FORMAT_ERROR_NONE != media_format_get_video_info(out_fmt, &mime, NULL, NULL, NULL, NULL))
-		media_format_get_audio_info(out_fmt, &mime, NULL, NULL, NULL, NULL);
-	char *format_prefix = NULL;
+	GstCaps *sink_caps = in_fmt ? __ms_create_caps_from_fmt(in_fmt) : NULL;
+	GstCaps *src_caps = out_fmt ? __ms_create_caps_from_fmt(out_fmt) : NULL;
 
-	__ms_load_ini_dictionary(&dict);
+	node_plug_s plug_info = {&(nodes_info[node->type]), src_caps, sink_caps, NULL};
+	ms_info("Creating node with info: klass_name[%s]; default[%s]",
+			plug_info.info->klass_name, plug_info.info->default_name);
 
-	switch (node->type) {
-	case MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER:
-		format_prefix = g_strdup_printf("%s:encoder", __ms_convert_mime_to_string(mime));
-		plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_ENCODER);
-		node->gst_element = __ms_video_encoder_element_create(dict, mime);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER:
-		format_prefix = g_strdup_printf("%s:decoder", __ms_convert_mime_to_string(mime));
-		plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_DECODER);
-		node->gst_element = __ms_video_decoder_element_create(dict, mime);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_PARSER:
-		format_prefix = g_strdup_printf("%s:parser", __ms_convert_mime_to_string(mime));
-		plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_PARSER);
-		node->gst_element = __ms_element_create(plugin_name, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_FILTER:
-		node->gst_element = __ms_element_create(DEFAULT_FILTER, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY:
-		format_prefix = g_strdup_printf("%s:rtppay", __ms_convert_mime_to_string(mime));
-		plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_RTPPAY);
-		node->gst_element = __ms_element_create(plugin_name, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY:
-		plugin_name = __ms_ini_get_string(dict, "audio-raw:rtppay", DEFAULT_AUDIO_RTPPAY);
-		node->gst_element = __ms_element_create(plugin_name, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY:
-		format_prefix = g_strdup_printf("%s:rtpdepay", __ms_convert_mime_to_string(mime));
-		plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_RTPDEPAY);
-		node->gst_element = __ms_element_create(plugin_name, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY:
-		plugin_name = __ms_ini_get_string(dict, "audio-raw:rtpdepay", DEFAULT_AUDIO_RTPDEPAY);
-		node->gst_element = __ms_element_create(plugin_name, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_RTP:
-		node->gst_element = __ms_rtp_element_create(node);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_QUEUE:
-		node->gst_element = __ms_element_create(DEFAULT_QUEUE, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER:
-		node->gst_element = __ms_audio_encoder_element_create();
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_AUDIO_DECODER:
-		node->gst_element = __ms_element_create(DEFAULT_AUDIO_DECODER, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER:
-		node->gst_element = __ms_element_create(DEFAULT_VIDEO_CONVERT, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER:
-		node->gst_element = __ms_element_create(DEFAULT_AUDIO_CONVERT, NULL);
-		break;
-	case MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE:
-		node->gst_element = __ms_element_create(DEFAULT_AUDIO_RESAMPLE, NULL);
-		break;
-	default:
-		ms_error("Error: invalid node Type [%d]", node->type);
-		break;
-	}
-
-	MS_SAFE_FREE(plugin_name);
-	MS_SAFE_FREE(format_prefix);
-	__ms_destroy_ini_dictionary(dict);
-
-	if (node->gst_element == NULL)
-		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
-	else
+	node->gst_element = __ms_node_element_create(&plug_info, node->type);
+	if (node->gst_element)
 		node->name = gst_element_get_name(node->gst_element);
+	else
+		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+
+	if (src_caps)
+		gst_caps_unref(src_caps);
+
+	if (sink_caps)
+		gst_caps_unref(sink_caps);
 
 	return ret;
 }

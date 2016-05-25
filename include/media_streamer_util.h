@@ -93,10 +93,10 @@ extern "C" {
 
 /* Ini Utils */
 #ifndef MEDIA_STREAMER_INI_PATH
-	#define MEDIA_STREAMER_INI_PATH	"/etc/media_streamer.ini"
+	#define MEDIA_STREAMER_INI_PATH "/etc/media_streamer.ini"
 #endif
 
-#define MEDIA_STREAMER_INI_MAX_STRLEN	100
+#define MEDIA_STREAMER_INI_MAX_STRLEN 100
 #define RTP_STREAM_DISABLED (0)
 
 /**
@@ -245,6 +245,14 @@ typedef struct {
 		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_rtp_param_value_destroy); \
 	} while (0)
 
+#define MS_GET_CAPS_TYPE(caps, type) \
+	do { \
+		if (caps && gst_caps_get_size(caps) > 0) \
+			type = gst_structure_get_name(gst_caps_get_structure(caps, 0)); \
+		else \
+			type = NULL; \
+	} while (0)
+
 /**
  * @brief Loads media streamer settings from ini file.
  *        The default values will be used if error has occurred.
@@ -273,6 +281,13 @@ gboolean __ms_destroy_ini_dictionary(dictionary *dict);
  * @since_tizen 3.0
  */
 gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path, char *default_str);
+
+/**
+ * @brief Reads comma-separated string list from ini file.
+ *
+ * @since_tizen 3.0
+ */
+void __ms_ini_read_list(dictionary *dict, const char *key, gchar ***list);
 
 /**
  * @brief Converts Media Format mime type into Caps media format string.

@@ -23,6 +23,8 @@
 #define H264_PARSER_CONFIG_INTERVAL 5
 #define H264_ENCODER_ZEROLATENCY 0x00000004
 
+#define NODE_CONF_FIELD_LEN 100
+
 void __ms_generate_dots(GstElement *bin, gchar *name_tag)
 {
 	gchar *dot_name;
@@ -236,16 +238,11 @@ static gboolean __ms_get_peer_element(GstPad *source_pad, GstElement *found_elem
 
 const gchar *__ms_get_pad_type(GstPad *element_pad)
 {
-	const gchar *element_pad_type = NULL;
-	GstCaps *element_pad_caps = gst_pad_query_caps(element_pad, 0);
-	if (gst_caps_get_size(element_pad_caps) > 0) {
-		GstStructure *element_pad_struct = gst_caps_get_structure(element_pad_caps, 0);
-		element_pad_type = gst_structure_get_name(element_pad_struct);
-	} else {
-		ms_debug("Caps size of element is 0");
-	}
-	gst_caps_unref(element_pad_caps);
-	return element_pad_type;
+	const gchar *pad_type = NULL;
+	GstCaps *pad_caps = gst_pad_query_caps(element_pad, 0);
+	MS_GET_CAPS_TYPE(pad_caps, pad_type);
+	gst_caps_unref(pad_caps);
+	return pad_type;
 }
 
 static gboolean __ms_intersect_pads(GstPad *src_pad, GstPad *sink_pad)
@@ -829,7 +826,7 @@ static gboolean __ms_sink_bin_prepare(media_streamer_s * ms_streamer, GstPad * s
 			previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_SINK_KLASS, NULL, NULL);
 		}
 	} else if (MS_ELEMENT_IS_AUDIO(src_pad_type)) {
-		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_DECODER_KLASS, NULL, NULL);
+		previous_element = __ms_combine_next_element(previous_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_DECODER_KLASS, NULL, NULL);
 		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_QUEUE_KLASS, NULL, DEFAULT_QUEUE);
 		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_SINK_KLASS, NULL, NULL);
 	} else {
@@ -913,6 +910,113 @@ GstElement *__ms_element_create(const char *plugin_name, const char *name)
 	plugin_elem = gst_element_factory_make(plugin_name, name);
 	ms_retvm_if(plugin_elem == NULL, (GstElement *) NULL, "Error creating element [%s]", plugin_name);
 	return plugin_elem;
+}
+
+static gboolean __ms_feature_node_filter(GstPluginFeature *feature, gpointer data)
+{
+	node_plug_s *plug_info = (node_plug_s*)data;
+
+	if (!GST_IS_ELEMENT_FACTORY(feature))
+		return FALSE;
+
+	gboolean can_accept = FALSE;
+	GstElementFactory *factory = GST_ELEMENT_FACTORY(feature);
+	const gchar *factory_klass = gst_element_factory_get_klass(factory);
+
+	if (plug_info && g_strrstr(factory_klass, plug_info->info->klass_name)) {
+
+		if (GST_IS_CAPS(plug_info->src_caps))
+			can_accept = can_accept || gst_element_factory_can_src_any_caps(factory, plug_info->src_caps);
+
+		if (GST_IS_CAPS(plug_info->sink_caps))
+			can_accept = can_accept || gst_element_factory_can_sink_any_caps(factory, plug_info->sink_caps);
+
+		if (can_accept) {
+			int index = 0;
+			for ( ; plug_info->exclude_names && plug_info->exclude_names[index]; ++index) {
+				if (g_strrstr(GST_OBJECT_NAME(factory), plug_info->exclude_names[index])) {
+					ms_debug("Skipping compatible factory [%s] as excluded.", GST_OBJECT_NAME(factory));
+					return FALSE;
+				}
+			}
+
+			ms_info("[INFO] Found compatible factory [%s] for klass [%s]",
+				GST_OBJECT_NAME(factory), factory_klass);
+			return TRUE;
+		}
+
+	}
+
+	return FALSE;
+}
+
+GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node_type_e type)
+{
+	dictionary *dict = NULL;
+	GstElement *gst_element = NULL;
+
+	const gchar *src_type, *sink_type;
+	MS_GET_CAPS_TYPE(plug_info->src_caps, src_type);
+	MS_GET_CAPS_TYPE(plug_info->sink_caps, sink_type);
+
+	/* 1. Main priority:
+	 * If Node klass defined as MEDIA_STREAMER_STRICT,
+	 * element will be created immediately by default_name */
+	if (!strncmp(plug_info->info->klass_name, MEDIA_STREAMER_STRICT, 10)
+			|| ( !src_type && !sink_type)) {
+
+		if(type == MEDIA_STREAMER_NODE_TYPE_RTP)
+			gst_element = __ms_rtp_element_create();
+		else
+			gst_element = __ms_element_create(plug_info->info->default_name, NULL);
+	} else {
+		/* 2. Second priority:
+		 * Try to get plugin name that defined in ini file
+		 * according with node type and specified format. */
+		ms_info("Specified node formats types: in[%s] - out[%s]", sink_type, src_type);
+		gchar conf_key[NODE_CONF_FIELD_LEN] = {0,};
+		if (snprintf(conf_key, NODE_CONF_FIELD_LEN, "node type %d:%s", type, (sink_type ? sink_type : src_type)) >= NODE_CONF_FIELD_LEN) {
+			ms_error("Failed to generate config field name, size >= %d", NODE_CONF_FIELD_LEN);
+			return NULL;
+		}
+
+		__ms_load_ini_dictionary(&dict);
+		gchar *plugin_name = __ms_ini_get_string(dict, conf_key, NULL);
+
+		if (plugin_name) {
+			gst_element = __ms_element_create(plugin_name, NULL);
+			MS_SAFE_GFREE(plugin_name);
+		}
+		__ms_destroy_ini_dictionary(dict);
+	}
+
+	/* 3. Third priority:
+	 * If previous cases did not create a valid gst_element,
+	 * try to find compatible plugin in gstreamer registry.
+	 * Elements that are compatible but defined as excluded will be skipped*/
+	if(!gst_element) {
+		__ms_load_ini_dictionary(&dict);
+
+		/* Read exclude elements list */
+		__ms_ini_read_list(dict, "general:exclude elements", &plug_info->exclude_names);
+
+		GList *factories = gst_registry_feature_filter(gst_registry_get(),
+			__ms_feature_node_filter, TRUE, plug_info);
+
+		if (factories) {
+			GstElementFactory *factory = GST_ELEMENT_FACTORY(factories->data);
+			gst_element = __ms_element_create(GST_OBJECT_NAME(factory), NULL);
+		} else {
+			ms_error("Error: could not found any compatible element for node [%d]: in[%s] - out[%s]",
+				type, sink_type, src_type);
+		}
+
+		g_strfreev(plug_info->exclude_names);
+		gst_plugin_list_free(factories);
+		__ms_destroy_ini_dictionary(dict);
+	}
+
+	return gst_element;
 }
 
 GstElement *__ms_video_encoder_element_create(dictionary * dict, media_format_mimetype_e mime)
@@ -1050,10 +1154,8 @@ GstElement *__ms_audio_encoder_element_create(void)
 	return audio_enc_bin;
 }
 
-GstElement *__ms_rtp_element_create(media_streamer_node_s * ms_node)
+GstElement *__ms_rtp_element_create(void)
 {
-	ms_retvm_if(ms_node == NULL, (GstElement *) NULL, "Error empty rtp node Handle");
-
 	GstElement *rtp_container = gst_bin_new("rtp_container");
 	ms_retvm_if(!rtp_container, (GstElement *) NULL, "Error: creating elements for rtp container");
 
@@ -1387,7 +1489,7 @@ int __ms_pipeline_create(media_streamer_s *ms_streamer)
 	return ret;
 }
 
-static GstCaps *__ms_create_caps_from_fmt(media_format_h fmt)
+GstCaps *__ms_create_caps_from_fmt(media_format_h fmt)
 {
 	GstCaps *caps = NULL;
 	gchar *caps_name = NULL;

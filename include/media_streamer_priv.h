@@ -61,6 +61,28 @@ typedef struct {
 } param_s;
 
 /**
+ * @brief Media Streamer node_info type handle.
+ *
+ * @since_tizen 3.0
+ */
+typedef struct {
+	char *klass_name;
+	char *default_name;
+} node_info_s;
+
+/**
+ * @brief Media Streamer node_plug type handle.
+ *
+ * @since_tizen 3.0
+ */
+typedef struct {
+	node_info_s *info;
+	GstCaps *src_caps;
+	GstCaps *sink_caps;
+	gchar **exclude_names;
+} node_plug_s;
+
+/**
  * @brief Media Streamer type handle.
  *
  * @since_tizen 3.0

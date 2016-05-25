@@ -82,16 +82,16 @@ gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path, char *default
 	ms_retvm_if(ini_path == NULL, NULL, "Invalid ini path");
 
 	if (dict == NULL) {
-		result_str = g_strdup(default_str);
+		result_str = default_str;
 	} else {
 		gchar *str = NULL;
 		str = iniparser_getstring(dict, ini_path, default_str);
 		if (str && (strlen(str) > 0) && (strlen(str) < MEDIA_STREAMER_INI_MAX_STRLEN))
-			result_str = g_strdup(str);
+			result_str = str;
 		else
-			result_str = g_strdup(default_str);
+			result_str = default_str;
 	}
-	return result_str;
+	return result_str ? g_strdup(result_str) : NULL;
 }
 
 gboolean __ms_load_ini_dictionary(dictionary **dict)
@@ -127,7 +127,7 @@ gboolean __ms_destroy_ini_dictionary(dictionary *dict)
 	return TRUE;
 }
 
-static void __ms_ini_read_list(dictionary *dict, const char* key, gchar ***list)
+void __ms_ini_read_list(dictionary *dict, const char* key, gchar ***list)
 {
 	ms_retm_if(!dict || !list || !key, "Handle is NULL");
 

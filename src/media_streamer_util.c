@@ -75,18 +75,18 @@ format_s format_table[] = {
 
 static void __ms_check_ini_status(void);
 
-gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path, char *default_str)
+gchar *__ms_ini_get_string(const char *ini_path, char *default_str)
 {
 	gchar *result_str = NULL;
 
 	ms_retvm_if(ini_path == NULL, NULL, "Invalid ini path");
 
-	if (dict == NULL) {
+	if (__ms_get_ini_instance() == NULL) {
 		result_str = default_str;
 	} else {
 		gchar *str = NULL;
-		str = iniparser_getstring(dict, ini_path, default_str);
-		if (str && (strlen(str) > 0) && (strlen(str) < MEDIA_STREAMER_INI_MAX_STRLEN))
+		str = iniparser_getstring(__ms_get_ini_instance(), ini_path, default_str);
+		if (str && (strlen(str) > 0) && (strlen(str) < INI_MAX_STRLEN))
 			result_str = str;
 		else
 			result_str = default_str;
@@ -94,45 +94,32 @@ gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path, char *default
 	return result_str ? g_strdup(result_str) : NULL;
 }
 
-gboolean __ms_load_ini_dictionary(dictionary **dict)
+dictionary *__ms_get_ini_instance(void)
 {
-	ms_retvm_if(dict == NULL, FALSE, "Handle is NULL");
+	static dictionary *instance = NULL;
+	if (NULL == instance) {
+		dictionary *ms_dict = NULL;
+		__ms_check_ini_status();
 
-	__ms_check_ini_status();
+		/* loading existing ini file */
+		ms_dict = iniparser_load(MEDIA_STREAMER_INI_PATH);
 
-	dictionary *ms_dict = NULL;
-
-	/* loading existing ini file */
-	ms_dict = iniparser_load(MEDIA_STREAMER_INI_PATH);
-
-	/* if no file exists. create one with set of default values */
-	if (!ms_dict) {
-		ms_debug("Could not open ini [%s]. Media-streamer will use default values.", MEDIA_STREAMER_INI_PATH);
-		return FALSE;
-	} else {
-		ms_debug("Open ini file [%s].", MEDIA_STREAMER_INI_PATH);
+		if (!ms_dict)
+			ms_debug("Could not open ini [%s]. Media-streamer will use default values.", MEDIA_STREAMER_INI_PATH);
+		else
+			ms_debug("Open ini file [%s].", MEDIA_STREAMER_INI_PATH);
+		instance = ms_dict;
 	}
 
-	*dict = ms_dict;
-	return TRUE;
+	return instance;
 }
 
-gboolean __ms_destroy_ini_dictionary(dictionary *dict)
+void __ms_ini_read_list(const char *key, gchar ***list)
 {
-	ms_retvm_if(dict == NULL, FALSE, "Handle is null");
-
-	/* free dict as we got our own structure */
-	iniparser_freedict(dict);
-
-	return TRUE;
-}
-
-void __ms_ini_read_list(dictionary *dict, const char* key, gchar ***list)
-{
-	ms_retm_if(!dict || !list || !key, "Handle is NULL");
+	ms_retm_if(!__ms_get_ini_instance() || !list || !key, "Handle is NULL");
 
 	/* Read exclude elements list */
-	gchar *str = iniparser_getstring(dict, key, NULL);
+	gchar *str = iniparser_getstring(__ms_get_ini_instance(), key, NULL);
 	if (str && strlen(str) > 0) {
 		gchar *strtmp = g_strdup(str);
 		g_strstrip(strtmp);
@@ -144,34 +131,30 @@ void __ms_ini_read_list(dictionary *dict, const char* key, gchar ***list)
 
 void __ms_load_ini_settings(media_streamer_ini_t *ini)
 {
-	dictionary *dict = NULL;
-
 	/* get ini values */
 	memset(ini, 0, sizeof(media_streamer_ini_t));
 
-	if (__ms_load_ini_dictionary(&dict)) {
+	if (__ms_get_ini_instance()) {
 		/* general */
-		ini->generate_dot = iniparser_getboolean(dict, "general:generate dot", DEFAULT_GENERATE_DOT);
+		ini->generate_dot = iniparser_getboolean(__ms_get_ini_instance(), "general:generate dot", DEFAULT_GENERATE_DOT);
 		if (ini->generate_dot == TRUE) {
-			gchar *dot_path = iniparser_getstring(dict, "general:dot dir", MEDIA_STREAMER_DEFAULT_DOT_DIR);
+			gchar *dot_path = iniparser_getstring(__ms_get_ini_instance(), "general:dot dir", MEDIA_STREAMER_DEFAULT_DOT_DIR);
 			ms_debug("generate_dot is TRUE, dot file will be stored into %s", dot_path);
 			g_setenv("GST_DEBUG_DUMP_DOT_DIR", dot_path, FALSE);
 		}
 
-		ini->use_decodebin = iniparser_getboolean(dict, "general:use decodebin", DEFAULT_USE_DECODEBIN);
+		ini->use_decodebin = iniparser_getboolean(__ms_get_ini_instance(), "general:use decodebin", DEFAULT_USE_DECODEBIN);
 
 		/* Read exclude elements list */
-		__ms_ini_read_list(dict, "general:exclude elements", &ini->exclude_elem_names);
+		__ms_ini_read_list("general:exclude elements", &ini->exclude_elem_names);
 		/* Read gstreamer arguments list */
-		__ms_ini_read_list(dict, "general:gstreamer arguments", &ini->gst_args);
+		__ms_ini_read_list("general:gstreamer arguments", &ini->gst_args);
 
 	} else {
 		/* if dict is not available just fill the structure with default values */
 		ini->generate_dot = DEFAULT_GENERATE_DOT;
 		ini->use_decodebin = DEFAULT_USE_DECODEBIN;
 	}
-
-	__ms_destroy_ini_dictionary(dict);
 
 	/* general */
 	ms_debug("Media Streamer param [generate_dot] : %d", ini->generate_dot);

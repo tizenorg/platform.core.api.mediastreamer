@@ -88,14 +88,14 @@ GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_video_encoder_element_create(dictionary *dict, media_format_mimetype_e mime);
+GstElement *__ms_video_encoder_element_create(media_format_mimetype_e mime);
 
 /**
  * @brief Creates decoder GstElement by mime type.
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_video_decoder_element_create(dictionary *dict, media_format_mimetype_e mime);
+GstElement *__ms_video_decoder_element_create(media_format_mimetype_e mime);
 
 /**
  * @brief Creates audio encoder GstElement.

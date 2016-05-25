@@ -209,41 +209,43 @@ int __ms_src_node_create(media_streamer_node_s *node)
 	ms_retvm_if(node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	int ret = MEDIA_STREAMER_ERROR_NONE;
-	dictionary *dict = NULL;
 	char *plugin_name = NULL;
-
-	__ms_load_ini_dictionary(&dict);
 
 	switch (node->subtype) {
 	case MEDIA_STREAMER_NODE_SRC_TYPE_FILE:
-		node->gst_element = __ms_element_create(DEFAULT_FILE_SOURCE, NULL);
+		plugin_name = __ms_ini_get_string("node type 1:file", DEFAULT_FILE_SOURCE);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_RTSP:
-		node->gst_element = __ms_element_create(DEFAULT_UDP_SOURCE, NULL);
+		plugin_name = __ms_ini_get_string("node type 1:rtsp", DEFAULT_UDP_SOURCE);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_HTTP:
-		node->gst_element = __ms_element_create(DEFAULT_HTTP_SOURCE, NULL);
+		plugin_name = __ms_ini_get_string("node type 1:http", DEFAULT_HTTP_SOURCE);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA:
-		plugin_name = __ms_ini_get_string(dict, "sources:camera_source", DEFAULT_CAMERA_SOURCE);
+		plugin_name = __ms_ini_get_string("node type 1:camera", DEFAULT_CAMERA_SOURCE);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
-
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_CAPTURE:
-		plugin_name = __ms_ini_get_string(dict, "sources:audio_source", DEFAULT_AUDIO_SOURCE);
+		plugin_name = __ms_ini_get_string("node type 1:audio capture", DEFAULT_AUDIO_SOURCE);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_CAPTURE:
-		plugin_name = __ms_ini_get_string(dict, "sources:video_source", DEFAULT_VIDEO_SOURCE);
+		plugin_name = __ms_ini_get_string("node type 1:video capture", DEFAULT_VIDEO_SOURCE);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_TEST:
-		node->gst_element = __ms_element_create(DEFAULT_VIDEO_TEST_SOURCE, NULL);
+		plugin_name = __ms_ini_get_string("node type 1:video test", DEFAULT_VIDEO_TEST_SOURCE);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_TEST:
-		node->gst_element = __ms_element_create(DEFAULT_AUDIO_TEST_SOURCE, NULL);
+		plugin_name = __ms_ini_get_string("node type 1:audio test", DEFAULT_AUDIO_TEST_SOURCE);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_CUSTOM:
+		plugin_name = __ms_ini_get_string("node type 1:custom", DEFAULT_APP_SOURCE);
 		node->gst_element = __ms_element_create(DEFAULT_APP_SOURCE, NULL);
 		__ms_signal_create(&node->sig_list, node->gst_element, "need-data", G_CALLBACK(__ms_src_start_feed_cb), node);
 		__ms_signal_create(&node->sig_list, node->gst_element, "enough-data", G_CALLBACK(__ms_src_stop_feed_cb), node);
@@ -254,7 +256,6 @@ int __ms_src_node_create(media_streamer_node_s *node)
 	}
 
 	MS_SAFE_FREE(plugin_name);
-	__ms_destroy_ini_dictionary(dict);
 
 	if (node->gst_element == NULL)
 		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
@@ -299,41 +300,44 @@ int __ms_sink_node_create(media_streamer_node_s *node)
 	ms_retvm_if(node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	int ret = MEDIA_STREAMER_ERROR_NONE;
-	dictionary *dict = NULL;
 	char *plugin_name = NULL;
-
-	__ms_load_ini_dictionary(&dict);
 
 	switch (node->subtype) {
 	case MEDIA_STREAMER_NODE_SINK_TYPE_FILE:
-		ms_error("Error: not implemented yet");
+		plugin_name = __ms_ini_get_string("node type 2:file", DEFAULT_FILE_SINK);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SINK_TYPE_RTSP:
-		node->gst_element = __ms_element_create(DEFAULT_UDP_SINK, NULL);
+		plugin_name = __ms_ini_get_string("node type 2:rtsp", DEFAULT_UDP_SINK);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SINK_TYPE_HTTP:
 		ms_error("Error: not implemented yet");
 		break;
 	case MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO:
-		plugin_name = __ms_ini_get_string(dict, "sinks:audio_sink", DEFAULT_AUDIO_SINK);
+		plugin_name = __ms_ini_get_string("node type 2:audio", DEFAULT_AUDIO_SINK);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY:
-		plugin_name = __ms_ini_get_string(dict, "sinks:video_sink", DEFAULT_VIDEO_SINK);
+		plugin_name = __ms_ini_get_string("node type 2:overlay", DEFAULT_VIDEO_SINK);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SINK_TYPE_EVAS:
-		plugin_name = __ms_ini_get_string(dict, "sinks:evas_sink", DEFAULT_EVAS_SINK);
+		plugin_name = __ms_ini_get_string("node type 2:evas", DEFAULT_EVAS_SINK);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SINK_TYPE_FAKE:
-		node->gst_element = __ms_element_create(DEFAULT_FAKE_SINK, NULL);
+		plugin_name = __ms_ini_get_string("node type 2:fake", DEFAULT_FAKE_SINK);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
 		break;
 	case MEDIA_STREAMER_NODE_SINK_TYPE_CUSTOM:
-		node->gst_element = __ms_element_create(DEFAULT_APP_SINK, NULL);
-		g_object_set(G_OBJECT(node->gst_element), "emit-signals", TRUE, NULL);
-		__ms_signal_create(&node->sig_list, node->gst_element, "new-sample", G_CALLBACK(__ms_sink_new_buffer_cb), node);
-		__ms_signal_create(&node->sig_list, node->gst_element, "eos", G_CALLBACK(sink_eos), node);
+		plugin_name = __ms_ini_get_string("node type 2:custom", DEFAULT_APP_SINK);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
+		if (node->gst_element) {
+			g_object_set(G_OBJECT(node->gst_element), "emit-signals", TRUE, NULL);
+			__ms_signal_create(&node->sig_list, node->gst_element, "new-sample", G_CALLBACK(__ms_sink_new_buffer_cb), node);
+			__ms_signal_create(&node->sig_list, node->gst_element, "eos", G_CALLBACK(sink_eos), node);
+		}
 		break;
 	default:
 		ms_error("Error: invalid Sink node Type [%d]", node->subtype);
@@ -341,7 +345,6 @@ int __ms_sink_node_create(media_streamer_node_s *node)
 	}
 
 	MS_SAFE_FREE(plugin_name);
-	__ms_destroy_ini_dictionary(dict);
 
 	if (node->gst_element == NULL)
 		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;

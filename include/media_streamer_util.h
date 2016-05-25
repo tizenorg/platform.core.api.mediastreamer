@@ -96,7 +96,7 @@ extern "C" {
 	#define MEDIA_STREAMER_INI_PATH "/etc/media_streamer.ini"
 #endif
 
-#define MEDIA_STREAMER_INI_MAX_STRLEN 100
+#define INI_MAX_STRLEN (100)
 #define RTP_STREAM_DISABLED (0)
 
 /**
@@ -165,6 +165,7 @@ typedef struct {
 #define DEFAULT_UDP_SOURCE                  "udpsrc"
 #define DEFAULT_FILE_SOURCE                 "filesrc"
 #define DEFAULT_HTTP_SOURCE                 "souphttpsrc"
+#define DEFAULT_FILE_SINK                   "filesink"
 #define DEFAULT_UDP_SINK                    "udpsink"
 #define DEFAULT_RTP_BIN                     "rtpbin"
 
@@ -262,32 +263,25 @@ typedef struct {
 void __ms_load_ini_settings(media_streamer_ini_t *ini);
 
 /**
- * @brief Load settings from ini file into dictionary object.
+ * @brief Get instance of ini dictionary or create one if it doesn`t exist.
  *
  * @since_tizen 3.0
  */
-gboolean __ms_load_ini_dictionary(dictionary **dict);
-
-/**
- * @brief Destroys ini dictionary object and frees all resources.
- *
- * @since_tizen 3.0
- */
-gboolean __ms_destroy_ini_dictionary(dictionary *dict);
+dictionary *__ms_get_ini_instance(void);
 
 /**
  * @brief Read and copy string reading from ini file.
  *
  * @since_tizen 3.0
  */
-gchar *__ms_ini_get_string(dictionary *dict, const char *ini_path, char *default_str);
+gchar *__ms_ini_get_string(const char *ini_path, char *default_str);
 
 /**
  * @brief Reads comma-separated string list from ini file.
  *
  * @since_tizen 3.0
  */
-void __ms_ini_read_list(dictionary *dict, const char *key, gchar ***list);
+void __ms_ini_read_list(const char *key, gchar ***list);
 
 /**
  * @brief Converts Media Format mime type into Caps media format string.

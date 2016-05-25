@@ -23,7 +23,6 @@
 #define H264_PARSER_CONFIG_INTERVAL 5
 #define H264_ENCODER_ZEROLATENCY 0x00000004
 
-#define NODE_CONF_FIELD_LEN 100
 
 void __ms_generate_dots(GstElement *bin, gchar *name_tag)
 {
@@ -592,16 +591,11 @@ GstElement *__ms_combine_next_element(GstElement * previous_element, GstPad * pr
 			/* Create element by predefined format element type */
 		} else if (!found_element && next_elem_bin_name && MS_ELEMENT_IS_ENCODER(next_elem_bin_name)) {
 
-			dictionary *dict = NULL;
-
-			__ms_load_ini_dictionary(&dict);
 
 			if (MS_ELEMENT_IS_VIDEO(next_elem_bin_name))
-				found_element = __ms_video_encoder_element_create(dict, MEDIA_FORMAT_H263);
+				found_element = __ms_video_encoder_element_create(MEDIA_FORMAT_H263);
 			else
 				found_element = __ms_audio_encoder_element_create();
-
-			__ms_destroy_ini_dictionary(dict);
 
 			/* Create element by caps of the previous element */
 		} else if (!found_element) {
@@ -724,6 +718,7 @@ static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *m
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
 		} else {
+			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_CONVERTER_KLASS, NULL, DEFAULT_VIDEO_CONVERT);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_QUEUE_KLASS, NULL, DEFAULT_QUEUE);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_SINK_KLASS, NULL, NULL);
 		}
@@ -952,7 +947,6 @@ static gboolean __ms_feature_node_filter(GstPluginFeature *feature, gpointer dat
 
 GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node_type_e type)
 {
-	dictionary *dict = NULL;
 	GstElement *gst_element = NULL;
 
 	const gchar *src_type, *sink_type;
@@ -974,20 +968,18 @@ GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node
 		 * Try to get plugin name that defined in ini file
 		 * according with node type and specified format. */
 		ms_info("Specified node formats types: in[%s] - out[%s]", sink_type, src_type);
-		gchar conf_key[NODE_CONF_FIELD_LEN] = {0,};
-		if (snprintf(conf_key, NODE_CONF_FIELD_LEN, "node type %d:%s", type, (sink_type ? sink_type : src_type)) >= NODE_CONF_FIELD_LEN) {
-			ms_error("Failed to generate config field name, size >= %d", NODE_CONF_FIELD_LEN);
+		gchar conf_key[INI_MAX_STRLEN] = {0,};
+		if (snprintf(conf_key, INI_MAX_STRLEN, "node type %d:%s", type, (sink_type ? sink_type : src_type)) >= INI_MAX_STRLEN) {
+			ms_error("Failed to generate config field name, size >= %d", INI_MAX_STRLEN);
 			return NULL;
 		}
 
-		__ms_load_ini_dictionary(&dict);
-		gchar *plugin_name = __ms_ini_get_string(dict, conf_key, NULL);
+		gchar *plugin_name = __ms_ini_get_string(conf_key, NULL);
 
 		if (plugin_name) {
 			gst_element = __ms_element_create(plugin_name, NULL);
 			MS_SAFE_GFREE(plugin_name);
 		}
-		__ms_destroy_ini_dictionary(dict);
 	}
 
 	/* 3. Third priority:
@@ -995,10 +987,8 @@ GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node
 	 * try to find compatible plugin in gstreamer registry.
 	 * Elements that are compatible but defined as excluded will be skipped*/
 	if(!gst_element) {
-		__ms_load_ini_dictionary(&dict);
-
 		/* Read exclude elements list */
-		__ms_ini_read_list(dict, "general:exclude elements", &plug_info->exclude_names);
+		__ms_ini_read_list("general:exclude elements", &plug_info->exclude_names);
 
 		GList *factories = gst_registry_feature_filter(gst_registry_get(),
 			__ms_feature_node_filter, TRUE, plug_info);
@@ -1013,13 +1003,12 @@ GstElement *__ms_node_element_create(node_plug_s *plug_info, media_streamer_node
 
 		g_strfreev(plug_info->exclude_names);
 		gst_plugin_list_free(factories);
-		__ms_destroy_ini_dictionary(dict);
 	}
 
 	return gst_element;
 }
 
-GstElement *__ms_video_encoder_element_create(dictionary * dict, media_format_mimetype_e mime)
+GstElement *__ms_video_encoder_element_create(media_format_mimetype_e mime)
 {
 	char *plugin_name = NULL;
 	char *format_prefix = NULL;
@@ -1028,14 +1017,14 @@ GstElement *__ms_video_encoder_element_create(dictionary * dict, media_format_mi
 	GstElement *video_convert = __ms_element_create(DEFAULT_VIDEO_CONVERT, NULL);
 
 	format_prefix = g_strdup_printf("%s:encoder", __ms_convert_mime_to_string(mime));
-	plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_ENCODER);
+	plugin_name = __ms_ini_get_string(format_prefix, DEFAULT_VIDEO_ENCODER);
 	GstElement *encoder_elem = __ms_element_create(plugin_name, NULL);
 
 	MS_SAFE_FREE(format_prefix);
 	MS_SAFE_FREE(plugin_name);
 
 	format_prefix = g_strdup_printf("%s:parser", __ms_convert_mime_to_string(mime));
-	plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_PARSER);
+	plugin_name = __ms_ini_get_string(format_prefix, DEFAULT_VIDEO_PARSER);
 	GstElement *encoder_parser = __ms_element_create(plugin_name, NULL);
 
 	MS_SAFE_FREE(format_prefix);
@@ -1066,7 +1055,7 @@ GstElement *__ms_video_encoder_element_create(dictionary * dict, media_format_mi
 	return encoder_bin;
 }
 
-GstElement *__ms_video_decoder_element_create(dictionary * dict, media_format_mimetype_e mime)
+GstElement *__ms_video_decoder_element_create(media_format_mimetype_e mime)
 {
 	char *plugin_name = NULL;
 	char *format_prefix = NULL;
@@ -1074,13 +1063,13 @@ GstElement *__ms_video_decoder_element_create(dictionary * dict, media_format_mi
 	GstElement *last_elem = NULL;
 
 	format_prefix = g_strdup_printf("%s:decoder", __ms_convert_mime_to_string(mime));
-	plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_DECODER);
+	plugin_name = __ms_ini_get_string(format_prefix, DEFAULT_VIDEO_DECODER);
 	GstElement *decoder_elem = __ms_element_create(plugin_name, NULL);
 	MS_SAFE_FREE(format_prefix);
 	MS_SAFE_FREE(plugin_name);
 
 	format_prefix = g_strdup_printf("%s:parser", __ms_convert_mime_to_string(mime));
-	plugin_name = __ms_ini_get_string(dict, format_prefix, DEFAULT_VIDEO_PARSER);
+	plugin_name = __ms_ini_get_string(format_prefix, DEFAULT_VIDEO_PARSER);
 	GstElement *decoder_parser = __ms_element_create(plugin_name, NULL);
 
 	if (mime == MEDIA_FORMAT_H264_SP)

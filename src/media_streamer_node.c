@@ -57,10 +57,13 @@ node_info_s nodes_info[] = {
 	{MEDIA_STREAMER_STRICT, "videoconvert"},   /* MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER */
 	{MEDIA_STREAMER_STRICT, "audioconvert"},   /* MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER */
 	{MEDIA_STREAMER_STRICT, "audioresample"},  /* MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE */
-	{"Payloader", "rtph264pay"},               /* MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY */
-	{"Payloader", "rtpamrpay"},                /* MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY */
-	{"Depayloader", "rtph264depay"},           /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY */
-	{"Depayloader", "rtpamrdepay"},            /* MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY */
+	{"Payloader/Network", "rtph264pay"},       /* MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY */
+	{"Payloader/Network", "rtpamrpay"},        /* MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY */
+	{"Depayloader/Network", "rtph264depay"},   /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY */
+	{"Depayloader/Network", "rtpamrdepay"},    /* MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY */
+	{"Filter/Effect/Video", "videorate"},      /* MEDIA_STREAMER_NODE_TYPE_VIDEO_RATE */
+	{"Scaler", "videoscale"},                  /* MEDIA_STREAMER_NODE_TYPE_VIDEO_SCALE */
+	{"Parser", "h264parse"},                   /* MEDIA_STREAMER_NODE_TYPE_PARSER */
 	{MEDIA_STREAMER_STRICT, "capsfilter"},     /* MEDIA_STREAMER_NODE_TYPE_FILTER */
 	{MEDIA_STREAMER_STRICT, "tee"},            /* MEDIA_STREAMER_NODE_TYPE_TEE */
 	{MEDIA_STREAMER_STRICT, "queue"},          /* MEDIA_STREAMER_NODE_TYPE_QUEUE */

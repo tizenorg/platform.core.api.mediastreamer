@@ -70,6 +70,8 @@ typedef enum {
 	MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY,            /**<  Rtp audio payloader */
 	MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY,          /**<  Rtp video depayloader */
 	MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY,          /**<  Rtp audio depayloader */
+	MEDIA_STREAMER_NODE_TYPE_VIDEO_RATE,           /**<  Rate node type */
+	MEDIA_STREAMER_NODE_TYPE_VIDEO_SCALE,          /**<  Scale node type */
 	MEDIA_STREAMER_NODE_TYPE_PARSER,               /**<  Parser node type */
 	MEDIA_STREAMER_NODE_TYPE_FILTER,               /**<  Filter node type, to limit formats of data */
 	MEDIA_STREAMER_NODE_TYPE_TEE,                  /**<  Tee node type, splits data to multiple path */

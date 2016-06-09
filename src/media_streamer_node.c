@@ -89,7 +89,7 @@ void __ms_get_state(media_streamer_s *ms_streamer)
 		ms_error("Couldn`t get state for [%s]", GST_ELEMENT_NAME(ms_streamer->pipeline));
 }
 
-static gboolean __ms_rtp_node_has_property(media_streamer_node_s *ms_node, const gchar *param_name)
+static gboolean __ms_rtp_node_has_property(media_streamer_node_s *ms_node, const char *param_name)
 {
 	ms_retvm_if(!ms_node || !ms_node->gst_element, FALSE, "Error: empty node");
 	ms_retvm_if(!param_name, FALSE, "Error: invalid property parameter");
@@ -146,7 +146,7 @@ static int __ms_rtp_node_set_property(media_streamer_node_s *ms_node, param_s *p
 	} else if (!strcmp(param->param_name, MEDIA_STREAMER_PARAM_HOST)) {
 		g_value_unset(val);
 		g_value_init(val, G_TYPE_STRING);
-		g_value_take_string(val, g_strdup(param_value));
+		g_value_set_string(val, param_value);
 	} else if (!strcmp(param->param_name, MEDIA_STREAMER_PARAM_VIDEO_IN_FORMAT) ||
 			   !strcmp(param->param_name, MEDIA_STREAMER_PARAM_AUDIO_IN_FORMAT)) {
 		GstCaps *caps = gst_caps_from_string(param_value);
@@ -434,7 +434,7 @@ node_info_s * __ms_node_get_klass_by_its_type(media_streamer_node_type_e element
 	int it_klass;
 	for (it_klass = 0; nodes_info[it_klass].klass_name != NULL; it_klass++) {
 		if (it_klass == element_type) {
-			ms_info(" Node`s type klass is [%s]", nodes_info[it_klass].klass_name);
+			ms_info("Next node`s type klass is [%s]", nodes_info[it_klass].klass_name);
 			break;
 		}
 	}
@@ -446,6 +446,7 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 {
 	media_streamer_s *ms_streamer = (media_streamer_s *) user_data;
 	GstElement *src_element = GST_ELEMENT(g_value_get_object(item));
+	g_object_ref(src_element);
 
 	media_streamer_node_s *found_node = (media_streamer_node_s *) g_hash_table_lookup(ms_streamer->nodes_table, GST_ELEMENT_NAME(src_element));
 	if (!found_node)
@@ -460,13 +461,17 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 	if (__ms_src_need_typefind(src_pad)) {
 		found_element = __ms_decodebin_create(ms_streamer);
 		__ms_link_two_elements(src_element, src_pad, found_element);
+		MS_SAFE_UNREF(src_element);
 	} else {
 		/* Check the source element`s pad type */
 		const gchar *new_pad_type = __ms_get_pad_type(src_pad);
+		/* If SRC Element linked by user, don`t consider the following nodes` managing */
 		if (gst_pad_is_linked(src_pad)) {
 			MS_SAFE_UNREF(src_pad);
+			MS_SAFE_UNREF(src_element);
 			return;
 		}
+		/* It is media streamer Server part */
 		if (MS_ELEMENT_IS_VIDEO(new_pad_type) || MS_ELEMENT_IS_IMAGE(new_pad_type)) {
 			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_FILTER);
 			GstCaps *videoCaps = gst_caps_from_string(MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT);
@@ -483,6 +488,7 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_RTP);
 		}
 		__ms_generate_dots(ms_streamer->pipeline, "after_connecting_rtp");
+		MS_SAFE_UNREF(found_element);
 	}
 	MS_SAFE_UNREF(src_pad);
 }
@@ -497,12 +503,12 @@ int __ms_pipeline_prepare(media_streamer_s *ms_streamer)
 		ret = __ms_rtp_element_prepare(rtp_node) ? MEDIA_STREAMER_ERROR_NONE : MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
 	} else {
 		GstBin *nodes_bin = GST_BIN(ms_streamer->src_bin);
-		if(nodes_bin->numchildren == 0) {
+		if (nodes_bin->numchildren == 0) {
 			ms_debug(" No any node is added to [%s]", GST_ELEMENT_NAME(ms_streamer->src_bin));
 			return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
 		}
 		nodes_bin = GST_BIN(ms_streamer->sink_bin);
-		if(nodes_bin->numchildren == 0) {
+		if (nodes_bin->numchildren == 0) {
 			ms_debug(" No any node is added to [%s]", GST_ELEMENT_NAME(ms_streamer->sink_bin));
 			return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
 		}
@@ -614,6 +620,7 @@ int __ms_node_set_params_from_bundle(media_streamer_node_s *node, bundle *param_
 				written_count++;
 		}
 	}
+	g_list_free(p_list);
 
 	ms_info("Set [%d] parameters of [%d]", written_count, bundle_get_count(param_list));
 	if (written_count == 0)
@@ -635,10 +642,14 @@ int __ms_node_write_params_into_bundle(media_streamer_node_s *node, bundle *para
 		for (list_iter = p_list; list_iter != NULL; list_iter = list_iter->next) {
 			param = (param_s *)list_iter->data;
 
-			if (__ms_node_get_param_value(node, param, &string_val) == MEDIA_STREAMER_ERROR_NONE)
+			if (__ms_node_get_param_value(node, param, &string_val) == MEDIA_STREAMER_ERROR_NONE) {
 				bundle_add_str(param_list, param->param_name, string_val);
+				MS_SAFE_FREE(string_val);
+			}
 		}
 	}
+	g_list_free(p_list);
+
 	return ret;
 }
 
@@ -752,6 +763,8 @@ int __ms_node_get_param_value(media_streamer_node_s *node, param_s *param, char 
 		string_val = g_value_dup_string(&value);
 
 	*string_value = string_val;
+
+	g_value_reset(&value);
 	g_value_unset(&value);
 	return ret;
 }
@@ -774,7 +787,7 @@ int __ms_node_set_param_value(media_streamer_node_s *ms_node, param_s *param, co
 			/* v4l2src  have string property 'device' with value /dev/video[0-n]. */
 			gchar *camera_device_str = g_strdup_printf("/dev/video%d", camera_id);
 			g_object_set(ms_node->gst_element, param->origin_name, camera_device_str, NULL);
-			MS_SAFE_FREE(camera_device_str);
+			MS_SAFE_GFREE(camera_device_str);
 		} else
 			g_object_set(ms_node->gst_element, param->origin_name, camera_id, NULL);
 	} else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_CAPTURE_WIDTH))

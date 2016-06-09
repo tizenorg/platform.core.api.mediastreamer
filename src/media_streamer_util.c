@@ -266,14 +266,16 @@ void __ms_signal_destroy(void *data)
 	MS_SAFE_GFREE(sig_data);
 }
 
-void __ms_rtp_param_value_destroy(gpointer data)
+void __ms_param_value_destroy(gpointer data)
 {
 	GValue *val = (GValue *)data;
 	ms_retm_if(!data, "Empty object data!");
 
-	if (GST_VALUE_HOLDS_CAPS(val))
+	if (GST_VALUE_HOLDS_CAPS(val)) {
 		gst_caps_unref(GST_CAPS(gst_value_get_caps(val)));
 
-	g_value_unset(val);
+		g_value_reset(val);
+		g_value_unset(val);
+	}
 	MS_SAFE_GFREE(val);
 }

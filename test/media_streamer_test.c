@@ -1285,9 +1285,9 @@ void _interpret_autoplug_menu(char *cmd)
 {
 	if (strlen(cmd) == 1) {
 		if (cmd[0] == '2')
-			g_autoplug_mode = true;
+			g_autoplug_mode = TRUE;
 		else
-			g_autoplug_mode = false;
+			g_autoplug_mode = FALSE;
 	} else {
 		g_print("Invalid input. Default autoplug mode will be used\n");
 	}

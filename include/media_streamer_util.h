@@ -185,7 +185,7 @@ typedef struct {
 
 #define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,format=I420,width=352,height=288"
 #define MEDIA_STREAMER_DEFAULT_AUDIO_RAW_FORMAT "audio/x-raw,channels=1,rate=8000,format=S16LE"
-#define MEDIA_STREAMER_DEFAULT_VIDEO_FORMAT "video/x-h263,width=352,height=288,framrate = 3/1"
+#define MEDIA_STREAMER_DEFAULT_VIDEO_FORMAT "video/x-h263,width=352,height=288,framerate = 3/1"
 #define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/AMR ,rate = 8000,channels = 1"
 #define MEDIA_STREAMER_DEFAULT_VIDEO_RTP_FORMAT "application/x-rtp,media=video"
 #define MEDIA_STREAMER_DEFAULT_AUDIO_RTP_FORMAT "application/x-rtp,media=(string)audio,clock-rate=(int)8000,encoding-name=(string)AMR,encoding-params=(string)1,octet-align=(string)1"
@@ -225,12 +225,12 @@ typedef struct {
 		ms_debug("Got a few errors during unprepare [%s] bin.", GST_ELEMENT_NAME(bin));\
 	}
 
-#define MS_SET_INT_RTP_PARAM(obj, key, value) \
+#define MS_SET_INT_PARAM(obj, key, value) \
 	do { \
 		GValue *val = g_malloc0(sizeof(GValue)); \
 		g_value_init(val, G_TYPE_INT); \
 		g_value_set_int(val, value); \
-		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_rtp_param_value_destroy); \
+		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_param_value_destroy); \
 	} while (0)
 
 #define MS_SET_INT_STATIC_STRING_PARAM(obj, key, value) \
@@ -238,7 +238,7 @@ typedef struct {
 		GValue *val = g_malloc0(sizeof(GValue)); \
 		g_value_init(val, G_TYPE_STRING); \
 		g_value_set_static_string(val, value); \
-		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_rtp_param_value_destroy); \
+		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_param_value_destroy); \
 	} while (0)
 
 #define MS_SET_INT_CAPS_PARAM(obj, key, value) \
@@ -246,7 +246,7 @@ typedef struct {
 		GValue *val = g_malloc0(sizeof(GValue)); \
 		g_value_init(val, GST_TYPE_CAPS); \
 		gst_value_set_caps(val, value); \
-		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_rtp_param_value_destroy); \
+		g_object_set_data_full(G_OBJECT(obj), key, (gpointer)val, __ms_param_value_destroy); \
 	} while (0)
 
 #define MS_GET_CAPS_TYPE(caps, type) \
@@ -328,7 +328,7 @@ void __ms_signal_destroy(void *data);
  *
  * @since_tizen 3.0
  */
-void __ms_rtp_param_value_destroy(gpointer data);
+void __ms_param_value_destroy(gpointer data);
 
 #ifdef __cplusplus
 }

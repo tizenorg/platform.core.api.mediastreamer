@@ -18,6 +18,10 @@
 #include <media_streamer_util.h>
 #include <media_streamer_gst.h>
 #include <fcntl.h>
+#include <cynara-client.h>
+#include <cynara-session.h>
+
+#define SMACK_LABEL_LEN 255
 
 param_s param_table[] = {
 	{MEDIA_STREAMER_PARAM_CAMERA_ID, "camera-id"},
@@ -219,6 +223,58 @@ static void __ms_src_stop_feed_cb(GstElement *pipeline, gpointer data)
 	}
 }
 
+int __ms_src_node_check_priveleges(char *privilege)
+{
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+
+	FILE* opened_file;
+
+	char smackLabel[SMACK_LABEL_LEN + 1];
+	char uid[10];
+	cynara *cynara_h;
+
+	if (CYNARA_API_SUCCESS != cynara_initialize(&cynara_h, NULL)) {
+		ms_error("Failed to initialize cynara structure\n");
+		return MEDIA_STREAMER_ERROR_PERMISSION_DENIED;
+	}
+
+	bzero(smackLabel, SMACK_LABEL_LEN + 1);
+
+	/* Getting smack label */
+	opened_file = fopen("/proc/self/attr/current", "r");
+	if (opened_file == NULL) {
+		ms_error("Failed to open /proc/self/attr/current\n");
+		return MEDIA_STREAMER_ERROR_PERMISSION_DENIED;
+	}
+	ret = fread(smackLabel, sizeof(smackLabel), 1, opened_file);
+	fclose(opened_file);
+	if (ret < 0) {
+		ms_error("Failed to read /proc/self/attr/current\n");
+		return MEDIA_STREAMER_ERROR_PERMISSION_DENIED;
+	}
+
+	/* Getting uid */
+	snprintf(uid, sizeof(uid), "%d", getuid());
+	ms_info("%s %s %s\n", smackLabel, uid, privilege);
+
+	/* Checking with cynara for current session */
+	ret = cynara_check(cynara_h, smackLabel, "", uid, privilege);
+	ms_info("%d\n", ret);
+
+	switch (ret) {
+	case CYNARA_API_ACCESS_ALLOWED:
+		ms_info("Access is allowed");
+		break;
+	case CYNARA_API_ACCESS_DENIED:
+	default:
+		ms_error("Access is denied");
+		break;
+	}
+
+	cynara_finish(cynara_h);
+	return ret;
+}
+
 int __ms_src_node_create(media_streamer_node_s *node)
 {
 	ms_retvm_if(node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -238,18 +294,30 @@ int __ms_src_node_create(media_streamer_node_s *node)
 	case MEDIA_STREAMER_NODE_SRC_TYPE_HTTP:
 		plugin_name = __ms_ini_get_string("node type 1:http", DEFAULT_HTTP_SOURCE);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
+		ret = __ms_src_node_check_priveleges("http://tizen.org/privilege/internet");
+		if (ret != MEDIA_STREAMER_ERROR_NONE)
+			ms_error("Error getting privileges for HTTP Src Node");
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA:
 		plugin_name = __ms_ini_get_string("node type 1:camera", DEFAULT_CAMERA_SOURCE);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
+		ret = __ms_src_node_check_priveleges("http://tizen.org/privilege/camera");
+		if (ret != MEDIA_STREAMER_ERROR_NONE)
+			ms_error("Error getting privileges for Camera Src Node");
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_CAPTURE:
 		plugin_name = __ms_ini_get_string("node type 1:audio capture", DEFAULT_AUDIO_SOURCE);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
+		ret = __ms_src_node_check_priveleges("http://tizen.org/privilege/audiorecorder");
+		if (ret != MEDIA_STREAMER_ERROR_NONE)
+			ms_error("Error getting privileges for Audio capture Src Node");
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_CAPTURE:
 		plugin_name = __ms_ini_get_string("node type 1:video capture", DEFAULT_VIDEO_SOURCE);
 		node->gst_element = __ms_element_create(plugin_name, NULL);
+		ret = __ms_src_node_check_priveleges("http://tizen.org/privilege/camera");
+		if (ret != MEDIA_STREAMER_ERROR_NONE)
+			ms_error("Error getting privileges for Camera Src Node");
 		break;
 	case MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_TEST:
 		plugin_name = __ms_ini_get_string("node type 1:video test", DEFAULT_VIDEO_TEST_SOURCE);
@@ -272,10 +340,12 @@ int __ms_src_node_create(media_streamer_node_s *node)
 
 	MS_SAFE_FREE(plugin_name);
 
-	if (node->gst_element == NULL)
-		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
-	else
-		node->name = gst_element_get_name(node->gst_element);
+	if (ret == MEDIA_STREAMER_ERROR_NONE) {
+		if (node->gst_element == NULL)
+			ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+		else
+			node->name = gst_element_get_name(node->gst_element);
+	}
 
 	return ret;
 }
@@ -778,7 +848,7 @@ int __ms_node_uri_path_check(const char *file_uri)
 	if (!file_uri || !strlen(file_uri))
 		return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
 
-	file_open = open (file_uri, O_RDONLY);
+	file_open = open(file_uri, O_RDONLY);
 	if (file_open < 0) {
 		char mes_error[256];
 		strerror_r(errno, mes_error, sizeof(mes_error));
@@ -831,10 +901,9 @@ int __ms_node_set_param_value(media_streamer_node_s *ms_node, param_s *param, co
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_IS_LIVE_STREAM))
 		g_object_set(ms_node->gst_element, param->origin_name, !g_ascii_strcasecmp(param_value, "true"), NULL);
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_URI)) {
-		if(!__ms_node_uri_path_check(param_value))
+		if (!__ms_node_uri_path_check(param_value))
 			g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);
-	}
-	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_USER_AGENT))
+	} else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_USER_AGENT))
 		g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_STREAM_TYPE))
 		g_object_set(ms_node->gst_element, param->origin_name, (int)strtol(param_value, NULL, 10), NULL);

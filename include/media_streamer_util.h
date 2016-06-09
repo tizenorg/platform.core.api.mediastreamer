@@ -223,7 +223,6 @@ typedef struct {
 #define MS_BIN_UNPREPARE(bin) \
 	if (!__ms_bin_remove_elements(ms_streamer, bin)) {\
 		ms_debug("Got a few errors during unprepare [%s] bin.", GST_ELEMENT_NAME(bin));\
-		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;\
 	}
 
 #define MS_SET_INT_RTP_PARAM(obj, key, value) \

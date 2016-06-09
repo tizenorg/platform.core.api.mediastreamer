@@ -105,6 +105,7 @@ typedef struct {
 	gboolean is_seeking;
 
 	media_streamer_state_e state;
+	media_streamer_state_e pend_state;
 
 	media_streamer_callback_s error_cb;
 	media_streamer_callback_s state_changed_cb;

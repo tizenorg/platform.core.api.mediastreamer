@@ -26,9 +26,7 @@ int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e stat
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
-
-	media_streamer_state_e previous_state = ms_streamer->state;
-	ms_retvm_if(previous_state == state, MEDIA_STREAMER_ERROR_NONE, "Media streamer already in this state");
+	ms_retvm_if(ms_streamer->state == state, MEDIA_STREAMER_ERROR_NONE, "Media streamer already in this state");
 
 	switch (state) {
 	case MEDIA_STREAMER_STATE_NONE:
@@ -36,27 +34,31 @@ int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e stat
 		 * Media streamer must be in IDLE state
 		 * Unlink and destroy all bins and elements.
 		 */
-		if (previous_state != MEDIA_STREAMER_STATE_IDLE)
-			__ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE);
+		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_NULL);
+		ms_streamer->pend_state = 0;
+		ms_streamer->state = state;
 		break;
 	case MEDIA_STREAMER_STATE_IDLE:
 		/*
 		 * Unlink all gst_elements, set pipeline into state NULL
 		 */
-		if (previous_state != MEDIA_STREAMER_STATE_NONE) {
-			MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_unlock_state, ms_streamer);
-			ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_NULL);
-		}
+		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_NULL);
+		MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_unlock_state, ms_streamer);
+		ms_streamer->pend_state = MEDIA_STREAMER_STATE_NONE;
+		ms_streamer->state = state;
 		break;
 	case MEDIA_STREAMER_STATE_READY:
 		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PAUSED);
+		ms_streamer->pend_state = MEDIA_STREAMER_STATE_READY;
 		break;
 	case MEDIA_STREAMER_STATE_PLAYING:
-		MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_unlock_state, ms_streamer);
 		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PLAYING);
+		MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_unlock_state, ms_streamer);
+		ms_streamer->pend_state = MEDIA_STREAMER_STATE_PLAYING;
 		break;
 	case MEDIA_STREAMER_STATE_PAUSED:
 		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PAUSED);
+		ms_streamer->pend_state = MEDIA_STREAMER_STATE_PAUSED;
 		break;
 	case MEDIA_STREAMER_STATE_SEEKING:
 	default:{
@@ -65,13 +67,6 @@ int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e stat
 		}
 	}
 
-	if (ret != MEDIA_STREAMER_ERROR_NONE) {
-		ms_error("Failed change state");
-		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
-	}
-
-	ms_streamer->state = state;
-	ms_info("Media streamer state changed to [%d]", state);
 	return ret;
 }
 

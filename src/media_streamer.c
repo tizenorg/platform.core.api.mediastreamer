@@ -190,15 +190,11 @@ int media_streamer_prepare(media_streamer_h streamer)
 
 	ret = __ms_pipeline_prepare(ms_streamer);
 
-	if (ret == MEDIA_STREAMER_ERROR_NONE) {
-		ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY);
-		if (ret != MEDIA_STREAMER_ERROR_NONE)
-			__ms_pipeline_unprepare(ms_streamer);
-	}
-
 	__ms_generate_dots(ms_streamer->pipeline, "after_prepare");
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);
+
+	__ms_get_state(ms_streamer);
 
 	return ret;
 }
@@ -215,10 +211,7 @@ int media_streamer_unprepare(media_streamer_h streamer)
 
 	__ms_generate_dots(ms_streamer->pipeline, "before_unprepare");
 
-	ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE);
-
-	if (ret == MEDIA_STREAMER_ERROR_NONE)
-		ret = __ms_pipeline_unprepare(ms_streamer);
+	ret = __ms_pipeline_unprepare(ms_streamer);
 
 	__ms_generate_dots(ms_streamer->pipeline, "after_unprepare");
 
@@ -240,6 +233,8 @@ int media_streamer_play(media_streamer_h streamer)
 	ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_PLAYING);
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);
+
+	__ms_get_state(ms_streamer);
 
 	return ret;
 }
@@ -264,7 +259,8 @@ int media_streamer_create(media_streamer_h *streamer)
 		return ret;
 	}
 
-	ms_streamer->state = MEDIA_STREAMER_STATE_IDLE;
+	ms_streamer->pend_state = MEDIA_STREAMER_STATE_NONE;
+	ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_IDLE);
 	*streamer = ms_streamer;
 
 	ms_info("Media Streamer created successfully");
@@ -454,6 +450,8 @@ int media_streamer_pause(media_streamer_h streamer)
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 
+	__ms_get_state(ms_streamer);
+
 	return ret;
 }
 
@@ -475,6 +473,8 @@ int media_streamer_stop(media_streamer_h streamer)
 		ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_PAUSED);
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);
+
+	__ms_get_state(ms_streamer);
 
 	return ret;
 }

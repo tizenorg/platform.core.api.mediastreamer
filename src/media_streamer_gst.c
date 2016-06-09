@@ -1346,11 +1346,31 @@ static gboolean __ms_bus_cb(GstBus *bus, GstMessage *message, gpointer userdata)
 					gchar *state_transition_name;
 
 					gst_message_parse_state_changed(message, &state_old, &state_new, &state_pending);
-					state_transition_name = g_strdup_printf("%s_%s", gst_element_state_get_name(state_old), gst_element_state_get_name(state_new));
-					ms_info("GST_MESSAGE_STATE_CHANGED: [%s] %s", GST_OBJECT_NAME(GST_MESSAGE_SRC(message)), state_transition_name);
+					state_transition_name = g_strdup_printf("Old_[%s]_New_[%s]_Pending_[%s]", gst_element_state_get_name(state_old),
+											gst_element_state_get_name(state_new), gst_element_state_get_name(state_pending));
+					ms_info("GST_MESSAGE_STATE_CHANGED: [%s] %s. ", GST_OBJECT_NAME(GST_MESSAGE_SRC(message)), state_transition_name);
 					__ms_generate_dots(ms_streamer->pipeline, state_transition_name);
-
 					MS_SAFE_GFREE(state_transition_name);
+
+					media_streamer_state_e old_state = ms_streamer->state;
+					if (state_new >= GST_STATE_PAUSED)
+					{
+						if ((old_state == MEDIA_STREAMER_STATE_PLAYING) && (state_new <= GST_STATE_PAUSED))
+							ms_streamer->pend_state = MEDIA_STREAMER_STATE_PAUSED;
+
+						if (ms_streamer->pend_state != ms_streamer->state) {
+
+							g_mutex_lock(&ms_streamer->mutex_lock);
+							ms_streamer->state = ms_streamer->pend_state;
+							g_mutex_unlock(&ms_streamer->mutex_lock);
+
+							ms_info("Media streamer state changed to [%d] [%d]", old_state, ms_streamer->state);
+							if (ms_streamer->state_changed_cb.callback) {
+								media_streamer_state_changed_cb cb = (media_streamer_state_changed_cb) ms_streamer->state_changed_cb.callback;
+								cb((media_streamer_h) ms_streamer, old_state, ms_streamer->state, ms_streamer->state_changed_cb.user_data);
+							}
+						}
+					}
 				}
 				break;
 			}
@@ -1359,14 +1379,21 @@ static gboolean __ms_bus_cb(GstBus *bus, GstMessage *message, gpointer userdata)
 				if (GST_MESSAGE_SRC(message) == GST_OBJECT(ms_streamer->pipeline)
 					&& ms_streamer->is_seeking) {
 
+					g_mutex_lock(&ms_streamer->mutex_lock);
+					ms_streamer->pend_state = MEDIA_STREAMER_STATE_SEEKING;
+					g_mutex_unlock(&ms_streamer->mutex_lock);
+
 					if (ms_streamer->seek_done_cb.callback) {
 						media_streamer_position_changed_cb cb = (media_streamer_position_changed_cb) ms_streamer->seek_done_cb.callback;
 						cb(ms_streamer->seek_done_cb.user_data);
 					}
 
+					g_mutex_lock(&ms_streamer->mutex_lock);
 					ms_streamer->is_seeking = FALSE;
+					ms_streamer->pend_state = MEDIA_STREAMER_STATE_PLAYING;
 					ms_streamer->seek_done_cb.callback = NULL;
 					ms_streamer->seek_done_cb.user_data = NULL;
+					g_mutex_unlock(&ms_streamer->mutex_lock);
 				}
 				break;
 			}

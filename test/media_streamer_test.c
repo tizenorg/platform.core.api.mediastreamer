@@ -142,6 +142,11 @@ static void streamer_seek_cb(void *user_data)
 	g_print("Current play position [%02d:%02d:%03d] \n", current_time / (1000 * 60), (current_time / 1000) % 60, current_time % 1000);
 }
 
+static void streamer_changed_cb(media_streamer_h streamer, media_streamer_state_e previous_state, media_streamer_state_e current_state, void *user_data)
+{
+	g_print("Media Streamer State changed [%d] -> [%d]", previous_state, current_state);
+}
+
 static void _create(media_streamer_h *streamer)
 {
 	g_print("== create \n");
@@ -170,6 +175,8 @@ static void _prepare(void)
 		g_print("Fail to prepare media streamer");
 		return;
 	}
+
+	media_streamer_set_state_change_cb(current_media_streamer, streamer_changed_cb, NULL);
 	g_print("== success prepare \n");
 }
 

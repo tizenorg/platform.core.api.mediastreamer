@@ -79,6 +79,16 @@ node_info_s nodes_info[] = {
 	{NULL, NULL}
 };
 
+void __ms_get_state(media_streamer_s *ms_streamer)
+{
+	GstState state_old, state_new;
+	GstStateChangeReturn ret_state = gst_element_get_state(ms_streamer->pipeline, &state_old, &state_new, GST_CLOCK_TIME_NONE);
+	if (ret_state == GST_STATE_CHANGE_SUCCESS)
+		ms_info("Got state for [%s]: old [%s], new [%s]", GST_ELEMENT_NAME(ms_streamer->pipeline), gst_element_state_get_name(state_old), gst_element_state_get_name(state_new));
+	else
+		ms_error("Couldn`t get state for [%s]", GST_ELEMENT_NAME(ms_streamer->pipeline));
+}
+
 static gboolean __ms_rtp_node_has_property(media_streamer_node_s *ms_node, const gchar *param_name)
 {
 	ms_retvm_if(!ms_node || !ms_node->gst_element, FALSE, "Error: empty node");
@@ -481,14 +491,31 @@ int __ms_pipeline_prepare(media_streamer_s *ms_streamer)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
+	int ret = MEDIA_STREAMER_ERROR_NONE;
 	media_streamer_node_s *rtp_node = (media_streamer_node_s *)g_hash_table_lookup(ms_streamer->nodes_table, "rtp_container");
-	if (rtp_node)
-		__ms_rtp_element_prepare(rtp_node);
+	if (rtp_node) {
+		ret = __ms_rtp_element_prepare(rtp_node) ? MEDIA_STREAMER_ERROR_NONE : MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
+	} else {
+		GstBin *nodes_bin = GST_BIN(ms_streamer->src_bin);
+		if(nodes_bin->numchildren == 0) {
+			ms_debug(" No any node is added to [%s]", GST_ELEMENT_NAME(ms_streamer->src_bin));
+			return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
+		}
+		nodes_bin = GST_BIN(ms_streamer->sink_bin);
+		if(nodes_bin->numchildren == 0) {
+			ms_debug(" No any node is added to [%s]", GST_ELEMENT_NAME(ms_streamer->sink_bin));
+			return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
+		}
+	}
 
 	MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_lock_state, ms_streamer);
 	MS_BIN_FOREACH_ELEMENTS(ms_streamer->src_bin, _src_node_prepare, ms_streamer);
 
-	return MEDIA_STREAMER_ERROR_NONE;
+	ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY);
+	if (ret != MEDIA_STREAMER_ERROR_NONE)
+		__ms_pipeline_unprepare(ms_streamer);
+
+	return ret;
 }
 
 static gboolean __ms_bin_remove_elements(media_streamer_s *ms_streamer, GstElement *bin)
@@ -542,6 +569,8 @@ int __ms_pipeline_unprepare(media_streamer_s *ms_streamer)
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 
 	__ms_element_set_state(ms_streamer->pipeline, GST_STATE_NULL);
+	ms_streamer->state = MEDIA_STREAMER_STATE_IDLE;
+	ms_streamer->pend_state = ms_streamer->state;
 
 	MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_unlock_state, ms_streamer);
 

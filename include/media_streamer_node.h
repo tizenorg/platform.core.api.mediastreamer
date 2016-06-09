@@ -16,6 +16,12 @@
 
 #include <media_streamer_priv.h>
 
+/**
+ * @brief Gets state of media streamer.
+ *
+ * @since_tizen 3.0
+ */
+void __ms_get_state(media_streamer_s *ms_streamer);
 
 /**
  * @brief Creates media streamer node using input and output format.

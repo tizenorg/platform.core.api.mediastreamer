@@ -10,8 +10,8 @@ SET(PREFIX ${CMAKE_INSTALL_PREFIX})
 SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
-SET(dependents "dlog glib-2.0 mm-common capi-media-tool iniparser bundle libtbm gstreamer-1.0 gstreamer-plugins-base-1.0 gstreamer-app-1.0" )
-SET(pc_dependents "capi-base-common capi-media-tool gstreamer-1.0 gstreamer-plugins-base-1.0 gstreamer-app-1.0" )
+SET(dependents "dlog glib-2.0 mm-common capi-media-tool iniparser bundle libtbm gstreamer-1.0 gstreamer-plugins-base-1.0 gstreamer-app-1.0 cynara-client")
+SET(pc_dependents "capi-base-common capi-media-tool gstreamer-1.0 gstreamer-plugins-base-1.0 gstreamer-app-1.0 cynara-client")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})

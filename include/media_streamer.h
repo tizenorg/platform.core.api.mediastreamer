@@ -836,9 +836,7 @@ int media_streamer_get_state(media_streamer_h streamer, media_streamer_state_e *
 /**
  * @brief Creates media streamer source node.
  * @since_tizen 3.0
- * @remarks The mediastorage privilege(http://tizen.org/privilege/mediastorage) should be added if any video/audio files are used to play located in the internal storage.
- *          The externalstorage privilege(http://tizen.org/privilege/externalstorage) should be added if any video/audio files are used to play located in the external storage.
- *          The internet privilege(http://tizen.org/privilege/internet) should be added if any URIs are used to play from network.
+ * @remarks The internet privilege(http://tizen.org/privilege/internet) should be added if any URIs are used to play from network.
  *          The camera privilege(http://tizen.org/privilege/camera) should be added if the src node handle the camera device.
  *          The recorder privilege(http://tizen.org/privilege/recorder) should be added if the src node handle the recorder device.
  *          You can release @a source node using media_streamer_node_destroy() function.
@@ -878,9 +876,7 @@ int media_streamer_node_push_packet(media_streamer_node_h src, media_packet_h pa
 /**
  * @brief Creates media streamer sink node.
  * @since_tizen 3.0
- * @remarks The mediastorage privilege(http://tizen.org/privilege/mediastorage) should be added if any video/audio files are written in the internal storage devices.
- *          The externalstorage privilege(http://tizen.org/privilege/externalstorage) should be added if any video/audio files are written in the external storage devices.
- *          The internet privilege(http://tizen.org/privilege/internet) should be added if any URIs are used to transmit the output data.
+ * @remarks The internet privilege(http://tizen.org/privilege/internet) should be added if any URIs are used to transmit the output data.
  *          You can release @a sink node using media_streamer_node_destroy()
  * @param [in]  type     Type of sink node to be created
  * @param [out] sink     Media streamer sink node handle
@@ -1092,6 +1088,8 @@ int media_streamer_node_get_pad_name(media_streamer_node_h node, char ***src_pad
  * @brief Sets parameters of node.
  * @details Many parameters can be set at one time all together by using bundle.
  * @since_tizen 3.0
+ * @remarks The mediastorage privilege(http://tizen.org/privilege/mediastorage) should be added if any video/audio files are written in the internal storage devices.
+ *          The externalstorage privilege(http://tizen.org/privilege/externalstorage) should be added if any video/audio files are written in the external storage devices.
  * @param [in] node        Media streamer node handle
  * @param [in] param_list  Key value array of media streamer node parameters
  * @return @c 0 on success,
@@ -1100,6 +1098,7 @@ int media_streamer_node_get_pad_name(media_streamer_node_h node, char ***src_pad
  * @retval #MEDIA_STREAMER_ERROR_INVALID_STATE Invalid state
  * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #MEDIA_STREAMER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #MEDIA_STREAMER_ERROR_PERMISSION_DENIED Permission denied
  * @pre Create a node handle by calling media_streamer_node_createXXX() function.
  * @pre Get param list to set by calling media_streamer_node_get_params() function.
  * @see media_streamer_node_create()
@@ -1135,6 +1134,8 @@ int media_streamer_node_get_params(media_streamer_node_h node, bundle **param_li
  * @brief Sets single parameter of node.
  * @details Sets parameter one by one without creating param bundle.
  * @since_tizen 3.0
+ * @remarks The mediastorage privilege(http://tizen.org/privilege/mediastorage) should be added if any video/audio files are written in the internal storage devices.
+ *          The externalstorage privilege(http://tizen.org/privilege/externalstorage) should be added if any video/audio files are written in the external storage devices.
  * @param [in] node        Media streamer node handle
  * @param [in] param_name  Param name of node
  * @param [in] param_value Parm value of node
@@ -1144,6 +1145,7 @@ int media_streamer_node_get_params(media_streamer_node_h node, bundle **param_li
  * @retval #MEDIA_STREAMER_ERROR_INVALID_STATE Invalid state
  * @retval #MEDIA_STREAMER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #MEDIA_STREAMER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #MEDIA_STREAMER_ERROR_PERMISSION_DENIED Permission denied
  * @pre Create a node handle by calling media_streamer_node_createXXX() function.
  * @pre Get param list to set by calling media_streamer_node_get_params() function.
  * @see media_streamer_node_create()

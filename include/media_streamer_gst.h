@@ -38,13 +38,26 @@
 #define MEDIA_STREAMER_SINK_KLASS "Sink"
 #define MEDIA_STREAMER_STRICT "_strict_"
 
-
 /**
  * @brief Generates dot files for GStreamer pipeline.
  *
  * @since_tizen 3.0
  */
 void __ms_generate_dots(GstElement *bin, gchar *name_tag);
+
+/**
+ * @brief Gets Node`s information by its type.
+ *
+ * @since_tizen 3.0
+ */
+node_info_s *__ms_node_get_klass_by_its_type(media_streamer_node_type_e element_type);
+
+/**
+ * @brief Link two elements.
+ *
+ * @since_tizen 3.0
+ */
+gboolean __ms_link_two_elements(GstElement *previous_element, GstPad *prev_elem_src_pad, GstElement *found_element);
 
 /**
  * @brief Finds GstElement by klass name.
@@ -60,14 +73,6 @@ GstElement *__ms_bin_find_element_by_klass(GstElement *sink_bin, GstElement *pre
  * @since_tizen 3.0
  */
 GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_name);
-
-/**
- * @brief Links two Gstelements and returns the last one.
- *
- * @since_tizen 3.0
- */
-GstElement *__ms_link_with_new_element(GstElement *previous_element, GstPad *prev_elem_src_pad,
-					GstElement *new_element);
 
 /**
  * @brief Creates GstElement by plugin name.
@@ -156,8 +161,7 @@ GstElement *__ms_decodebin_create(media_streamer_s *ms_streamer);
  *
  * @since_tizen 3.0
  */
-GstElement *__ms_combine_next_element(GstElement *previous_element, GstPad *prev_elem_src_pad, GstElement *bin_to_find_in,
-					const gchar *next_elem_klass_name, const gchar *next_elem_bin_name, gchar *default_element);
+GstElement *__ms_combine_next_element(GstElement *previous_element, GstPad *prev_elem_src_pad, GstElement *bin_to_find_in, media_streamer_node_type_e node_type);
 
 /**
  * @brief Creates pipeline, bus and src/sink/topology bins.

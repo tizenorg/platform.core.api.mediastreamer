@@ -84,6 +84,13 @@ typedef enum {
 #define VIDEO_PORT 5000
 #define AUDIO_PORT 6000
 
+#define VIDEO_WIDTH       352
+#define VIDEO_HIGHT       288
+#define VIDEO_AVG_BPS     1
+#define VIDEO_MAX_BPS     3
+#define AUDIO_CHANNEL     1
+#define AUDIO_SAMPLERATE  8000
+
 /*---------------------------------------------------------------------------
 |    GLOBAL VARIABLE DEFINITIONS:                     |
 ---------------------------------------------------------------------------*/
@@ -268,36 +275,36 @@ static void create_formats(void)
 	if (media_format_set_video_mime(vfmt_raw, MEDIA_FORMAT_I420) != MEDIA_FORMAT_ERROR_NONE)
 		g_print("media_format_set_video_mime failed!");
 
-	media_format_set_video_width(vfmt_raw, 800);
-	media_format_set_video_height(vfmt_raw, 600);
-	media_format_set_video_avg_bps(vfmt_raw, 10000);
-	media_format_set_video_max_bps(vfmt_raw, 30000);
+	media_format_set_video_width(vfmt_raw, VIDEO_WIDTH);
+	media_format_set_video_height(vfmt_raw, VIDEO_HIGHT);
+	media_format_set_video_avg_bps(vfmt_raw, VIDEO_AVG_BPS);
+	media_format_set_video_max_bps(vfmt_raw, VIDEO_MAX_BPS);
 
 	/* Define encoded video format */
 	media_format_create(&vfmt_encoded);
 	if (media_format_set_video_mime(vfmt_encoded, MEDIA_FORMAT_H263) != MEDIA_FORMAT_ERROR_NONE)
 		g_print("media_format_set_video_mime failed!");
 
-	media_format_set_video_width(vfmt_encoded, 800);
-	media_format_set_video_height(vfmt_encoded, 600);
-	media_format_set_video_avg_bps(vfmt_encoded, 10000);
-	media_format_set_video_max_bps(vfmt_encoded, 30000);
+	media_format_set_video_width(vfmt_encoded, VIDEO_WIDTH);
+	media_format_set_video_height(vfmt_encoded, VIDEO_HIGHT);
+	media_format_set_video_avg_bps(vfmt_encoded, VIDEO_AVG_BPS);
+	media_format_set_video_max_bps(vfmt_encoded, VIDEO_MAX_BPS);
 
 	/* Define audio raw format */
 	media_format_create(&afmt_raw);
 	if (media_format_set_audio_mime(afmt_raw, MEDIA_FORMAT_PCM) != MEDIA_FORMAT_ERROR_NONE)
 		g_print("media_format_set_audio_mime failed!");
 
-	media_format_set_audio_channel(afmt_raw, 1);
-	media_format_set_audio_samplerate(afmt_raw, 8000);
+	media_format_set_audio_channel(afmt_raw, AUDIO_CHANNEL);
+	media_format_set_audio_samplerate(afmt_raw, AUDIO_SAMPLERATE);
 
 	/* Define audio encoded format */
 	media_format_create(&afmt_encoded);
 	if (media_format_set_audio_mime(afmt_encoded, MEDIA_FORMAT_AMR_NB) != MEDIA_FORMAT_ERROR_NONE)
 		g_print("media_format_set_audio_mime failed!");
 
-	media_format_set_audio_channel(afmt_encoded, 1);
-	media_format_set_audio_samplerate(afmt_encoded, 8000);
+	media_format_set_audio_channel(afmt_encoded, AUDIO_CHANNEL);
+	media_format_set_audio_samplerate(afmt_encoded, AUDIO_SAMPLERATE);
 }
 
 static void set_rtp_params(media_streamer_node_h rtp_node, const char *ip, int video_port, int audio_port, gboolean port_reverse)
@@ -335,8 +342,8 @@ static void set_rtp_params(media_streamer_node_h rtp_node, const char *ip, int v
 	bundle_add_str(params, MEDIA_STREAMER_PARAM_HOST, ip);
 
 	media_streamer_node_set_params(rtp_node, params);
-	media_streamer_node_set_pad_format(rtp_node, "video_in_rtp", vfmt_encoded);
-	media_streamer_node_set_pad_format(rtp_node, "audio_in_rtp", afmt_raw);
+	media_streamer_node_set_pad_format(rtp_node, "video_in", vfmt_encoded);
+	media_streamer_node_set_pad_format(rtp_node, "audio_in", afmt_encoded);
 
 	bundle_free(params);
 }

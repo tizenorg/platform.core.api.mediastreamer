@@ -183,10 +183,14 @@ typedef struct {
 #define DEFAULT_AUDIO_RTPPAY                "rtpamrpay"
 #define DEFAULT_AUDIO_RTPDEPAY              "rtpamrdepay"
 
-#define DEFAULT_AUDIO "S16LE"
-#define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,format=I420,width=1280,height=720"
-#define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/x-raw,channels=1,rate=8000,format="DEFAULT_AUDIO
-#define MEDIA_STREAMER_DEFAULT_ENCODER_FORMAT(format) "video/x-"format",stream-format=byte-stream"
+#define MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT "video/x-raw,format=I420,width=352,height=288"
+#define MEDIA_STREAMER_DEFAULT_AUDIO_RAW_FORMAT "audio/x-raw,channels=1,rate=8000,format=S16LE"
+#define MEDIA_STREAMER_DEFAULT_VIDEO_FORMAT "video/x-h263,width=352,height=288,framrate = 3/1"
+#define MEDIA_STREAMER_DEFAULT_AUDIO_FORMAT "audio/AMR ,rate = 8000,channels = 1"
+#define MEDIA_STREAMER_DEFAULT_VIDEO_RTP_FORMAT "application/x-rtp,media=video"
+#define MEDIA_STREAMER_DEFAULT_AUDIO_RTP_FORMAT "application/x-rtp,media=(string)audio,clock-rate=(int)8000,encoding-name=(string)AMR,encoding-params=(string)1,octet-align=(string)1"
+
+
 
 #define MS_ELEMENT_IS_OUTPUT(el) g_strrstr(el, "out")
 #define MS_ELEMENT_IS_INPUT(el) g_strrstr(el, "in")
@@ -289,13 +293,6 @@ void __ms_ini_read_list(const char *key, gchar ***list);
  * @since_tizen 3.0
  */
 const gchar *__ms_convert_mime_to_string_format(media_format_mimetype_e mime);
-
-/**
- * @brief Converts Media Format mime type into Caps media format string.
- *
- * @since_tizen 3.0
- */
-const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime);
 
 /**
  * @brief Converts Media Format mime type into rtp media type.

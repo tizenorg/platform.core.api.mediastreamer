@@ -196,27 +196,6 @@ const gchar *__ms_convert_mime_to_string_format(media_format_mimetype_e mime)
 	return format_name;
 }
 
-const gchar *__ms_convert_mime_to_string(media_format_mimetype_e mime)
-{
-	switch (mime) {
-	case MEDIA_FORMAT_I420:
-		return "I420";
-	case MEDIA_FORMAT_YV12:
-		return "YV12";
-	case MEDIA_FORMAT_H263:
-		return "h263";
-	case MEDIA_FORMAT_H264_HP:
-	case MEDIA_FORMAT_H264_MP:
-	case MEDIA_FORMAT_H264_SP:
-		return "h264";
-	case MEDIA_FORMAT_PCM:
-		return DEFAULT_AUDIO;
-	default:
-		ms_error("Invalid or Unsupported media format [%d].", mime);
-		return NULL;
-	}
-}
-
 const gchar *__ms_convert_mime_to_rtp_format(media_format_mimetype_e mime)
 {
 	switch (mime) {
@@ -239,7 +218,7 @@ const gchar *__ms_convert_mime_to_rtp_format(media_format_mimetype_e mime)
 
 media_format_mimetype_e __ms_convert_string_format_to_media_format(const char *format_type)
 {
-	media_format_mimetype_e mime = 0;
+	media_format_mimetype_e mime = MEDIA_FORMAT_NATIVE_VIDEO;
 	int it_format;
 	for (it_format = 0; format_table[it_format].format != MEDIA_FORMAT_MAX; it_format++) {
 		if (g_strrstr(format_type, format_table[it_format].format_name)) {

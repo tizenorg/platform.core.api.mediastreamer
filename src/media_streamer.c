@@ -609,9 +609,10 @@ int media_streamer_node_link(media_streamer_node_h src_node, const char *src_pad
 	gboolean link_ret = gst_element_link_pads_filtered(ms_src_node->gst_element, src_pad_name,
 											  ms_dest_node->gst_element, sink_pad_name, src_pad_caps ? src_pad_caps : sink_pad_caps);
 	if (!link_ret) {
-		ms_error("Can not link [%s]->%s pad to [%s]->%s pad, ret code [%d] ", ms_src_node->name, src_pad_name, ms_dest_node->name, sink_pad_name, link_ret);
+		ms_error("Can not link [%s]:%s pad to [%s]:%s pad, ret code [%d] ", ms_src_node->name, src_pad_name, ms_dest_node->name, sink_pad_name, link_ret);
 		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	} else {
+		ms_info("Linked successfully [%s]:%s pad to [%s]:%s pad, ret code [%d] ", ms_src_node->name, src_pad_name, ms_dest_node->name, sink_pad_name, link_ret);
 		ms_src_node->linked_by_user = TRUE;
 		ms_dest_node->linked_by_user = TRUE;
 	}

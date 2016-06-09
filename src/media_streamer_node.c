@@ -47,34 +47,35 @@ param_s param_table[] = {
 };
 
 node_info_s nodes_info[] = {
-	{NULL, NULL},                              /* MEDIA_STREAMER_NODE_TYPE_NONE */
-	{"Source", "fakesrc"},                     /* MEDIA_STREAMER_NODE_TYPE_SRC */
-	{"Sink", "fakesink"},                      /* MEDIA_STREAMER_NODE_TYPE_SINK */
-	{"Codec/Encoder", "x264enc"},              /* MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER */
-	{"Codec/Decoder", "avdec_h264"},           /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER */
-	{"Codec/Encoder", "amrnbenc"},             /* MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER */
-	{"Codec/Decoder", "amrnbdec"},             /* MEDIA_STREAMER_NODE_TYPE_AUDIO_DECODER */
-	{MEDIA_STREAMER_STRICT, "videoconvert"},   /* MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER */
-	{MEDIA_STREAMER_STRICT, "audioconvert"},   /* MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER */
-	{MEDIA_STREAMER_STRICT, "audioresample"},  /* MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE */
-	{"Payloader/Network", "rtph264pay"},       /* MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY */
-	{"Payloader/Network", "rtpamrpay"},        /* MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY */
-	{"Depayloader/Network", "rtph264depay"},   /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY */
-	{"Depayloader/Network", "rtpamrdepay"},    /* MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY */
-	{"Filter/Effect/Video", "videorate"},      /* MEDIA_STREAMER_NODE_TYPE_VIDEO_RATE */
-	{"Scaler", "videoscale"},                  /* MEDIA_STREAMER_NODE_TYPE_VIDEO_SCALE */
-	{"Parser", "h264parse"},                   /* MEDIA_STREAMER_NODE_TYPE_PARSER */
-	{MEDIA_STREAMER_STRICT, "capsfilter"},     /* MEDIA_STREAMER_NODE_TYPE_FILTER */
-	{MEDIA_STREAMER_STRICT, "tee"},            /* MEDIA_STREAMER_NODE_TYPE_TEE */
-	{MEDIA_STREAMER_STRICT, "queue"},          /* MEDIA_STREAMER_NODE_TYPE_QUEUE */
-	{MEDIA_STREAMER_STRICT, "multiqueue"},     /* MEDIA_STREAMER_NODE_TYPE_MQUEUE */
-	{"Codec/Muxer", "qtmux"},                  /* MEDIA_STREAMER_NODE_TYPE_MUXER */
-	{"Codec/Demuxer", "qtdemux"},              /* MEDIA_STREAMER_NODE_TYPE_DEMUXER */
-	{MEDIA_STREAMER_STRICT, "rtpbin"},         /* MEDIA_STREAMER_NODE_TYPE_RTP */
-	{MEDIA_STREAMER_STRICT, "input-selector"}, /* MEDIA_STREAMER_NODE_TYPE_INPUT_SELECTOR */
-	{MEDIA_STREAMER_STRICT, "output-selector"},/* MEDIA_STREAMER_NODE_TYPE_OUTPUT_SELECTOR */
-	{MEDIA_STREAMER_STRICT, "interleave"},     /* MEDIA_STREAMER_NODE_TYPE_INTERLEAVE */
-	{MEDIA_STREAMER_STRICT, "deinterleave"},   /* MEDIA_STREAMER_NODE_TYPE_DEINTERLEAVE */
+	{"Generic", "none"},                               /* MEDIA_STREAMER_NODE_TYPE_NONE */
+	{"Source", "fakesrc"},                             /* MEDIA_STREAMER_NODE_TYPE_SRC */
+	{"Sink", "fakesink"},                              /* MEDIA_STREAMER_NODE_TYPE_SINK */
+	{"Codec/Encoder/Video", "video_encoder"},          /* MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER */
+	{"Codec/Decoder/Video", "video_decoder"},          /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER */
+	{"Codec/Encoder/Audio", "audio_encoder"},          /* MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER */
+	{"Codec/Decoder/Audio", "audio_decoder"},          /* MEDIA_STREAMER_NODE_TYPE_AUDIO_DECODER */
+	{"Filter/Converter/Video", "videoconvert"},        /* MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER */
+	{"Filter/Converter/Audio", "audioconvert"},        /* MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER */
+	{MEDIA_STREAMER_STRICT, "audioresample"},          /* MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE */
+	{"Codec/Payloader/Network/RTP", "rtph264pay"},     /* MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY */
+	{"Codec/Payloader/Network/RTP", "rtpamrpay"},      /* MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY */
+	{"Codec/Depayloader/Network/RTP", "rtph264depay"}, /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY */
+	{"Codec/Depayloader/Network/RTP", "rtpamrdepay"},  /* MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY */
+	{"Filter/Effect/Video", "videorate"},              /* MEDIA_STREAMER_NODE_TYPE_VIDEO_RATE */
+	{"Filter/Converter/Video/Scaler", "videoscale"},   /* MEDIA_STREAMER_NODE_TYPE_VIDEO_SCALE */
+	{MEDIA_STREAMER_STRICT, "textoverlay"},            /* MEDIA_STREAMER_NODE_TYPE_TEXT_OVERLAY */
+	{"Codec/Parser/Converter/Video", "h264parse"},     /* MEDIA_STREAMER_NODE_TYPE_PARSER */
+	{MEDIA_STREAMER_STRICT, "capsfilter"},             /* MEDIA_STREAMER_NODE_TYPE_FILTER */
+	{MEDIA_STREAMER_STRICT, "tee"},                    /* MEDIA_STREAMER_NODE_TYPE_TEE */
+	{MEDIA_STREAMER_STRICT, "queue"},                  /* MEDIA_STREAMER_NODE_TYPE_QUEUE */
+	{MEDIA_STREAMER_STRICT, "multiqueue"},             /* MEDIA_STREAMER_NODE_TYPE_MQUEUE */
+	{"Codec/Muxer", "qtmux"},                          /* MEDIA_STREAMER_NODE_TYPE_MUXER */
+	{"Codec/Demuxer", "qtdemux"},                      /* MEDIA_STREAMER_NODE_TYPE_DEMUXER */
+	{"Generic/Bin", "rtpbin"},                         /* MEDIA_STREAMER_NODE_TYPE_RTP */
+	{MEDIA_STREAMER_STRICT, "input-selector"},         /* MEDIA_STREAMER_NODE_TYPE_INPUT_SELECTOR */
+	{MEDIA_STREAMER_STRICT, "output-selector"},        /* MEDIA_STREAMER_NODE_TYPE_OUTPUT_SELECTOR */
+	{MEDIA_STREAMER_STRICT, "interleave"},             /* MEDIA_STREAMER_NODE_TYPE_INTERLEAVE */
+	{MEDIA_STREAMER_STRICT, "deinterleave"},           /* MEDIA_STREAMER_NODE_TYPE_DEINTERLEAVE */
 	{NULL, NULL}
 };
 
@@ -436,6 +437,19 @@ static void _sink_node_lock_state(const GValue *item, gpointer user_data)
 	}
 }
 
+node_info_s * __ms_node_get_klass_by_its_type(media_streamer_node_type_e element_type)
+{
+	int it_klass;
+	for (it_klass = 0; nodes_info[it_klass].klass_name != NULL; it_klass++) {
+		if (it_klass == element_type) {
+			ms_info(" Node`s type klass is [%s]", nodes_info[it_klass].klass_name);
+			break;
+		}
+	}
+
+	return &nodes_info[it_klass];
+}
+
 static void _src_node_prepare(const GValue *item, gpointer user_data)
 {
 	media_streamer_s *ms_streamer = (media_streamer_s *) user_data;
@@ -453,7 +467,7 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 
 	if (__ms_src_need_typefind(src_pad)) {
 		found_element = __ms_decodebin_create(ms_streamer);
-		found_element = __ms_link_with_new_element(src_element, src_pad, found_element);
+		__ms_link_two_elements(src_element, src_pad, found_element);
 	} else {
 		/* Check the source element`s pad type */
 		const gchar *new_pad_type = __ms_get_pad_type(src_pad);
@@ -462,21 +476,20 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 			MS_SAFE_UNREF(src_pad);
 			return;
 		}
-
 		if (MS_ELEMENT_IS_VIDEO(new_pad_type) || MS_ELEMENT_IS_IMAGE(new_pad_type)) {
-			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, NULL, NULL, DEFAULT_FILTER);
+			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_FILTER);
 			GstCaps *videoCaps = gst_caps_from_string(MEDIA_STREAMER_DEFAULT_CAMERA_FORMAT);
 			g_object_set(G_OBJECT(found_element), "caps", videoCaps, NULL);
 			gst_caps_unref(videoCaps);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "video_encoder", NULL);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
-		}
 
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_RTP);
+		}
 		if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
-			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "audio_encoder", NULL);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_PAYLOADER_KLASS, NULL, NULL);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_BIN_KLASS, "rtp_container", NULL);
+			found_element = __ms_combine_next_element(src_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_RTP);
 		}
 		__ms_generate_dots(ms_streamer->pipeline, "after_connecting_rtp");
 	}
@@ -800,14 +813,14 @@ int __ms_node_set_pad_format(media_streamer_node_s *node, const char *pad_name, 
 		gchar *rtp_caps_str = NULL;
 
 		/* It is needed to set 'application/x-rtp' for audio and video udpsrc */
-		if (!strcmp(pad_name, MS_RTP_PAD_VIDEO_IN"_rtp")) {
+		if (g_strrstr(pad_name, MS_RTP_PAD_VIDEO_IN)) {
 			ret = media_format_get_video_info(fmt, &mime, NULL, NULL, NULL, NULL);
 			if (MEDIA_FORMAT_ERROR_NONE == ret) {
 				rtp_caps_str = g_strdup_printf("application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=%s", __ms_convert_mime_to_rtp_format(mime));
 				param_s param = {MEDIA_STREAMER_PARAM_VIDEO_IN_FORMAT, MEDIA_STREAMER_PARAM_VIDEO_IN_FORMAT};
 				ret = __ms_node_set_param_value(node, &param, rtp_caps_str);
 			}
-		} else if (!strcmp(pad_name, MS_RTP_PAD_AUDIO_IN"_rtp")) {
+		} else if (g_strrstr(pad_name, MS_RTP_PAD_AUDIO_IN)) {
 			int audio_channels, audio_samplerate;
 			ret = media_format_get_audio_info(fmt, &mime, &audio_channels, &audio_samplerate, NULL, NULL);
 			if (MEDIA_FORMAT_ERROR_NONE == ret) {

@@ -530,17 +530,6 @@ static void __decodebin_newpad_cb(GstElement * decodebin, GstPad * new_pad, gpoi
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 }
 
-static void _sink_node_unlock_state(const GValue * item, gpointer user_data)
-{
-	GstElement *sink_element = GST_ELEMENT(g_value_get_object(item));
-	ms_retm_if(!sink_element, "Handle is NULL");
-
-	if (gst_element_is_locked_state(sink_element)) {
-		gst_element_set_locked_state(sink_element, FALSE);
-		gst_element_sync_state_with_parent(sink_element);
-	}
-}
-
 static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *ms_streamer, gboolean is_server_part)
 {
 	GstElement *found_element = NULL;
@@ -548,20 +537,19 @@ static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *m
 	const gchar *new_pad_type = __ms_get_pad_type(src_pad);
 
 	if (MS_ELEMENT_IS_VIDEO(new_pad_type)) {
-			found_element = __ms_bin_find_element_by_type(parent_element, src_pad, ms_streamer->topology_bin, __ms_node_get_klass_by_its_type(MEDIA_STREAMER_NODE_TYPE_TEXT_OVERLAY));
-			if (found_element) {
-				ms_info(" Overlay Element [%s]", GST_ELEMENT_NAME(found_element));
-				src_pad = NULL;
-			} else {
-				found_element = parent_element;
-			}
+		found_element = __ms_bin_find_element_by_type(parent_element, src_pad, ms_streamer->topology_bin, __ms_node_get_klass_by_its_type(MEDIA_STREAMER_NODE_TYPE_TEXT_OVERLAY));
+		if (found_element) {
+			ms_info(" Overlay Element [%s]", GST_ELEMENT_NAME(found_element));
+			src_pad = NULL;
+		} else {
+			found_element = parent_element;
+		}
 		if (is_server_part) {
 			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_RTP);
 		} else {
 			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_QUEUE);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
 		}
 	} else if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
@@ -570,8 +558,7 @@ static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *m
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_RTP);
 		} else {
-			found_element = __ms_combine_next_element(parent_element, src_pad, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_QUEUE);
-			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
+			found_element = __ms_combine_next_element(parent_element, src_pad, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
 		}
 	} else if (MS_ELEMENT_IS_TEXT(new_pad_type)) {
 		found_element = __ms_combine_next_element(parent_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_TEXT_OVERLAY);
@@ -582,7 +569,7 @@ static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *m
 	__ms_generate_dots(ms_streamer->pipeline, "after_sink_linked");
 }
 
-static void __decodebin_nomore_pads_cb(GstElement * decodebin, gpointer user_data)
+static void __decodebin_nomore_pads_cb(GstElement *decodebin, gpointer user_data)
 {
 	media_streamer_s *ms_streamer = (media_streamer_s *) user_data;
 	ms_retm_if(ms_streamer == NULL, "Handle is NULL");
@@ -609,7 +596,6 @@ static void __decodebin_nomore_pads_cb(GstElement * decodebin, gpointer user_dat
 		__decodebin_nomore_pads_combine(src_pad, ms_streamer, is_server_part);
 	}
 
-	MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, _sink_node_unlock_state, NULL);
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 }
 
@@ -647,24 +633,20 @@ static gboolean __ms_sink_bin_prepare(media_streamer_s * ms_streamer, GstPad * s
 				return TRUE;
 			} else {
 				previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_DECODER);
-				previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_QUEUE);
 				previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
 			}
 		} else {
 			__ms_link_two_elements(previous_element, NULL, found_element);
-			previous_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_QUEUE);
-			previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
+			previous_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
 		}
 	} else if (MS_ELEMENT_IS_AUDIO(src_pad_type)) {
 		previous_element = __ms_combine_next_element(parent_rtp_element, source_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY);
 		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_AUDIO_DECODER);
-		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_QUEUE);
 		previous_element = __ms_combine_next_element(previous_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
 	} else {
 		ms_info("Unknown media type received from rtp element!");
 	}
 	MS_SAFE_UNREF(parent_rtp_element);
-	MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, _sink_node_unlock_state, NULL);
 
 	return TRUE;
 }
@@ -721,16 +703,13 @@ int __ms_element_set_state(GstElement * gst_element, GstState gst_state)
 	ms_retvm_if(gst_element == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	GstStateChangeReturn ret_state;
-	gchar *element_name = gst_element_get_name(gst_element);
 
 	ret_state = gst_element_set_state(gst_element, gst_state);
 	if (ret_state == GST_STATE_CHANGE_FAILURE) {
-		ms_error("Failed to set element [%s] into %s state", element_name, gst_element_state_get_name(gst_state));
-		MS_SAFE_GFREE(element_name);
+		ms_error("Failed to set element [%s] into %s state", GST_ELEMENT_NAME(gst_element), gst_element_state_get_name(gst_state));
 		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
 	}
 
-	MS_SAFE_GFREE(element_name);
 	return MEDIA_STREAMER_ERROR_NONE;
 }
 
@@ -1238,9 +1217,6 @@ int __ms_add_node_into_bin(media_streamer_s *ms_streamer, media_streamer_node_s 
 	case MEDIA_STREAMER_NODE_TYPE_SINK:
 		bin = ms_streamer->sink_bin;
 		break;
-	case MEDIA_STREAMER_NODE_TYPE_QUEUE:
-		bin = ms_streamer->sink_bin;
-		break;
 	default:
 		/* Another elements will be add into topology bin */
 		bin = ms_streamer->topology_bin;
@@ -1280,6 +1256,62 @@ static gboolean __ms_parse_gst_error(media_streamer_s *ms_streamer, GstMessage *
 	}
 
 	return TRUE;
+}
+
+static GstPadProbeReturn __ms_element_event_probe(GstPad * pad, GstPadProbeInfo *info, gpointer user_data)
+{
+	GstElement *parent_element = gst_pad_get_parent_element(pad);
+	GstEvent *event = GST_PAD_PROBE_INFO_EVENT(info);
+	if (GST_PAD_PROBE_INFO_TYPE(info) & GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM) {
+		if (GST_EVENT_TYPE(event) == GST_EVENT_BUFFERSIZE) {
+			GValue *val_ = (GValue *) g_object_get_data(G_OBJECT(parent_element), "pad_sink");
+			ms_info("Set locking probe [%d] on [%s] pad of [%s] element", g_value_get_int(val_), GST_PAD_NAME(pad), GST_ELEMENT_NAME(parent_element));
+			MS_SAFE_UNREF(parent_element);
+			return GST_PAD_PROBE_OK;
+		}
+	}
+	MS_SAFE_UNREF(parent_element);
+	return GST_PAD_PROBE_PASS;
+}
+
+void __ms_element_lock_state(const GValue *item, gpointer user_data)
+{
+	GstElement *sink_element = GST_ELEMENT(g_value_get_object(item));
+	ms_retm_if(!sink_element, "Handle is NULL");
+
+	GstPad *sink_pad = gst_element_get_static_pad(sink_element, "sink");
+	if (!gst_pad_is_blocked(sink_pad)) {
+		int probe_id = gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, __ms_element_event_probe, NULL, NULL);
+
+		GValue *val = g_malloc0(sizeof(GValue));
+		g_value_init(val, G_TYPE_INT);
+		g_value_set_int(val, probe_id);
+		g_object_set_data(G_OBJECT(sink_element), "pad_sink", (gpointer)val);
+
+		val = (GValue *) g_object_get_data(G_OBJECT(sink_element), "pad_sink");
+		if (val)
+			ms_info("Added locking probe [%d] on pad [%s] of element [%s]", g_value_get_int(val), GST_PAD_NAME(sink_pad), GST_ELEMENT_NAME(sink_element));
+	} else {
+		ms_info("Pad [%s] of element [%s] is already locked", GST_PAD_NAME(sink_pad), GST_ELEMENT_NAME(sink_element));
+	}
+	MS_SAFE_UNREF(sink_pad);
+}
+
+void __ms_element_unlock_state(const GValue *item, gpointer user_data)
+{
+	GstElement *sink_element = GST_ELEMENT(g_value_get_object(item));
+	ms_retm_if(!sink_element, "Handle is NULL");
+
+	GValue *val = (GValue *) g_object_get_data(G_OBJECT(sink_element), "pad_sink");
+	if (val) {
+		GstPad *sink_pad = gst_element_get_static_pad(sink_element, "sink");
+		if (gst_pad_is_blocked(sink_pad)) {
+			ms_info("Removing locking probe [%d] ID on [%s] pad of [%s] element", g_value_get_int(val), GST_PAD_NAME(sink_pad), GST_ELEMENT_NAME(sink_element));
+			gst_pad_remove_probe(sink_pad, g_value_get_int(val));
+		} else {
+			ms_info("No locking Probe on pad [%s] of element [%s]", GST_PAD_NAME(sink_pad), GST_ELEMENT_NAME(sink_element));
+		}
+	}
 }
 
 static gboolean __ms_bus_cb(GstBus *bus, GstMessage *message, gpointer userdata)

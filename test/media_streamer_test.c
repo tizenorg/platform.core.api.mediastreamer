@@ -551,12 +551,6 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_add(current_media_streamer, video_dec);
 		APPEND_NODE(video_dec);
 
-		/* ********************** videoqueue ************************************ */
-		media_streamer_node_h video_queue = NULL;
-		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_QUEUE, NULL, NULL, &video_queue);
-		media_streamer_node_add(current_media_streamer, video_queue);
-		APPEND_NODE(video_queue);
-
 		/* ********************** videosink *********************************** */
 		media_streamer_node_h video_sink = NULL;
 		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY, &video_sink);
@@ -565,8 +559,7 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 
 		/* ====================Linking Video Client=========================== */
 		media_streamer_node_link(video_depay, "src", video_dec, "sink");
-		media_streamer_node_link(video_dec, "src", video_queue, "sink");
-		media_streamer_node_link(video_queue, "src", video_sink, "sink");
+		media_streamer_node_link(video_dec, "src", video_sink, "sink");
 
 		g_print("== success client video part \n");
 	}
@@ -585,12 +578,6 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 		media_streamer_node_add(current_media_streamer, audio_dec);
 		APPEND_NODE(audio_dec);
 
-		/* ********************** audioqueue ********************************** */
-		media_streamer_node_h audio_queue = NULL;
-		media_streamer_node_create(MEDIA_STREAMER_NODE_TYPE_QUEUE, NULL, NULL, &audio_queue);
-		media_streamer_node_add(current_media_streamer, audio_queue);
-		APPEND_NODE(audio_queue);
-
 		/* ********************** audiosink *********************************** */
 		media_streamer_node_h audio_sink = NULL;
 		media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_AUDIO, &audio_sink);
@@ -599,8 +586,7 @@ static void _create_rtp_client(media_streamer_node_h rtp_bin)
 
 		/* ====================Linking Audio Client=========================== */
 		media_streamer_node_link(audio_depay, "src", audio_dec, "sink");
-		media_streamer_node_link(audio_dec, "src", audio_queue, "sink");
-		media_streamer_node_link(audio_queue, "src", audio_sink, "sink");
+		media_streamer_node_link(audio_dec, "src", audio_sink, "sink");
 		/* =================================================================== */
 
 		g_print("== success client audio part \n");

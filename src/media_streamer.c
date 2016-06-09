@@ -190,8 +190,11 @@ int media_streamer_prepare(media_streamer_h streamer)
 
 	ret = __ms_pipeline_prepare(ms_streamer);
 
-	if (ret == MEDIA_STREAMER_ERROR_NONE)
+	if (ret == MEDIA_STREAMER_ERROR_NONE) {
 		ret = __ms_state_change(ms_streamer, MEDIA_STREAMER_STATE_READY);
+		if (ret != MEDIA_STREAMER_ERROR_NONE)
+			__ms_pipeline_unprepare(ms_streamer);
+	}
 
 	__ms_generate_dots(ms_streamer->pipeline, "after_prepare");
 

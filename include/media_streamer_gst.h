@@ -164,6 +164,20 @@ GstElement *__ms_decodebin_create(media_streamer_s *ms_streamer);
 GstElement *__ms_combine_next_element(GstElement *previous_element, GstPad *prev_elem_src_pad, GstElement *bin_to_find_in, media_streamer_node_type_e node_type);
 
 /**
+ * @brief Locks gst_element being contained in GValue data.
+ *
+ * @since_tizen 3.0
+ */
+void __ms_element_lock_state(const GValue *item, gpointer user_data);
+
+/**
+ * @brief Unlocks gst_element being contained in GValue data.
+ *
+ * @since_tizen 3.0
+ */
+void __ms_element_unlock_state(const GValue *item, gpointer user_data);
+
+/**
  * @brief Creates pipeline, bus and src/sink/topology bins.
  *
  * @since_tizen 3.0

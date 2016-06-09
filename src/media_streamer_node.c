@@ -57,14 +57,14 @@ node_info_s nodes_info[] = {
 	{"Filter/Converter/Video", "videoconvert"},        /* MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER */
 	{"Filter/Converter/Audio", "audioconvert"},        /* MEDIA_STREAMER_NODE_TYPE_AUDIO_CONVERTER */
 	{MEDIA_STREAMER_STRICT, "audioresample"},          /* MEDIA_STREAMER_NODE_TYPE_AUDIO_RESAMPLE */
-	{"Codec/Payloader/Network/RTP", "rtph264pay"},     /* MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY */
+	{"Codec/Payloader/Network/RTP", "rtph263pay"},     /* MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY */
 	{"Codec/Payloader/Network/RTP", "rtpamrpay"},      /* MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY */
-	{"Codec/Depayloader/Network/RTP", "rtph264depay"}, /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY */
+	{"Codec/Depayloader/Network/RTP", "rtph263depay"}, /* MEDIA_STREAMER_NODE_TYPE_VIDEO_DEPAY */
 	{"Codec/Depayloader/Network/RTP", "rtpamrdepay"},  /* MEDIA_STREAMER_NODE_TYPE_AUDIO_DEPAY */
 	{"Filter/Effect/Video", "videorate"},              /* MEDIA_STREAMER_NODE_TYPE_VIDEO_RATE */
 	{"Filter/Converter/Video/Scaler", "videoscale"},   /* MEDIA_STREAMER_NODE_TYPE_VIDEO_SCALE */
 	{MEDIA_STREAMER_STRICT, "textoverlay"},            /* MEDIA_STREAMER_NODE_TYPE_TEXT_OVERLAY */
-	{"Codec/Parser/Converter/Video", "h264parse"},     /* MEDIA_STREAMER_NODE_TYPE_PARSER */
+	{"Codec/Parser/Converter/Video", "h263parse"},     /* MEDIA_STREAMER_NODE_TYPE_PARSER */
 	{MEDIA_STREAMER_STRICT, "capsfilter"},             /* MEDIA_STREAMER_NODE_TYPE_FILTER */
 	{MEDIA_STREAMER_STRICT, "tee"},                    /* MEDIA_STREAMER_NODE_TYPE_TEE */
 	{MEDIA_STREAMER_STRICT, "queue"},                  /* MEDIA_STREAMER_NODE_TYPE_QUEUE */
@@ -419,24 +419,6 @@ static gboolean __ms_src_need_typefind(GstPad *src_pad)
 	return ret;
 }
 
-static void _sink_node_lock_state(const GValue *item, gpointer user_data)
-{
-	GstElement *sink_element = GST_ELEMENT(g_value_get_object(item));
-	ms_retm_if(!sink_element, "Handle is NULL");
-
-	if (!gst_element_is_locked_state(sink_element)) {
-		GstState current_state = GST_STATE_VOID_PENDING;
-		gst_element_set_locked_state(sink_element, TRUE);
-
-		gst_element_get_state(sink_element, &current_state, NULL, GST_MSECOND);
-
-		ms_debug("Locked sink element [%s] into state [%s]", GST_ELEMENT_NAME(sink_element), gst_element_state_get_name(current_state));
-	} else {
-		gst_element_set_locked_state(sink_element, FALSE);
-		gst_element_sync_state_with_parent(sink_element);
-	}
-}
-
 node_info_s * __ms_node_get_klass_by_its_type(media_streamer_node_type_e element_type)
 {
 	int it_klass;
@@ -472,7 +454,6 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 		/* Check the source element`s pad type */
 		const gchar *new_pad_type = __ms_get_pad_type(src_pad);
 		if (gst_pad_is_linked(src_pad)) {
-			MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, _sink_node_lock_state, NULL);
 			MS_SAFE_UNREF(src_pad);
 			return;
 		}
@@ -504,7 +485,7 @@ int __ms_pipeline_prepare(media_streamer_s *ms_streamer)
 	if (rtp_node)
 		__ms_rtp_element_prepare(rtp_node);
 
-	MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, _sink_node_lock_state, NULL);
+	MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_lock_state, ms_streamer);
 	MS_BIN_FOREACH_ELEMENTS(ms_streamer->src_bin, _src_node_prepare, ms_streamer);
 
 	return MEDIA_STREAMER_ERROR_NONE;
@@ -559,6 +540,10 @@ int __ms_pipeline_unprepare(media_streamer_s *ms_streamer)
 {
 	ms_retvm_if(ms_streamer == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 	int ret = MEDIA_STREAMER_ERROR_NONE;
+
+	__ms_element_set_state(ms_streamer->pipeline, GST_STATE_NULL);
+
+	MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_unlock_state, ms_streamer);
 
 	/* Disconnects and clean all autoplug signals */
 	g_list_free_full(ms_streamer->autoplug_sig_list, __ms_signal_destroy);

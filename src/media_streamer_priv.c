@@ -43,13 +43,16 @@ int __ms_state_change(media_streamer_s *ms_streamer, media_streamer_state_e stat
 		/*
 		 * Unlink all gst_elements, set pipeline into state NULL
 		 */
-		if (previous_state != MEDIA_STREAMER_STATE_NONE)
+		if (previous_state != MEDIA_STREAMER_STATE_NONE) {
+			MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_unlock_state, ms_streamer);
 			ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_NULL);
+		}
 		break;
 	case MEDIA_STREAMER_STATE_READY:
-		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_READY);
+		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PAUSED);
 		break;
 	case MEDIA_STREAMER_STATE_PLAYING:
+		MS_BIN_FOREACH_ELEMENTS(ms_streamer->sink_bin, __ms_element_unlock_state, ms_streamer);
 		ret = __ms_element_set_state(ms_streamer->pipeline, GST_STATE_PLAYING);
 		break;
 	case MEDIA_STREAMER_STATE_PAUSED:

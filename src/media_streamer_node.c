@@ -17,6 +17,11 @@
 #include <media_streamer_node.h>
 #include <media_streamer_util.h>
 #include <media_streamer_gst.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <cynara-client.h>
+
+#define SMACK_LABEL_LEN 255
 
 param_s param_table[] = {
 	{MEDIA_STREAMER_PARAM_CAMERA_ID, "camera-id"},
@@ -218,12 +223,98 @@ static void __ms_src_stop_feed_cb(GstElement *pipeline, gpointer data)
 	}
 }
 
+static int __ms_node_check_priveleges(media_streamer_node_s *node)
+{
+	int ret = MEDIA_STREAMER_ERROR_NONE;
+	int ret_val = 0;
+	char *privilege = NULL;
+
+	switch (node->subtype) {
+	case MEDIA_STREAMER_NODE_SRC_TYPE_HTTP:
+		privilege = "http://tizen.org/privilege/internet";
+		break;
+	case MEDIA_STREAMER_NODE_SRC_TYPE_CAMERA:
+		privilege = "http://tizen.org/privilege/camera";
+		break;
+	case MEDIA_STREAMER_NODE_SRC_TYPE_AUDIO_CAPTURE:
+		privilege = "http://tizen.org/privilege/audiorecorder";
+		break;
+	case MEDIA_STREAMER_NODE_SRC_TYPE_VIDEO_CAPTURE:
+		privilege = "http://tizen.org/privilege/camera";
+		break;
+	case MEDIA_STREAMER_NODE_SINK_TYPE_HTTP:
+		privilege = "http://tizen.org/privilege/internet";
+		break;
+	default:
+		ms_info("For current Node [%s] subtype [%d] privileges are not needed", node->name, node->subtype);
+		break;
+	}
+
+	/* Skip checking for privilige permission in case of other types of Nodes */
+	if (privilege == NULL)
+		return ret;
+
+	FILE* opened_file;
+
+	char smackLabel[SMACK_LABEL_LEN + 1];
+	char uid[10];
+	cynara *cynara_h;
+
+	if (CYNARA_API_SUCCESS != cynara_initialize(&cynara_h, NULL)) {
+		ms_error("Failed to initialize cynara structure\n");
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+
+	bzero(smackLabel, SMACK_LABEL_LEN + 1);
+
+	/* Getting smack label */
+	opened_file = fopen("/proc/self/attr/current", "r");
+	if (opened_file == NULL) {
+		ms_error("Failed to open /proc/self/attr/current\n");
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+	ret_val = fread(smackLabel, sizeof(smackLabel), 1, opened_file);
+	fclose(opened_file);
+	if (ret_val < 0) {
+		ms_error("Failed to read /proc/self/attr/current\n");
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+
+	/* Getting uid */
+	snprintf(uid, sizeof(uid), "%d", getuid());
+	ms_info("%s %s %s\n", smackLabel, uid, privilege);
+
+	/* Checking with cynara for current session */
+	ret_val = cynara_check(cynara_h, smackLabel, "", uid, privilege);
+	ms_info("Cynara_check [%d] ", ret_val);
+
+	switch (ret_val) {
+	case CYNARA_API_ACCESS_ALLOWED:
+		ms_info("Access to Node [%s] subtype [%d] is allowed", node->name, node->subtype);
+		break;
+	case CYNARA_API_ACCESS_DENIED:
+	default:
+		ms_error("Access to Node [%s] subtype [%d] is denied", node->name, node->subtype);
+		ret = MEDIA_STREAMER_ERROR_PERMISSION_DENIED;
+		break;
+	}
+
+	cynara_finish(cynara_h);
+	return ret;
+}
+
 int __ms_src_node_create(media_streamer_node_s *node)
 {
 	ms_retvm_if(node == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
 
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 	char *plugin_name = NULL;
+
+	ret = __ms_node_check_priveleges(node);
+	if(ret != MEDIA_STREAMER_ERROR_NONE) {
+		ms_error("Error getting privileges for Src Node");
+		return ret;
+	}
 
 	switch (node->subtype) {
 	case MEDIA_STREAMER_NODE_SRC_TYPE_FILE:
@@ -271,10 +362,12 @@ int __ms_src_node_create(media_streamer_node_s *node)
 
 	MS_SAFE_FREE(plugin_name);
 
-	if (node->gst_element == NULL)
-		ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
-	else
-		node->name = gst_element_get_name(node->gst_element);
+	if (ret == MEDIA_STREAMER_ERROR_NONE) {
+		if (node->gst_element == NULL)
+			ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+		else
+			node->name = gst_element_get_name(node->gst_element);
+	}
 
 	return ret;
 }
@@ -315,6 +408,12 @@ int __ms_sink_node_create(media_streamer_node_s *node)
 
 	int ret = MEDIA_STREAMER_ERROR_NONE;
 	char *plugin_name = NULL;
+
+	ret = __ms_node_check_priveleges(node);
+	if(ret != MEDIA_STREAMER_ERROR_NONE) {
+		ms_error("Error getting privileges for Src Node");
+		return ret;
+	}
 
 	switch (node->subtype) {
 	case MEDIA_STREAMER_NODE_SINK_TYPE_FILE:
@@ -769,6 +868,39 @@ int __ms_node_get_param_value(media_streamer_node_s *node, param_s *param, char 
 	return ret;
 }
 
+int __ms_node_uri_path_check(const char *file_uri)
+{
+	struct stat stat_results = {0, };
+	int file_open = 0;
+
+	if (!file_uri || !strlen(file_uri))
+		return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
+
+	file_open = open(file_uri, O_RDONLY);
+	if (file_open < 0) {
+		char mes_error[256];
+		strerror_r(errno, mes_error, sizeof(mes_error));
+		ms_error("Couldn`t open file according to [%s]. Error N [%d]", mes_error, errno);
+
+		if (EACCES == errno)
+			return MEDIA_STREAMER_ERROR_PERMISSION_DENIED;
+	}
+
+	if (fstat(file_open, &stat_results) < 0) {
+		ms_error("Couldn`t get status of the file [%s]", file_uri);
+	} else if (stat_results.st_size == 0) {
+		ms_error("The size of file is 0");
+		close(file_open);
+		return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
+	} else {
+		ms_debug("Size of file [%lld] bytes", (long long)stat_results.st_size);
+	}
+
+	close(file_open);
+
+	return MEDIA_STREAMER_ERROR_NONE;
+}
+
 int __ms_node_set_param_value(media_streamer_node_s *ms_node, param_s *param, const char *param_value)
 {
 	ms_retvm_if(!ms_node || !param || !param_value,  MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -796,9 +928,10 @@ int __ms_node_set_param_value(media_streamer_node_s *ms_node, param_s *param, co
 		g_object_set(ms_node->gst_element, param->origin_name, (int)strtol(param_value, NULL, 10), NULL);
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_IS_LIVE_STREAM))
 		g_object_set(ms_node->gst_element, param->origin_name, !g_ascii_strcasecmp(param_value, "true"), NULL);
-	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_URI))
-		g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);
-	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_USER_AGENT))
+	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_URI)) {
+		if (!__ms_node_uri_path_check(param_value))
+			g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);
+	} else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_USER_AGENT))
 		g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_STREAM_TYPE))
 		g_object_set(ms_node->gst_element, param->origin_name, (int)strtol(param_value, NULL, 10), NULL);

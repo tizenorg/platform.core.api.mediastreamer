@@ -17,6 +17,7 @@
 #include <media_streamer_node.h>
 #include <media_streamer_util.h>
 #include <media_streamer_gst.h>
+#include <fcntl.h>
 
 param_s param_table[] = {
 	{MEDIA_STREAMER_PARAM_CAMERA_ID, "camera-id"},
@@ -769,6 +770,39 @@ int __ms_node_get_param_value(media_streamer_node_s *node, param_s *param, char 
 	return ret;
 }
 
+int __ms_node_uri_path_check(const char *file_uri)
+{
+	struct stat stat_results = {0, };
+	int file_open = 0;
+
+	if (!file_uri || !strlen(file_uri))
+		return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
+
+	file_open = open (file_uri, O_RDONLY);
+	if (file_open < 0) {
+		char mes_error[256];
+		strerror_r(errno, mes_error, sizeof(mes_error));
+		ms_error("Couldn`t open file according to [%s]. Error N [%d]", mes_error, errno);
+
+		if (EACCES == errno)
+			return MEDIA_STREAMER_ERROR_PERMISSION_DENIED;
+	}
+
+	if (fstat(file_open, &stat_results) < 0) {
+		ms_error("Couldn`t get status of the file [%s]", file_uri);
+	} else if (stat_results.st_size == 0) {
+		ms_error("The size of file is 0");
+		close(file_open);
+		return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
+	} else {
+		ms_debug("Size of file [%lld] bytes", (long long)stat_results.st_size);
+	}
+
+	close(file_open);
+
+	return MEDIA_STREAMER_ERROR_NONE;
+}
+
 int __ms_node_set_param_value(media_streamer_node_s *ms_node, param_s *param, const char *param_value)
 {
 	ms_retvm_if(!ms_node || !param || !param_value,  MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Handle is NULL");
@@ -796,8 +830,10 @@ int __ms_node_set_param_value(media_streamer_node_s *ms_node, param_s *param, co
 		g_object_set(ms_node->gst_element, param->origin_name, (int)strtol(param_value, NULL, 10), NULL);
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_IS_LIVE_STREAM))
 		g_object_set(ms_node->gst_element, param->origin_name, !g_ascii_strcasecmp(param_value, "true"), NULL);
-	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_URI))
-		g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);
+	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_URI)) {
+		if(!__ms_node_uri_path_check(param_value))
+			g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);
+	}
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_USER_AGENT))
 		g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_STREAM_TYPE))

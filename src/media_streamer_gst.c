@@ -101,7 +101,7 @@ static gboolean __ms_pad_peer_unlink(GstPad *pad)
 			GstPad *ghost_pad = GST_PAD(ghost_object);
 			GstPad *target_pad = gst_pad_get_peer(ghost_pad);
 
-			if (GST_IS_GHOST_PAD(target_pad))
+			if (target_pad && GST_IS_GHOST_PAD(target_pad))
 				ret = ret && gst_element_remove_pad(GST_ELEMENT(GST_PAD_PARENT(target_pad)), target_pad);
 			else {
 				/* This is a usual static pad */

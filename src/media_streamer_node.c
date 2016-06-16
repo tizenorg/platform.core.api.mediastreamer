@@ -211,6 +211,7 @@ static void __ms_src_start_feed_cb(GstElement *pipeline, guint size, gpointer da
 
 /* This callback is called when appsrc has enough data and we can stop sending.
  * We remove the idle handler from the mainloop */
+//LCOV_EXCL_START
 static void __ms_src_stop_feed_cb(GstElement *pipeline, gpointer data)
 {
 	media_streamer_node_s *ms_src = (media_streamer_node_s *) data;
@@ -222,6 +223,7 @@ static void __ms_src_stop_feed_cb(GstElement *pipeline, gpointer data)
 		buffer_status_cb((media_streamer_node_h) ms_src, MEDIA_STREAMER_CUSTOM_BUFFER_OVERFLOW, src_callback->user_data);
 	}
 }
+//LCOV_EXCL_STOP
 
 static int __ms_node_check_priveleges(media_streamer_node_s *node)
 {

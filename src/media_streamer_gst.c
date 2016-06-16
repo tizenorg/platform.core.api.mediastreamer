@@ -368,59 +368,6 @@ int __ms_factory_rank_compare(GstPluginFeature * first_feature, GstPluginFeature
 	return (gst_plugin_feature_get_rank(second_feature) - gst_plugin_feature_get_rank(first_feature));
 }
 
-gboolean __ms_feature_filter(GstPluginFeature * feature, gpointer data)
-{
-	if (!GST_IS_ELEMENT_FACTORY(feature))
-		return FALSE;
-	return TRUE;
-}
-
-GstElement *__ms_create_element_by_registry(GstPad * src_pad, const gchar * klass_name)
-{
-	const GList *pads;
-	GstElement *next_element = NULL;
-
-	GstCaps *new_pad_caps = gst_pad_query_caps(src_pad, NULL);
-
-	GList *factories = gst_registry_feature_filter(gst_registry_get(),
-												   (GstPluginFeatureFilter) __ms_feature_filter, FALSE, NULL);
-	factories = g_list_sort(factories, (GCompareFunc) __ms_factory_rank_compare);
-	GList *factories_iter = factories;
-
-	for (; factories_iter != NULL; factories_iter = factories_iter->next) {
-		GstElementFactory *factory = GST_ELEMENT_FACTORY(factories_iter->data);
-
-		if (g_strrstr(gst_element_factory_get_klass(GST_ELEMENT_FACTORY(factory)), klass_name)) {
-			for (pads = gst_element_factory_get_static_pad_templates(factory); pads != NULL; pads = pads->next) {
-
-				GstCaps *intersect_caps = NULL;
-				GstCaps *static_caps = NULL;
-				GstStaticPadTemplate *pad_temp = pads->data;
-
-				if (pad_temp->presence != GST_PAD_ALWAYS || pad_temp->direction != GST_PAD_SINK)
-					continue;
-
-				if (GST_IS_CAPS(&pad_temp->static_caps.caps))
-					static_caps = gst_caps_ref(pad_temp->static_caps.caps);
-				else
-					static_caps = gst_caps_from_string(pad_temp->static_caps.string);
-
-				intersect_caps = gst_caps_intersect_full(new_pad_caps, static_caps, GST_CAPS_INTERSECT_FIRST);
-
-				if (!gst_caps_is_empty(intersect_caps)) {
-					if (!next_element)
-						next_element = __ms_element_create(GST_OBJECT_NAME(factory), NULL);
-				}
-				gst_caps_unref(intersect_caps);
-				gst_caps_unref(static_caps);
-			}
-		}
-	}
-	gst_caps_unref(new_pad_caps);
-	gst_plugin_feature_list_free(factories);
-	return next_element;
-}
-
 GstElement *__ms_combine_next_element(GstElement *previous_element, GstPad *prev_elem_src_pad, GstElement *bin_to_find_in, media_streamer_node_type_e node_type)
 {
 	if (!previous_element)

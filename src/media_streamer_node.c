@@ -939,7 +939,8 @@ int __ms_node_set_param_value(media_streamer_node_s *ms_node, param_s *param, co
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_IS_LIVE_STREAM))
 		g_object_set(ms_node->gst_element, param->origin_name, !g_ascii_strcasecmp(param_value, "true"), NULL);
 	else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_URI)) {
-		if (!__ms_node_uri_path_check(param_value))
+		ret = __ms_node_uri_path_check(param_value);
+		if (ret == MEDIA_STREAMER_ERROR_NONE)
 			g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);
 	} else if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_USER_AGENT))
 		g_object_set(ms_node->gst_element, param->origin_name, param_value, NULL);

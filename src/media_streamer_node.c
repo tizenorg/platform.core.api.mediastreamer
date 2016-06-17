@@ -362,6 +362,7 @@ int __ms_src_node_create(media_streamer_node_s *node)
 	case MEDIA_STREAMER_NODE_SRC_TYPE_CUSTOM:
 		plugin_name = __ms_ini_get_string("node type 1:custom", DEFAULT_APP_SOURCE);
 		node->gst_element = __ms_element_create(DEFAULT_APP_SOURCE, NULL);
+		g_object_set(G_OBJECT(node->gst_element), "emit-signals", TRUE, NULL);
 		__ms_signal_create(&node->sig_list, node->gst_element, "need-data", G_CALLBACK(__ms_src_start_feed_cb), node);
 		__ms_signal_create(&node->sig_list, node->gst_element, "enough-data", G_CALLBACK(__ms_src_stop_feed_cb), node);
 		break;

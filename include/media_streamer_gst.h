@@ -68,13 +68,6 @@ GstElement *__ms_bin_find_element_by_klass(GstElement *sink_bin, GstElement *pre
 					GstPad *source_pad, const gchar *klass_name, const gchar *bin_name);
 
 /**
- * @brief Creates GstElement by klass name.
- *
- * @since_tizen 3.0
- */
-GstElement *__ms_create_element_by_registry(GstPad *src_pad, const gchar *klass_name);
-
-/**
  * @brief Creates GstElement by plugin name.
  *
  * @since_tizen 3.0

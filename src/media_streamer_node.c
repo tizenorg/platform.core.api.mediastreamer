@@ -802,7 +802,7 @@ int __ms_node_get_param_list(media_streamer_node_s *node, GList **param_list)
 int __ms_node_get_param_value(media_streamer_node_s *node, param_s *param, char **string_value)
 {
 	char *string_val = NULL;
-	GParamSpec *param_spec;
+	GParamSpec *param_spec = NULL;
 	GValue value = G_VALUE_INIT;
 
 	int ret = MEDIA_STREAMER_ERROR_NONE;
@@ -811,11 +811,15 @@ int __ms_node_get_param_value(media_streamer_node_s *node, param_s *param, char 
 		ret = __ms_rtp_node_get_property(node, param, &value);
 	else {
 		param_spec = g_object_class_find_property(G_OBJECT_GET_CLASS(node->gst_element), param->origin_name);
+		if (param_spec) {
+			g_value_init(&value, param_spec->value_type);
+			g_object_get_property(G_OBJECT(node->gst_element), param->origin_name, &value);
 
-		g_value_init(&value, param_spec->value_type);
-		g_object_get_property(G_OBJECT(node->gst_element), param->origin_name, &value);
-
-		ms_info("Got parameter [%s] for node [%s] with description [%s]", param->param_name, node->name, g_param_spec_get_blurb(param_spec));
+			ms_info("Got parameter [%s] for node [%s] with description [%s]", param->param_name, node->name, g_param_spec_get_blurb(param_spec));
+		} else {
+			ms_error("There is no parameter [%s] for node [%s]", param->origin_name, node->name);
+			return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
+		}
 	}
 
 	if (!g_strcmp0(param->param_name, MEDIA_STREAMER_PARAM_CAMERA_ID))
@@ -894,6 +898,8 @@ int __ms_node_uri_path_check(const char *file_uri)
 
 		if (EACCES == errno)
 			return MEDIA_STREAMER_ERROR_PERMISSION_DENIED;
+
+		return MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
 	}
 
 	if (fstat(file_open, &stat_results) < 0) {

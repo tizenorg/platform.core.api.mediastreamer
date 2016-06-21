@@ -638,9 +638,11 @@ static void __ms_rtpbin_pad_added_cb(GstElement * src, GstPad * new_pad, gpointe
 		if (source_pad_name != NULL) {
 
 			GstPad *source_pad = gst_element_get_static_pad(ms_node->gst_element, source_pad_name);
-			gst_ghost_pad_set_target(GST_GHOST_PAD(source_pad), new_pad);
 
-			if (__ms_sink_bin_prepare(ms_streamer, source_pad, src_pad_type)) {
+			if (source_pad)
+				gst_ghost_pad_set_target(GST_GHOST_PAD(source_pad), new_pad);
+
+			if (source_pad && __ms_sink_bin_prepare(ms_streamer, source_pad, src_pad_type)) {
 				__ms_element_set_state(ms_node->gst_element, GST_STATE_PLAYING);
 				__ms_generate_dots(ms_streamer->pipeline, "rtpbin_playing");
 			} else {
@@ -1221,6 +1223,12 @@ static GstPadProbeReturn __ms_element_event_probe(GstPad * pad, GstPadProbeInfo 
 {
 	GstElement *parent_element = gst_pad_get_parent_element(pad);
 	GstEvent *event = GST_PAD_PROBE_INFO_EVENT(info);
+
+	if (!parent_element) {
+		ms_error("filed to get parent_elem");
+		return GST_PAD_PROBE_PASS;
+	}
+
 	if (GST_PAD_PROBE_INFO_TYPE(info) & GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM) {
 		if (GST_EVENT_TYPE(event) == GST_EVENT_BUFFERSIZE) {
 			GValue *val_ = (GValue *) g_object_get_data(G_OBJECT(parent_element), "pad_sink");
@@ -1239,6 +1247,10 @@ void __ms_element_lock_state(const GValue *item, gpointer user_data)
 	ms_retm_if(!sink_element, "Handle is NULL");
 
 	GstPad *sink_pad = gst_element_get_static_pad(sink_element, "sink");
+	if (!sink_pad) {
+		ms_info("Failed to get static pad of element [%s]", GST_ELEMENT_NAME(sink_element));
+		return;
+	}
 	if (!gst_pad_is_blocked(sink_pad)) {
 		int probe_id = gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM, __ms_element_event_probe, NULL, NULL);
 		MS_SET_INT_PARAM(sink_element, "pad_sink", probe_id);
@@ -1257,6 +1269,10 @@ void __ms_element_unlock_state(const GValue *item, gpointer user_data)
 	GValue *val = (GValue *) g_object_get_data(G_OBJECT(sink_element), "pad_sink");
 	if (val) {
 		GstPad *sink_pad = gst_element_get_static_pad(sink_element, "sink");
+		if (!sink_pad) {
+			ms_info("Failed to get static pad of element [%s]", GST_ELEMENT_NAME(sink_element));
+			return;
+		}
 		if (gst_pad_is_blocked(sink_pad)) {
 			ms_info("Removing locking probe [%d] ID on [%s] pad of [%s] element", g_value_get_int(val), GST_PAD_NAME(sink_pad), GST_ELEMENT_NAME(sink_element));
 			gst_pad_remove_probe(sink_pad, g_value_get_int(val));
@@ -1620,9 +1636,9 @@ int __ms_element_set_fmt(media_streamer_node_s *node, const char *pad_name, medi
 	GstElementFactory *factory = gst_element_get_factory(node->gst_element);
 	GstPad *node_pad = gst_element_get_static_pad(node->gst_element, pad_name);
 
-	if (GST_PAD_IS_SRC(node_pad))
+	if (node_pad && GST_PAD_IS_SRC(node_pad))
 		can_accept  = gst_element_factory_can_src_any_caps(factory, fmt_caps);
-	else if (GST_PAD_IS_SINK(node_pad))
+	else if (node_pad && GST_PAD_IS_SINK(node_pad))
 		can_accept  = gst_element_factory_can_sink_any_caps(factory, fmt_caps);
 	else
 		ms_error(" Node [%s] doesn`t have valid pad [%s]", node->name, pad_name);

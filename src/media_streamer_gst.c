@@ -1745,6 +1745,11 @@ int __ms_element_pull_packet(GstElement *sink_element, media_packet_h *packet)
 		GstMapInfo map;
 		guint8 *buffer_res = NULL;
 		GstBuffer *buffer = gst_sample_get_buffer(sample);
+		if (!buffer) {
+			ms_error("Failed to get buffer from sample");
+			gst_sample_unref(sample);
+			return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+		}
 		gst_buffer_map(buffer, &map, GST_MAP_READ);
 
 		buffer_res = (guint8 *) malloc(map.size * sizeof(guint8));

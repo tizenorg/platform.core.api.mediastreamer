@@ -1745,6 +1745,12 @@ int __ms_element_pull_packet(GstElement *sink_element, media_packet_h *packet)
 		GstMapInfo map;
 		guint8 *buffer_res = NULL;
 		GstBuffer *buffer = gst_sample_get_buffer(sample);
+		if (!buffer) {
+			ms_error("Failed to get buffer from sample");
+			media_format_unref(fmt);
+			gst_sample_unref(sample);
+			return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+		}
 		gst_buffer_map(buffer, &map, GST_MAP_READ);
 
 		buffer_res = (guint8 *) malloc(map.size * sizeof(guint8));
@@ -1755,8 +1761,6 @@ int __ms_element_pull_packet(GstElement *sink_element, media_packet_h *packet)
 			media_packet_set_pts(*packet, GST_BUFFER_PTS(buffer));
 			media_packet_set_dts(*packet, GST_BUFFER_DTS(buffer));
 			media_packet_set_pts(*packet, GST_BUFFER_DURATION(buffer));
-
-			media_format_unref(fmt);
 		} else {
 			ms_error("Error allocation memory for packet data");
 			ret = MEDIA_STREAMER_ERROR_INVALID_OPERATION;
@@ -1764,6 +1768,7 @@ int __ms_element_pull_packet(GstElement *sink_element, media_packet_h *packet)
 		gst_buffer_unmap(buffer, &map);
 	}
 
+	media_format_unref(fmt);
 	gst_sample_unref(sample);
 	return ret;
 }

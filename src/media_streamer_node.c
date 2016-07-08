@@ -764,7 +764,8 @@ int __ms_node_write_params_into_bundle(media_streamer_node_s *node, bundle *para
 			}
 		}
 	}
-	g_list_free(p_list);
+	if (p_list)
+		g_list_free(p_list);
 
 	return ret;
 }

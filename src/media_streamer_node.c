@@ -725,15 +725,21 @@ int __ms_node_set_params_from_bundle(media_streamer_node_s *node, bundle *param_
 		char *string_val = NULL;
 		for (list_iter = p_list; list_iter != NULL; list_iter = list_iter->next) {
 			param = (param_s *)list_iter->data;
-			if (bundle_get_str(param_list, param->param_name, &string_val) != BUNDLE_ERROR_KEY_NOT_AVAILABLE
-				&& __ms_node_set_param_value(node, param, string_val) == MEDIA_STREAMER_ERROR_NONE)
-				written_count++;
+			if (bundle_get_str(param_list, param->param_name, &string_val) != BUNDLE_ERROR_KEY_NOT_AVAILABLE) {
+				ret = __ms_node_set_param_value(node, param, string_val);
+				if (ret == MEDIA_STREAMER_ERROR_NONE) {
+					written_count++;
+				} else {
+					ms_error("failed to set param");
+					break;
+				}
+			}
 		}
 	}
 	g_list_free(p_list);
 
 	ms_info("Set [%d] parameters of [%d]", written_count, bundle_get_count(param_list));
-	if (written_count == 0)
+	if (ret == MEDIA_STREAMER_ERROR_NONE && written_count == 0)
 		ret = MEDIA_STREAMER_ERROR_INVALID_PARAMETER;
 
 	return ret;

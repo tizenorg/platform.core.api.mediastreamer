@@ -655,7 +655,6 @@ int media_streamer_node_set_params(media_streamer_node_h node, bundle *param_lis
 	ms_retvm_if(param_list == NULL, MEDIA_STREAMER_ERROR_INVALID_PARAMETER, "Parameters list is NULL");
 
 	ret = __ms_node_set_params_from_bundle(ms_node, param_list);
-	ms_retvm_if(ret != MEDIA_STREAMER_ERROR_NONE, MEDIA_STREAMER_ERROR_INVALID_OPERATION, "Parameters list is NULL");
 
 	return ret;
 }

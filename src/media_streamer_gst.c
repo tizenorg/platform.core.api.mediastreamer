@@ -1390,29 +1390,30 @@ int __ms_pipeline_create(media_streamer_s *ms_streamer)
 
 	int *argc = (int *)malloc(sizeof(int));
 	char **argv = NULL;
-	if (argc) {
-		*argc = 1;
-		if (ms_streamer->ini.gst_args)
-			(*argc) += g_strv_length(ms_streamer->ini.gst_args);
-
-		argv = (char **)calloc(*argc, sizeof(char*));
-		if (argv) {
-			argv[0] = g_strdup("MediaStreamer");
-
-			if (ms_streamer->ini.gst_args) {
-				int i = 0;
-				for ( ; ms_streamer->ini.gst_args[i]; ++i) {
-					argv[i+1] = ms_streamer->ini.gst_args[i];
-					ms_debug("Add [%s] gstreamer parameter.", argv[i+1]);
-				}
-			}
-
-		} else {
-			MS_SAFE_FREE(argc);
-			ms_error("Error allocation memory");
-		}
-	} else {
+	if (!argc) {
 		ms_error("Error allocation memory");
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+
+	*argc = 1;
+	if (ms_streamer->ini.gst_args)
+		(*argc) += g_strv_length(ms_streamer->ini.gst_args);
+
+	argv = (char **)calloc(*argc, sizeof(char*));
+	if (!argv) {
+		MS_SAFE_FREE(argc);
+		ms_error("Error allocation memory");
+		return MEDIA_STREAMER_ERROR_INVALID_OPERATION;
+	}
+
+	argv[0] = g_strdup("MediaStreamer");
+
+	if (ms_streamer->ini.gst_args) {
+		int i = 0;
+		for ( ; ms_streamer->ini.gst_args[i]; ++i) {
+			argv[i+1] = ms_streamer->ini.gst_args[i];
+			ms_debug("Add [%s] gstreamer parameter.", argv[i+1]);
+		}
 	}
 
 	gboolean gst_ret = gst_init_check(argc, &argv, &err);

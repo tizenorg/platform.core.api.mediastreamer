@@ -119,7 +119,8 @@ typedef enum {
 	MEDIA_STREAMER_NODE_SINK_TYPE_OVERLAY,/**<  Overlay sink type */
 	MEDIA_STREAMER_NODE_SINK_TYPE_EVAS,   /**<  EVAS sink type */
 	MEDIA_STREAMER_NODE_SINK_TYPE_FAKE,   /**<  Fake sink type */
-	MEDIA_STREAMER_NODE_SINK_TYPE_CUSTOM  /**<  Custom sink type */
+	MEDIA_STREAMER_NODE_SINK_TYPE_CUSTOM,  /**<  Custom sink type */
+	MEDIA_STREAMER_NODE_SINK_TYPE_HTTP_FILE_SEGMENT,   /**<  Http file segment sink type */
 } media_streamer_node_sink_type_e;
 
 /**

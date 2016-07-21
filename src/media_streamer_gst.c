@@ -23,6 +23,12 @@
 #define H264_PARSER_CONFIG_INTERVAL 5
 #define H264_ENCODER_ZEROLATENCY 0x00000004
 
+typedef enum {
+	MEDIA_STREAMER_SINK_BIN_NORMAL,
+	MEDIA_STREAMER_SINK_BIN_RTP_SERVER,
+	MEDIA_STREAMER_SINK_BIN_D2D_SERVER,
+} media_streamer_sink_bin_type_e;
+
 
 void __ms_generate_dots(GstElement *bin, gchar *name_tag)
 {
@@ -282,6 +288,8 @@ gboolean __ms_link_two_elements(GstElement *previous_element, GstPad *prev_elem_
 	GstPad * found_sink_pad = NULL;
 
 	if (prev_elem_src_pad) {
+		ms_debug("prev_src_pad  %s:%s", GST_DEBUG_PAD_NAME(prev_elem_src_pad));
+
 		GstElement *peer_element = __ms_pad_get_peer_element(prev_elem_src_pad);
 		if (!gst_pad_is_linked(prev_elem_src_pad)) {
 
@@ -377,12 +385,15 @@ GstElement *__ms_combine_next_element(GstElement *previous_element, GstPad *prev
 	GstElement *found_element = NULL;
 	node_info_s *node_klass_type = __ms_node_get_klass_by_its_type(node_type);
 
+	ms_debug("elem %s will be linked to type:%d elem", GST_ELEMENT_NAME(previous_element), node_type);
 	/* - 1 - If previous element is linked  - check for peer element */
 	found_element = __ms_find_peer_element_by_type(GST_ELEMENT(previous_element), prev_elem_src_pad, node_klass_type);
 
 	/* - 2 - If previous element is not linked  - find in bin by type */
-	if (!found_element)
+	if (!found_element && bin_to_find_in) {
 		found_element = __ms_bin_find_element_by_type(previous_element, prev_elem_src_pad, bin_to_find_in, node_klass_type);
+		gst_element_sync_state_with_parent(found_element);
+	}
 
 	/* - 3 - If element by type is not found in bin - create element by type */
 	if (!found_element) {
@@ -487,7 +498,7 @@ static void __decodebin_newpad_cb(GstElement * decodebin, GstPad * new_pad, gpoi
 	g_mutex_unlock(&ms_streamer->mutex_lock);
 }
 
-static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *ms_streamer, gboolean is_server_part)
+static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *ms_streamer, media_streamer_sink_bin_type_e sink_bin_type)
 {
 	GstElement *found_element = gst_pad_get_parent_element(src_pad);
 	const gchar *new_pad_type = __ms_get_pad_type(src_pad);
@@ -496,19 +507,30 @@ static void __decodebin_nomore_pads_combine(GstPad *src_pad, media_streamer_s *m
 			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_TEXT_OVERLAY);
 			src_pad = NULL;
 		}
-		if (is_server_part) {
+		if (sink_bin_type == MEDIA_STREAMER_SINK_BIN_RTP_SERVER) {
 			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_PAY);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_RTP);
+		} else if (sink_bin_type == MEDIA_STREAMER_SINK_BIN_D2D_SERVER) {
+			/* src ! decodebin ! video_encoder ! parser ! mpegtsmuxer ! hlssink */
+			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_ENCODER);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_PARSER);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_MUXER);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
 		} else {
 			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_VIDEO_CONVERTER);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
 		}
 	} else if (MS_ELEMENT_IS_AUDIO(new_pad_type)) {
-		if (is_server_part) {
+		if (sink_bin_type == MEDIA_STREAMER_SINK_BIN_RTP_SERVER) {
 			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_AUDIO_PAY);
 			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_RTP);
+		} else if (sink_bin_type == MEDIA_STREAMER_SINK_BIN_D2D_SERVER) {
+			/* src ! decodebin ! audio_encoder ! mpegtsmuxer ! hlssink */
+			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_AUDIO_ENCODER);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->topology_bin, MEDIA_STREAMER_NODE_TYPE_MUXER);
+			found_element = __ms_combine_next_element(found_element, NULL, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
 		} else {
 			found_element = __ms_combine_next_element(found_element, src_pad, ms_streamer->sink_bin, MEDIA_STREAMER_NODE_TYPE_SINK);
 		}
@@ -528,24 +550,39 @@ static void __decodebin_nomore_pads_cb(GstElement *decodebin, gpointer user_data
 
 	g_mutex_lock(&ms_streamer->mutex_lock);
 
-	gboolean is_server_part = FALSE;
+	media_streamer_sink_bin_type_e sink_bin_type = MEDIA_STREAMER_SINK_BIN_NORMAL;
 	media_streamer_node_s *rtp_node = (media_streamer_node_s *)g_hash_table_lookup(ms_streamer->nodes_table, "rtp_container");
+	media_streamer_node_s *segment_node = (media_streamer_node_s *)g_hash_table_lookup(ms_streamer->nodes_table, "hlssink0");
 
 	/* It`s server part of Streaming Scenario*/
 	if (rtp_node) {
 		char *param_value = NULL;
 		media_streamer_node_get_param(rtp_node, MEDIA_STREAMER_PARAM_VIDEO_OUT_PORT, &param_value);
 		if (param_value && (strtol(param_value, NULL, 10) > 0))
-			is_server_part = TRUE;
+			sink_bin_type = MEDIA_STREAMER_SINK_BIN_RTP_SERVER;
 
 		MS_SAFE_FREE(param_value);
+	} else if (segment_node){
+		GstElement *aenc = NULL;
+		ms_debug("we have http file segment sink.");
+
+		__ms_bin_add_element(ms_streamer->topology_bin, __ms_element_create("mpegtsmux", NULL), FALSE);
+		
+		/* FIXME : need to be modified to add right encoder and parser elem according to the caps */
+		__ms_bin_add_element(ms_streamer->topology_bin, __ms_element_create("sprdenc_h264", NULL), FALSE);
+		__ms_bin_add_element(ms_streamer->topology_bin, __ms_element_create("h264parse", NULL), FALSE);
+		aenc = __ms_element_create("avenc_aac", NULL);		
+		__ms_bin_add_element(ms_streamer->topology_bin, aenc, FALSE);
+		g_object_set(GST_OBJECT(aenc), "compliance", (-2), NULL);
+
+		sink_bin_type = MEDIA_STREAMER_SINK_BIN_D2D_SERVER;
 	}
 
 	GList *iterator = NULL;
 	GList *list = ms_streamer->pads_types_list;
 	for (iterator = list; iterator; iterator = iterator->next) {
 		GstPad *src_pad = GST_PAD(iterator->data);
-		__decodebin_nomore_pads_combine(src_pad, ms_streamer, is_server_part);
+		__decodebin_nomore_pads_combine(src_pad, ms_streamer, sink_bin_type);
 	}
 
 	g_mutex_unlock(&ms_streamer->mutex_lock);

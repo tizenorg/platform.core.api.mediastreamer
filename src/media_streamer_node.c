@@ -463,6 +463,17 @@ int __ms_sink_node_create(media_streamer_node_s *node)
 			__ms_signal_create(&node->sig_list, node->gst_element, "eos", G_CALLBACK(sink_eos), node);
 		}
 		break;
+	case MEDIA_STREAMER_NODE_SINK_TYPE_HTTP_FILE_SEGMENT:
+		plugin_name = __ms_ini_get_string("node type 2:http_file_segment", DEFAULT_HTTP_FILE_SEGMENT_SINK);
+		node->gst_element = __ms_element_create(plugin_name, NULL);
+
+		/* FIXME: need to be modified about path and the name of files */
+		g_object_set(G_OBJECT(node->gst_element),
+			"max-files", 0,
+			"playlist-length", 0,
+			"playlist-location", "/tmp/playlist.m3u8",
+			"location", "/tmp/segment%05d.ts", NULL);
+		break;
 	default:
 		ms_error("Error: invalid Sink node Type [%d]", node->subtype);
 		break;
@@ -569,6 +580,7 @@ static void _src_node_prepare(const GValue *item, gpointer user_data)
 	GstElement *found_element = NULL;
 
 	if (__ms_src_need_typefind(src_pad)) {
+		ms_debug("create decodebin");
 		found_element = __ms_decodebin_create(ms_streamer);
 		__ms_link_two_elements(src_element, src_pad, found_element);
 		MS_SAFE_UNREF(src_element);

@@ -28,7 +28,8 @@ typedef enum {
 	MENU_STATE_BROADCAST_MENU,
 	MENU_STATE_VOIP_MENU,
 	MENU_STATE_PLAYING_MENU,
-	MENU_STATE_PRESET_MENU
+	MENU_STATE_PRESET_MENU,
+	MENU_STATE_D2D_MENU,
 } menu_state_e;
 
 typedef enum {
@@ -40,7 +41,8 @@ typedef enum {
 	SUBMENU_STATE_AUTOPLUG,
 	SUBMENU_STATE_SCENARIO,
 	SUBMENU_STATE_PLAYING_SCENARIO,
-	SUBMENU_STATE_FORMAT
+	SUBMENU_STATE_FORMAT,
+	SUBMENU_STATE_D2D_SCENARIO,
 } submenu_state_e;
 
 #define SECOND_VOIP_MASK 0x8
@@ -70,7 +72,9 @@ typedef enum {
 	SCENARIO_MODE_FILE_PLAY_VIDEO_AUDIO,
 	SCENARIO_MODE_FILE_SUBTITLE_VIDEO_AUDIO,
 	SCENARIO_MODE_HTTP_VIDEO_AUDIO,
-	SCENARIO_MODE_APPSRC_APPSINK
+	SCENARIO_MODE_APPSRC_APPSINK,
+	SCENARIO_MODE_D2D_SERVER,
+	SCENARIO_MODE_D2D_CLIENT,
 } scenario_mode_e;
 
 #define PACKAGE "media_streamer_test"
@@ -640,6 +644,22 @@ static media_streamer_node_h _create_rtp(int video_port, int audio_port, gboolea
 	return rtp_bin;
 }
 
+static void _create_http_file_segment()
+{
+	g_print("\n _create_http_file_segment \n");
+	media_streamer_node_h file_src = NULL;
+	media_streamer_node_create_src(MEDIA_STREAMER_NODE_SRC_TYPE_FILE, &file_src);
+	media_streamer_node_set_param(file_src, MEDIA_STREAMER_PARAM_URI, g_uri);
+	media_streamer_node_add(current_media_streamer, file_src);
+	APPEND_NODE(file_src);
+
+	/*********************** videosink *********************************** */
+	media_streamer_node_h segment_sink = NULL;
+	media_streamer_node_create_sink(MEDIA_STREAMER_NODE_SINK_TYPE_HTTP_FILE_SEGMENT, &segment_sink);
+	media_streamer_node_add(current_media_streamer, segment_sink);
+	APPEND_NODE(segment_sink);
+}
+
 /* Application source callback */
 static void buffer_status_cb(media_streamer_node_h node, media_streamer_custom_buffer_status_e status, void *user_data)
 {
@@ -842,6 +862,22 @@ static void display_playing_scenario_select_menu(void)
 	g_print("====================================================\n");
 }
 
+static void display_d2d_scenario_select_menu(void)
+{
+	g_print("\n");
+	g_print("====================================================\n");
+	g_print("   media streamer test: D2D menu v0.3\n");
+	g_print("----------------------------------------------------\n");
+	g_print("\n");
+	g_print("Please select D2D Scenario mode\n");
+	g_print("By default will be used [%d] mode\n", g_scenario_mode);
+	g_print("1. [Server] Create Video http file segment \n");
+	g_print("2. [Client] HLS playing \n");
+	g_print("b. back \n");
+	g_print("----------------------------------------------------\n");
+	g_print("====================================================\n");
+}
+
 static void display_preset_menu(void)
 {
 	g_print("\n");
@@ -901,6 +937,7 @@ static void display_main_menu(void)
 	g_print("1. Broadcast \n");
 	g_print("2. VOIP \n");
 	g_print("3. Local Playing \n");
+	g_print("4. D2D \n");
 	g_print("q. quit \n");
 	g_print("----------------------------------------------------\n");
 	g_print("====================================================\n");
@@ -923,6 +960,9 @@ static void display_menu(void)
 			display_preset_menu();
 			break;
 		case MENU_STATE_PRESET_MENU:
+			display_preset_menu();
+			break;
+		case MENU_STATE_D2D_MENU:
 			display_preset_menu();
 			break;
 		default:
@@ -951,6 +991,9 @@ static void display_menu(void)
 			break;
 		case SUBMENU_STATE_PLAYING_SCENARIO:
 			display_playing_scenario_select_menu();
+			break;
+		case SUBMENU_STATE_D2D_SCENARIO:
+			display_d2d_scenario_select_menu();
 			break;
 		default:
 			g_print("*** Unknown Submenu state.\n");
@@ -1037,6 +1080,18 @@ void run_playing_preset(void)
 		g_print("Invalid playing menu preset was selected!");
 }
 
+void run_d2d_preset(void)
+{
+	g_print("%s:%d, %d %d %d", __FUNCTION__, __LINE__, g_menu_state, g_sub_menu_state, g_scenario_mode);
+
+	if (g_scenario_mode == SCENARIO_MODE_D2D_SERVER)
+		_create_http_file_segment();
+	else if (g_scenario_mode == SCENARIO_MODE_D2D_CLIENT)
+		_create_http_playing(); /* temp */
+	else
+		g_print("Invalid d2d menu preset was selected!");
+}
+
 void _interpret_main_menu(char *cmd)
 {
 	int len = strlen(cmd);
@@ -1048,6 +1103,8 @@ void _interpret_main_menu(char *cmd)
 			g_menu_state = MENU_STATE_VOIP_MENU;
 		else if (!strncmp(cmd, "3", len))
 			g_menu_state = MENU_STATE_PLAYING_MENU;
+		else if (!strncmp(cmd, "4", len))
+			g_menu_state = MENU_STATE_D2D_MENU;
 		else if (!strncmp(cmd, "q", len))
 			quit();
 	} else {
@@ -1110,6 +1167,24 @@ void _interpret_voip_menu(char *cmd)
 	} else {
 		g_print("wrong command\n");
 	}
+}
+
+void _interpret_d2d_scenario_menu(char *cmd)
+{
+	int len = strlen(cmd);
+
+	if (len == 1) {
+		if (!strncmp(cmd, "1", len)) {
+			g_scenario_mode = SCENARIO_MODE_D2D_SERVER;
+			g_sub_menu_state = SUBMENU_STATE_GETTING_VIDEOFILE_URI;
+			return;
+		} else if (!strncmp(cmd, "2", len)) {
+			g_scenario_mode = SCENARIO_MODE_D2D_CLIENT;
+			g_sub_menu_state = SUBMENU_STATE_GETTING_VIDEOFILE_URI;
+			return;
+		}
+	}
+	g_sub_menu_state = SUBMENU_STATE_UNKNOWN;
 }
 
 void _interpret_playing_scenario_menu(char *cmd)
@@ -1262,6 +1337,7 @@ void _interpret_getting_uri_menu(char *cmd)
 		return;
 	}
 
+	g_print("_interpret_getting_uri_menu %d %d %d", g_menu_state, g_sub_menu_state, g_scenario_mode);
 	if (g_menu_state == MENU_STATE_PLAYING_MENU) {
 		if (g_scenario_mode == SCENARIO_MODE_FILE_SUBTITLE_VIDEO_AUDIO) {
 			g_sub_menu_state = SUBMENU_STATE_GETTING_SUBFILE_URI;
@@ -1274,6 +1350,8 @@ void _interpret_getting_uri_menu(char *cmd)
 			create_formats();
 			_create_file_streaming();
 			_create_rtp(VIDEO_PORT, AUDIO_PORT, FALSE);
+		} else if (g_scenario_mode == SCENARIO_MODE_D2D_SERVER) {
+			run_d2d_preset();
 		} else {
 			run_preset();
 		}
@@ -1320,6 +1398,8 @@ void _interpret_preset_menu(char *cmd)
 			/* call the run_preset function after autoplug mode was selected; */
 			if (g_menu_state == MENU_STATE_PLAYING_MENU)
 				g_sub_menu_state = SUBMENU_STATE_PLAYING_SCENARIO;
+			else if (g_menu_state == MENU_STATE_D2D_MENU)
+				g_sub_menu_state = SUBMENU_STATE_D2D_SCENARIO;
 			else
 				g_sub_menu_state = SUBMENU_STATE_AUTOPLUG;
 		} else if (!strncmp(cmd, "3", len)) {
@@ -1372,6 +1452,9 @@ static void interpret_cmd(char *cmd)
 		case MENU_STATE_PRESET_MENU:
 			_interpret_preset_menu(cmd);
 			break;
+		case MENU_STATE_D2D_MENU:
+			_interpret_preset_menu(cmd);
+			break;
 		default:
 			g_print("Invalid command\n");
 			return;
@@ -1399,6 +1482,9 @@ static void interpret_cmd(char *cmd)
 			break;
 		case SUBMENU_STATE_PLAYING_SCENARIO:
 			_interpret_playing_scenario_menu(cmd);
+			break;
+		case SUBMENU_STATE_D2D_SCENARIO:
+			_interpret_d2d_scenario_menu(cmd);
 			break;
 		default:
 			g_print("*** Unknown Submenu state.\n");

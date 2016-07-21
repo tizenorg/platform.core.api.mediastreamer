@@ -160,6 +160,7 @@ typedef struct {
 #define DEFAULT_AUDIO_CONVERT               "audioconvert"
 #define DEFAULT_AUDIO_RESAMPLE              "audioresample"
 #define DEFAULT_APP_SINK                    "appsink"
+#define DEFAULT_HTTP_FILE_SEGMENT_SINK      "hlssink"
 
 /* udp streaming */
 #define DEFAULT_UDP_SOURCE                  "udpsrc"
